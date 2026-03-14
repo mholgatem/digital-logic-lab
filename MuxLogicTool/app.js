@@ -766,10 +766,45 @@ function undoAction() {
 
 function exportPng() {
   const container = document.querySelector('.workspace');
+  
+  // Hide input controls
+  const controls = document.querySelector('.kmap-input-controls');
+  const oldControlsDisplay = controls ? controls.style.display : '';
+  if (controls) controls.style.display = 'none';
+  
+  // Temporarily disable 'inactive' class
+  const inactiveElements = document.querySelectorAll('.inactive');
+  inactiveElements.forEach(el => el.classList.remove('inactive'));
+  
+  // Replace inputs with divs for html2canvas to fix alignment issues
+  const inputs = document.querySelectorAll('.kmap-cell-input');
+  const tempDivs = [];
+  inputs.forEach(input => {
+    const div = document.createElement('div');
+    div.textContent = input.value;
+    div.className = input.className;
+    div.style.display = 'flex';
+    div.style.justifyContent = 'center';
+    div.style.alignItems = 'center';
+    div.style.width = '100%';
+    div.style.height = '100%';
+    input.parentNode.insertBefore(div, input);
+    input.style.display = 'none';
+    tempDivs.push({input, div});
+  });
+
   html2canvas(container).then(canvas => {
     const link = document.createElement('a');
     link.download = `mux-logic-problem.png`;
     link.href = canvas.toDataURL();
     link.click();
+    
+    // Restore state
+    if (controls) controls.style.display = oldControlsDisplay;
+    inactiveElements.forEach(el => el.classList.add('inactive'));
+    tempDivs.forEach(({input, div}) => {
+      input.style.display = '';
+      div.remove();
+    });
   });
 }
