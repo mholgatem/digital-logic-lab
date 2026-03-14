@@ -99,6 +99,18 @@ export class TransitionTableManager {
     }
   }
 
+  rebuildRows() {
+    const state = store.state;
+    const numInputs = state.inputs.length;
+    const numStates = state.states.length;
+    const totalRows = numStates * Math.pow(2, numInputs);
+    
+    state.transitionTable.rows = Array.from({ length: totalRows }, (_, i) => ({
+      key: `row-${i}`,
+      index: i
+    }));
+  }
+
   ensureStructure() {
     const state = store.state;
     if (!state.transitionTable || typeof state.transitionTable !== 'object') {
