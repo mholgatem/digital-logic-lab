@@ -3431,8 +3431,8 @@ function buildKmapCircleGroup({
 
     rectEl.setAttribute('x', minX);
     rectEl.setAttribute('y', minY);
-    rectEl.setAttribute('width', maxX - minX);
-    rectEl.setAttribute('height', maxY - minY);
+    rectEl.setAttribute('width', Math.max(0,maxX - minX));
+    rectEl.setAttribute('height', Math.max(0, maxY - minY));
     rectEl.setAttribute('rx', 14);
     rectEl.setAttribute('ry', 14);
     rectEl.setAttribute('fill', fillColor);
