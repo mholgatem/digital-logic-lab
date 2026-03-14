@@ -508,8 +508,6 @@ function getLeafValue(path) {
     }
   }
   if (values.length === 0) return "";
-  if (values.every(v => v === 0)) return "0";
-  if (values.every(v => v === 1)) return "1";
   return "?";
 }
 
@@ -541,8 +539,8 @@ function updateMuxDiagram() {
     if (node.isSplit) {
       let child0 = node.children[0];
       let child1 = node.children[1];
-      let y0 = child0.isSplit ? y - MUX_HEIGHT * 0.45 : y - MUX_HEIGHT * 0.25;
-      let y1 = child1.isSplit ? y + MUX_HEIGHT * 0.45 : y + MUX_HEIGHT * 0.25;
+      let y0 = child0.isSplit ? y - MUX_HEIGHT * 0.45 - 25 : y - MUX_HEIGHT * 0.25;
+      let y1 = child1.isSplit ? y + MUX_HEIGHT * 0.45 + 25 : y + MUX_HEIGHT * 0.25;
       calcLayout(child0, x - X_SPACING, y0);
       calcLayout(child1, x - X_SPACING, y1);
     }
