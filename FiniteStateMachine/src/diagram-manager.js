@@ -22,49 +22,47 @@ export class DiagramManager {
     this.render();
     store.subscribe(() => this.render());
   }
-setupEventListeners() {
-  this.diagram.addEventListener('wheel', (e) => this.handleWheel(e), { passive: false });
-  this.diagram.addEventListener('mousedown', (e) => this.handleMouseDown(e));
-  document.addEventListener('mousemove', (e) => this.handleMouseMove(e));
-  document.addEventListener('mouseup', (e) => this.handleMouseUp(e));
 
-  if (ui.elements.paletteList) {
-    ui.elements.paletteList.addEventListener('dragstart', (e) => this.handlePaletteDragStart(e));
+  setupEventListeners() {
+    this.diagram.addEventListener('wheel', (e) => this.handleWheel(e), { passive: false });
+    this.diagram.addEventListener('mousedown', (e) => this.handleMouseDown(e));
+    document.addEventListener('mousemove', (e) => this.handleMouseMove(e));
+    document.addEventListener('mouseup', (e) => this.handleMouseUp(e));
+
+    if (ui.elements.paletteList) {
+      ui.elements.paletteList.addEventListener('dragstart', (e) => this.handlePaletteDragStart(e));
+    }
+
+    this.diagram.addEventListener('dragover', (e) => e.preventDefault());
+    this.diagram.addEventListener('drop', (e) => this.handleDrop(e));
   }
 
-  this.diagram.addEventListener('dragover', (e) => e.preventDefault());
-  this.diagram.addEventListener('drop', (e) => this.handleDrop(e));
-}
+  handlePaletteDragStart(e) {
+    const id = e.target.closest('.palette-item')?.dataset.id;
+    if (!id) return;
+    e.dataTransfer.setData('text/plain', id);
+  }
 
-handlePaletteDragStart(e) {
-  const id = e.target.closest('.palette-item')?.dataset.id;
-  if (!id) return;
-  e.dataTransfer.setData('text/plain', id);
-}
+  renderPalette() {
+    const paletteList = ui.elements.paletteList;
+    if (!paletteList) return;
+    paletteList.innerHTML = '';
+    const template = document.getElementById('paletteItemTemplate');
+    if (!template) return;
 
-renderPalette() {
-  const paletteList = ui.elements.paletteList;
-  if (!paletteList) return;
-  paletteList.innerHTML = '';
-  const template = document.getElementById('paletteItemTemplate');
-  if (!template) return;
+    const unplaced = store.state.states.filter((s) => !s.placed);
+    unplaced.forEach((st) => {
+      const node = template.content.cloneNode(true).querySelector('.palette-item');
+      node.dataset.id = st.id;
+      const decimalValue = this.stateBinaryDecimal(st);
+      node.querySelector('.state-circle').textContent = decimalValue ?? st.id;
+      node.querySelector('.state-label').textContent = st.label;
+      paletteList.appendChild(node);
+    });
+  }
 
-  const unplaced = store.state.states.filter((s) => !s.placed);
-  unplaced.forEach((st) => {
-    const node = template.content.cloneNode(true).querySelector('.palette-item');
-    node.dataset.id = st.id;
-    const decimalValue = this.stateBinaryDecimal(st);
-    node.querySelector('.state-circle').textContent = decimalValue ?? st.id;
-    node.querySelector('.state-label').textContent = st.label;
-    paletteList.appendChild(node);
-  });
-}
-
-render() {
-  this.clear();
-  this.renderPalette();
-  const state = store.state;
-
+  handleWheel(e) {
+    e.preventDefault();
     const point = this.getSVGPoint(e.clientX, e.clientY);
     const delta = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
     const zoomIntensity = 0.0015;
@@ -348,6 +346,7 @@ render() {
 
   render() {
     this.clear();
+    this.renderPalette();
     const state = store.state;
     
     state.transitions.forEach((tr) => this.drawTransition(tr));
