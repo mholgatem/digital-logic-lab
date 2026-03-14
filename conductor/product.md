@@ -9,9 +9,9 @@ A comprehensive suite of web-based interactive learning tools for digital logic 
 - **Description:** Build, visualize, and verify state machines.
 - **Key Features:** Moore/Mealy support, diagramming, state/transition tables, and automated verification.
 
-### Mux Logic Tool (Planned)
-- **Description:** Explore multiplexer behavior and applications.
-- **Key Features:** Interactive multiplexer logic puzzles and truth table generation.
+### Mux Logic Tool
+- **Description:** Interactive educational module for visualizing Karnaugh map symmetry and Multiplexer logic.
+- **Key Features:** Random 3-variable K-map problem generation with variable difficulty (1, 2, or 3 muxes), interactive click-to-select symmetry splitting, dynamic Mux tree visualization, input literal overrides, and PNG export for documentation.
 
 ### Decoder Games (Planned)
 - **Description:** Interactive puzzles to learn about decoders.

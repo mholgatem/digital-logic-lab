@@ -1,8 +1,25 @@
 :root {
-  --kmap-cell-size: 80px;
+  --bg: #f6f7fb;
+  --bg-muted: #e9ebf3;
+  --text: #1f2630;
+  --primary: #4a6cf7;
+  --border: #cfd5e4;
+  --accent: #f0f4ff;
+  --surface: #ffffff;
+  --kmap-cell-size: 50px;
   --kmap-border: #334155;
   --active-color: var(--primary);
   --inactive-opacity: 0.3;
+}
+
+body.dark {
+  --bg: #111827;
+  --bg-muted: #1f2937;
+  --text: #ffffff;
+  --primary: #8b9cf9;
+  --border: #374151;
+  --accent: #1f2937;
+  --surface: #0b1221;
 }
 
 .header-left {
@@ -26,31 +43,40 @@
   color: var(--primary);
 }
 
+.header-actions {
+  display: flex;
+  flex-direction: row;
+  gap: 0.5rem;
+  align-items: center;
+}
+
 .toolbar {
-  background-color: var(--card-bg);
-  border: 1px solid var(--border);
-  border-radius: 0.75rem;
-  padding: 1rem;
+  background-color: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0.75rem 1rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .difficulty-selector {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.5rem;
 }
 
 .difficulty-btn {
   background-color: var(--bg);
   border: 1px solid var(--border);
-  padding: 0.5rem 1rem;
+  padding: 0.4rem 0.875rem;
   border-radius: 0.5rem;
   cursor: pointer;
   font-weight: 600;
   color: var(--text);
+  font-size: 0.875rem;
   transition: all 0.2s;
 }
 
@@ -65,76 +91,139 @@
 }
 
 .workspace {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2rem;
-  align-items: start;
-}
-
-.kmap-container {
-  position: relative;
-  background-color: var(--card-bg);
-  border: 1px solid var(--border);
-  border-radius: 1rem;
-  padding: 4rem 3rem 3rem 4rem;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  padding: 2rem;
+  gap: 2rem;
   align-items: center;
-  overflow: visible;
-}
-
-.kmap-label-top {
-  position: absolute;
-  top: 2rem;
-  left: 4.5rem;
-  font-weight: 700;
-  letter-spacing: 1.5rem;
-  color: var(--muted);
-  font-size: 0.875rem;
-}
-
-.kmap-label-left {
-  position: absolute;
-  left: 1.5rem;
-  top: 4.5rem;
-  font-weight: 700;
-  color: var(--muted);
-  font-size: 0.875rem;
-  line-height: 5rem;
-  text-align: right;
-}
-
-.kmap-grid {
-  display: grid;
-  grid-template-columns: repeat(4, var(--kmap-cell-size));
-  grid-template-rows: repeat(2, var(--kmap-cell-size));
-  border: 2px solid var(--kmap-border);
   background-color: var(--bg);
 }
 
-.kmap-cell {
-  width: var(--kmap-cell-size);
-  height: var(--kmap-cell-size);
+.kmap-container {
+  background-color: var(--surface);
   border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 1.5rem 2.5rem;
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
-  font-size: 1.5rem;
-  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.kmap-grid-wrapper {
   position: relative;
-  cursor: pointer;
-  transition: transform 0.3s, opacity 0.3s;
+  display: inline-block;
+  width: 250px;
+  height: 150px;
+  margin-bottom: 1.5rem;
 }
 
-.kmap-cell.active {
+.kmap-grid-collection {
+  display: grid;
+  gap: 1rem;
+}
+
+.kmap-submap {
+  background: var(--surface);
+}
+
+.kmap-table {
+  border-collapse: collapse;
+  table-layout: fixed;
+  width: 250px;
+  height: 150px;
+}
+
+.kmap-table th {
   background-color: var(--accent);
-  transform: scale(1.05);
-  z-index: 2;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border);
+  text-align: center;
+  padding: 0;
+  width: var(--kmap-cell-size);
+  height: var(--kmap-cell-size);
 }
 
-.kmap-cell.inactive {
+.kmap-table td {
+  border: 1px solid var(--border);
+  text-align: center;
+  padding: 0;
+  width: var(--kmap-cell-size);
+  height: var(--kmap-cell-size);
+  background-color: transparent;
+}
+
+.kmap-cell-input {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: transparent;
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: 300;
+  color: var(--text);
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.kmap-cell-input.inactive {
   opacity: var(--inactive-opacity);
+  background-color: var(--bg-muted);
+}
+
+.kmap-gray-code {
+  display: inline-block;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.kmap-corner-label {
+  position: relative;
+  min-width: var(--kmap-cell-size);
+  min-height: var(--kmap-cell-size);
+  display: grid;
+  place-items: center;
+  color: var(--text);
+  font-weight: 700;
+  overflow: hidden;
+}
+
+.kmap-corner-label .kmap-diagonal {
+  position: absolute;
+  inset: 0;
+}
+
+.kmap-corner-label .kmap-diagonal::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: -20%;
+  width: 140%;
+  border-top: 1px solid var(--border);
+  transform: rotate(45deg);
+  transform-origin: center;
+}
+
+.kmap-corner-label .kmap-variable-block {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: 0.2rem;
+  font-size: 0.85rem;
+}
+
+.kmap-corner-label .kmap-vars-row {
+  position: absolute;
+  bottom: 0.5rem;
+  left: 0.5rem;
+}
+
+.kmap-corner-label .kmap-vars-col {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
 }
 
 .symmetry-overlay {
@@ -144,22 +233,72 @@
   width: 100%;
   height: 100%;
   pointer-events: none;
-  z-index: 5;
+  z-index: 10;
+}
+
+.symmetry-selector {
+  position: absolute;
+  background: transparent;
+  cursor: pointer;
+  z-index: 15;
+  pointer-events: auto;
+  transition: background-color 0.2s;
+}
+
+.symmetry-selector.hover-active {
+  background-color: rgba(74, 108, 247, 0.3);
+}
+
+.wavy-line {
+  fill: none;
+  stroke-width: 4;
+  stroke-linecap: round;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+}
+
+.kmap-input-controls {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.mux-input-btn {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.25rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  font-weight: bold;
+  cursor: pointer;
+  color: var(--text);
+  transition: all 0.2s;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.mux-input-btn:hover {
+  background-color: var(--accent);
+  border-color: var(--primary);
 }
 
 .mux-container {
-  background-color: var(--card-bg);
+  background-color: var(--surface);
   border: 1px solid var(--border);
   border-radius: 1rem;
   padding: 2rem;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .mux-container h3 {
   margin: 0 0 1.5rem 0;
+  text-align: center;
 }
 
 .mux-diagram {
   min-height: 300px;
+  width: 100%;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -167,6 +306,13 @@
   border: 2px dashed var(--border);
   border-radius: 0.5rem;
   color: var(--muted);
+  text-align: center;
+  padding: 1.5rem;
+  box-sizing: border-box;
+}
+
+.mux-diagram p {
+  margin: 0;
 }
 
 .tutorial-step {
