@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mux Logic Tool - Digital Logic Lab</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+</head>
+<body class="light">
+  <header class="main-header">
+    <div class="container">
+      <div class="header-left">
+        <a href="../" class="back-link">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+          Back
+        </a>
+        <h1>Mux Logic Tool</h1>
+      </div>
+      <div class="header-actions">
+        <button id="undoBtn" class="icon-btn" title="Undo (Ctrl+Z)">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"></path><path d="M21 17a9 9 0 0 0-9-9 6.7 6.7 0 0 0-5 2.2L3 13"></path></svg>
+        </button>
+        <button id="resetBtn" class="icon-btn" title="Reset">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+        </button>
+        <button id="exportBtn" class="icon-btn" title="Export PNG">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+        </button>
+        <button id="tutorialBtn" class="icon-btn" title="Tutorial">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="toolbar">
+      <div class="difficulty-selector">
+        <label>Difficulty:</label>
+        <button class="difficulty-btn active" data-difficulty="1">1 Mux</button>
+        <button class="difficulty-btn" data-difficulty="2">2 Muxes</button>
+        <button class="difficulty-btn" data-difficulty="3">3 Muxes</button>
+      </div>
+      <button id="newProblemBtn" class="primary">New Problem</button>
+    </div>
+
+    <div class="workspace">
+      <div id="kmapContainer" class="kmap-container">
+        <!-- Labels -->
+        <div class="kmap-label-top">BC: 00 01 11 10</div>
+        <div class="kmap-label-left">A=0<br><br>A=1</div>
+        <!-- K-map will be rendered here -->
+        <div id="kmap" class="kmap-grid"></div>
+        <svg id="symmetryOverlay" class="symmetry-overlay"></svg>
+      </div>
+
+      <div id="muxContainer" class="mux-container">
+        <h3>Mux Visualization</h3>
+        <div id="muxDiagram" class="mux-diagram">
+          <!-- Mux diagram will be rendered here -->
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div id="tutorialDialog" class="dialog-backdrop hidden">
+    <div class="dialog">
+      <h2>Mux Logic Tutorial</h2>
+      <p>Learn how to use K-map symmetry to build multiplexer logic.</p>
+      <div class="tutorial-step">
+        <p>1. Look for lines of symmetry in the K-map values.</p>
+        <p>2. Click on a grid line to select it as a Mux select line.</p>
+        <p>3. Observe how the K-map highlights the selected portion.</p>
+      </div>
+      <div class="dialog-actions">
+        <button id="closeTutorial" class="primary">Got it!</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
