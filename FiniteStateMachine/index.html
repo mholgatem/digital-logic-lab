@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Finite State Machine Designer</title>
+  <link rel="shortcut icon" href="/FiniteStateMachine/favicon.ico">
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+</head>
+<body class="light" oncontextmenu="return false;">
+  <div id="landing" class="dialog-backdrop">
+    <div class="dialog">
+      <h1>Finite State Machine Designer</h1>
+      <p>Create or load a state machine project.</p>
+      <div class="dialog-actions">
+        <button id="newMachineBtn" class="primary">+ New State Machine</button>
+        <label class="file-label">
+          <input type="file" id="loadMachineInput" accept="application/json" hidden />
+          <span>Load</span>
+        </label>
+        <button id="loadExampleLanding" type="button">Load example</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="welcomeDialog" class="dialog-backdrop hidden">
+    <div class="dialog">
+      <h2>Goals of the FSM Designer!</h2>
+      <ol>
+        <li>Build legible state transition diagrams</li>
+        <li>Export images for capstone templates</li>
+        <li>Help UGTAs diagnose issues</li>
+        <li>Generate files that can be processed by an auto-grader python script to check validity of FSM steps.</li>
+      </ol>
+      <div class="dialog-actions">
+        <button class="primary" data-close="welcomeDialog">Let's get started</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="newMachineDialog" class="dialog-backdrop hidden">
+    <div class="dialog">
+      <h2>New State Machine</h2>
+      <div class="form-row">
+        <label>Name</label>
+        <input type="text" id="machineName" placeholder="Untitled Machine" />
+      </div>
+      <div class="form-row">
+        <label>Machine Type</label>
+        <select id="machineType">
+          <option value="moore">Moore</option>
+          <option value="mealy">Mealy</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label>Number of States</label>
+        <select id="stateCount"></select>
+      </div>
+      <div class="form-row">
+        <label>Input variables (comma separated)</label>
+        <input type="text" id="inputVars" placeholder="a, b" />
+      </div>
+      <div class="form-row">
+        <label>Output variables (comma separated)</label>
+        <input type="text" id="outputVars" placeholder="c" />
+      </div>
+      <div class="dialog-actions">
+        <button id="createMachine" class="primary">Create</button>
+        <button data-close="newMachineDialog">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="arrowDialog" class="dialog-backdrop hidden">
+    <div class="dialog">
+      <h2>Transition Details</h2>
+      <div class="form-row">
+        <label>Input values</label>
+        <div id="inputChoices" class="io-grid"></div>
+      </div>
+      <div class="form-row" id="mealyOutputRow">
+        <label>Output values</label>
+        <div id="outputChoices" class="io-grid"></div>
+      </div>
+      <div class="dialog-actions">
+        <button id="saveArrow" class="primary">Save</button>
+        <button data-close="arrowDialog">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <header class="toolbar">
+    <div class="toolbar-left">
+      <h3 id="toolbarTitle">Untitled Machine</h3>
+    </div>
+    <div class="toolbar-actions">
+      <div class="dropdown">
+        <button id="fileMenuButton" class="ghost dropdown-toggle">File ▾</button>
+        <div id="fileMenu" class="dropdown-menu hidden">
+          <button id="toolbarNewMachine" class="ghost" type="button">New</button>
+          <label class="file-label">
+            <input type="file" id="loadButton" accept="application/json" hidden />
+            <span>Load</span>
+          </label>
+          <button id="loadExampleButton" class="ghost" type="button">Load example</button>
+          <button id="saveButton" class="primary" type="button">Save</button>
+          <div class="dropdown nested-dropdown">
+            <button id="saveImageDropdown" class="ghost dropdown-toggle">Download Images ▾</button>
+            <div id="saveImageMenu" class="dropdown-menu hidden nested-menu">
+              <button id="saveImageTable" type="button">State Definition Table</button>
+              <button id="saveImageDiagram" type="button">State Transition Diagram</button>
+              <button id="saveImageTransitionTable" type="button">State Transition Table</button>
+              <button id="saveImageKmaps" type="button">Karnaugh Maps (ZIP)</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="dropdown">
+        <button id="settingsMenuButton" class="ghost dropdown-toggle">Settings ▾</button>
+        <div id="settingsMenu" class="dropdown-menu hidden">
+          <button id="toggleIoMode" class="ghost" type="button">Display: Variables</button>
+          <button id="toggleTheme" class="ghost" type="button">Light/Dark</button>
+        </div>
+      </div>
+      <button id="quickRef" class="ghost">Quick Reference</button>
+      <button id="stateDefinitionBtn" class="ghost">State Definition Table</button>
+      <button id="toggleTransitionDrawer" class="ghost">State Transition Table</button>
+      <button id="kmapToggle" class="ghost">K-maps</button>
+      <button id="testKmapBtn" class="ghost">TEST KMAP</button>
+    </div>
+  </header>
+
+  <main class="workspace">
+    <aside class="state-palette">
+      <h4>Unplaced States</h4>
+      <div id="paletteList"></div>
+    </aside>
+    <section class="playmat">
+      <div class="version-label">v1.8.0</div>
+      <div class="diagram-controls">
+        <button id="diagramControlsBtn" class="ghost diagram-controls-btn" type="button" aria-label="Show diagram controls">
+          ?
+        </button>
+        <div id="diagramControlsPopup" class="diagram-controls-popup hidden" role="dialog" aria-label="Diagram controls">
+          <div class="diagram-controls-header">
+            <span>Diagram controls</span>
+            <button id="diagramControlsClose" class="ghost" type="button" aria-label="Close diagram controls">✕</button>
+          </div>
+          <ul>
+            <li><b>Drag</b> a state to move it.</li>
+            <li><b>Ctrl + Drag</b> a state to resize it.</li>
+            <li><b>Alt + Drag</b> (or <b>Right-click Drag</b>) to create an arrow.</li>
+            <li><b>Drag</b> the blue dot on an arrow to curve or reposition it.</li>
+            <li><b>Alt + Click</b> (or <b>Right-click</b>) a label to set values.</li>
+            <li><b>Shift + Drag</b> or <b>Middle-click Drag</b> to pan.</li>
+            <li><b>Scroll</b> to zoom.</li>
+          </ul>
+        </div>
+      </div>
+      <svg id="diagram" width="100%" height="100%">
+        <defs>
+          <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto" markerUnits="strokeWidth">
+            <polygon points="0 0, 10 3.5, 0 7" fill="currentColor"></polygon>
+          </marker>
+        </defs>
+        <g id="viewport"></g>
+      </svg>
+    </section>
+  </main>
+
+  <aside id="transitionDrawer" class="transition-drawer">
+    <div class="drawer-header">
+      <h4>State Transition Table</h4>
+      <div class="drawer-header-actions">
+        <button id="transitionTableHelp" class="ghost" aria-label="Transition table quick reference">?</button>
+        <button id="verifyTransitionTable" class="ghost">Verify Transition Table</button>
+        <button id="closeTransitionDrawer" class="ghost" aria-label="Close transition table">✕</button>
+      </div>
+    </div>
+    <div class="drawer-resize-handle" id="transitionDrawerHandle" aria-hidden="true"></div>
+    <div class="drawer-content">
+      <div class="transition-column-builder" id="transitionColumnBuilder">
+        <div class="transition-builder-header">
+          <div class="transition-builder-title">Column builder</div>
+          <button id="toggleTransitionBuilder" class="ghost" aria-expanded="true">Hide builder</button>
+        </div>
+        <div class="transition-builder-body">
+          <div class="kmap-variable-tray transition-column-tray">
+            <span class="kmap-tray-label">Column tray:</span>
+            <div id="transitionColumnTray" class="kmap-variable-items"></div>
+          </div>
+          <div class="transition-expression">
+            <div class="kmap-expression-label">Arrange columns</div>
+            <div id="transitionColumnDropzone" class="kmap-expression-tray transition-expression-tray" tabindex="0"></div>
+          </div>
+        </div>
+      </div>
+      <div id="cellHider"></div>
+      <div class="drawer-table-wrapper">
+        <table id="transitionTable">
+          <thead id="transitionTableHead"></thead>
+          <tbody id="transitionTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </aside>
+
+  <div id="quickRefDialog" class="dialog-backdrop hidden">
+    <div class="dialog">
+      <h2>Quick Reference</h2>
+      <ul>
+        <li>Drag states from the left <i>unused states tray</i> onto the playmat</li>
+        <li><b>Ctrl + Drag</b> a placed state to resize it.</li>
+        <li><b>Alt + Drag</b> or <b>Right-click Drag</b> from <i>state → state</i> to create a <i>transition arrow</i>.</li>
+        <li><b>Drag</b> the midpoint handle on an arrow to curve it and adjust snap points.</li>
+        <li><b>Scroll</b> to zoom</li>
+        <li><b>Shift + Drag</b> or <b>Middle-Click Drag</b> to pan.</li>
+        <li><b>Backspace</b> on selected state or transition will delete that element.</li>
+        <li><b>Right-click</b> an arrow to <i>set inputs</i> (and outputs for Mealy).</li>
+      </ul>
+      <div class="dialog-actions">
+        <button data-close="quickRefDialog">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="stateDefinitionDialog" class="dialog-backdrop hidden">
+    <div class="dialog state-definition-dialog">
+      <div class="dialog-header state-definition-header" id="stateDefinitionHeader">
+        <h2>State Definition Table</h2>
+        <button class="ghost" data-close="stateDefinitionDialog" aria-label="Close state definition table">✕</button>
+      </div>
+      <div id="stateDefinitionContent" class="state-definition-body">
+        <div class="table-controls">
+          <div class="form-row inline">
+            <label>Machine Name</label>
+            <input type="text" id="nameControl" />
+          </div>
+          <div class="form-row inline">
+            <label>Type</label>
+            <select id="typeControl">
+              <option value="moore">Moore</option>
+              <option value="mealy">Mealy</option>
+            </select>
+          </div>
+          <div class="form-row inline">
+            <label>States</label>
+            <select id="stateControl"></select>
+          </div>
+          <div class="form-row inline">
+            <label>Inputs</label>
+            <input type="text" id="inputsControl" />
+          </div>
+          <div class="form-row inline">
+            <label>Outputs</label>
+            <input type="text" id="outputsControl" />
+          </div>
+        </div>
+        <div class="table-wrapper">
+          <table id="stateTable">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th id="stateBinaryHeader">State Binary</th>
+                <th>Label</th>
+                <th>Description</th>
+                <th id="stateOutputsHeader" class="moore-only">Outputs</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="dialog-actions end">
+        <button data-close="stateDefinitionDialog">Close</button>
+      </div>
+      <div class="state-definition-resize-handle" id="stateDefinitionResizeHandle" aria-hidden="true"></div>
+    </div>
+  </div>
+
+  <div id="transitionTableHelpDialog" class="dialog-backdrop hidden">
+    <div class="dialog">
+      <h2>Transition Table Quick Reference</h2>
+      <ul>
+        <li>Drag and drop columns in the Column Builder to arrange your transition table order.</li>
+        <li><i>Current state</i> and <i>input</i> columns accept only <b>1</b> or <b>0</b>.</li>
+        <li><i>Next state</i> and <i>output</i> columns accept <b>1</b>, <b>0</b>, or <b>X</b> (don’t care).</li>
+        <li class="spaced-bullet"><b>Verify Transition Table Button</b> checks the table against the Transition Diagram only—it does not validate the correctness of your logic.</li>
+      </ul>
+      <div class="dialog-actions">
+        <button data-close="transitionTableHelpDialog">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="kmapWindow" class="kmap-window hidden">
+    <div class="kmap-window-header" id="kmapWindowHeader">
+      <div class="kmap-window-title">K-map Workspace</div>
+      <div class="kmap-window-actions">
+        <button id="kmapQuickRef" class="ghost" aria-label="Open k-map quick reference">?</button>
+        <button id="newKmapBtn" class="primary">Create new k-map</button>
+        <button id="toggleKmapCircles" class="ghost">Show Circles</button>
+        <button id="closeKmapWindow" aria-label="Close k-map window">✕</button>
+      </div>
+    </div>
+    <div class="kmap-window-body">
+      <div class="kmap-empty" id="kmapEmptyState">No k-maps yet. Click "Create new k-map" to get started.</div>
+      <div id="kmapList" class="kmap-list"></div>
+    </div>
+    <div class="kmap-resize-handle" id="kmapResizeHandle" aria-hidden="true"></div>
+
+    <div id="kmapCreateDialog" class="dialog-backdrop hidden">
+      <div class="dialog">
+        <h2>Create Karnaugh Map</h2>
+        <div class="kmap-variable-tray transition-column-tray">
+          <span class="kmap-tray-label">Available tokens:</span>
+          <div id="kmapColumnTray" class="kmap-variable-items"></div>
+        </div>
+        <div class="form-row">
+          <label for="kmapLabelDropzone">Function Identifier</label>
+          <div id="kmapLabelDropzone" class="kmap-expression-tray kmap-dialog-dropzone" tabindex="0"></div>
+        </div>
+        <div class="form-row">
+          <label for="kmapVariablesDropzone">Independent Variables (MSB → LSB)</label>
+          <div
+            id="kmapVariablesDropzone"
+            class="kmap-expression-tray kmap-dialog-dropzone"
+            tabindex="0"
+            aria-label="K-map variable order"
+          ></div>
+        </div>
+        <div class="form-row">
+          <label for="kmapType">Map type</label>
+          <select id="kmapType">
+            <option value="sop">SOP (Sum of Products)</option>
+            <option value="pos">POS (Product of Sums)</option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <label for="kmapDirection">Map direction</label>
+          <select id="kmapDirection">
+            <option value="horizontal">Horizontal</option>
+            <option value="vertical">Vertical</option>
+          </select>
+        </div>
+        <div class="dialog-actions">
+          <button id="confirmKmapCreate" class="primary" disabled>OK</button>
+          <button data-close="kmapCreateDialog">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="kmapQuickRefDialog" class="dialog-backdrop hidden">
+      <div class="dialog">
+        <h2>K-map Quick Reference</h2>
+        <ul>
+          <li><b>Create</b> a map with <i>Create new k-map</i> and pick variables and format.</li>
+          <li><b>Expressions</b> can be built by <i>dragging</i> values into the tray.</li>
+          <li><b>Complement</b> a value in a tray by <i>clicking</i> the value.</li>
+          <li><b>Input cells</b> accept values of <b>1</b>, <b>0</b>, or <b>X</b> (don’t care).</li>
+          <li><b>Toggle circles</b> with <i>Show/Hide Circles</i> to visualize groupings.</li>
+          <li><b>Resize</b> the window from the corner handle; circles will refresh afterward.</li>
+        </ul>
+        <div class="dialog-actions">
+          <button data-close="kmapQuickRefDialog">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="kmapZipStatus" class="kmap-zip-status hidden">Zipping kmap images...</div>
+
+  <div id="coachmarkLayer" class="coachmark-layer" aria-live="polite"></div>
+
+  <template id="paletteItemTemplate">
+    <div class="palette-item" draggable="true">
+      <div class="state-circle"></div>
+      <div class="state-meta">
+        <div class="state-label"></div>
+        <div class="state-extra"></div>
+      </div>
+    </div>
+  </template>
+
+  <!-- <script src="app.js"></script> -->
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>
