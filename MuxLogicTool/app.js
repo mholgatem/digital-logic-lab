@@ -79,7 +79,7 @@ function initEventListeners() {
   document.querySelectorAll('.mux-input-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       if (currentState.selections.length > 0 && currentState.activePath !== "") {
-        currentState.leafInputs[currentState.activePath] = e.target.textContent;
+        currentState.leafInputs[currentState.activePath] = e.currentTarget.dataset.val;
         updateMuxVisualization();
       }
     });
@@ -436,6 +436,9 @@ function getCellPath(i) {
 }
 
 function updateCellStates() {
+  let activeRows = new Set();
+  let activeCols = new Set();
+
   document.querySelectorAll('.kmap-cell-input').forEach(input => {
     const i = parseInt(input.dataset.index);
     input.value = currentState.kmapValues[i]; // Update the visible value!
@@ -444,9 +447,34 @@ function updateCellStates() {
     if (p.startsWith(currentState.activePath)) {
       input.classList.add('active');
       input.classList.remove('inactive');
+      
+      let rowIndex = KMAP_MAPPING[0].includes(i) ? 0 : 1;
+      let colIndex = KMAP_MAPPING[rowIndex].indexOf(i);
+      activeRows.add(rowIndex);
+      activeCols.add(colIndex);
     } else {
       input.classList.remove('active');
       input.classList.add('inactive');
+    }
+  });
+
+  document.querySelectorAll('.kmap-table tr').forEach((tr, rIdx) => {
+    if (rIdx === 0) {
+      tr.querySelectorAll('th').forEach((th, cIdx) => {
+        if (cIdx === 0) return; // Corner
+        if (activeCols.has(cIdx - 1)) {
+          th.classList.remove('inactive');
+        } else {
+          th.classList.add('inactive');
+        }
+      });
+    } else {
+      let th = tr.querySelector('th');
+      if (activeRows.has(rIdx - 1)) {
+        th.classList.remove('inactive');
+      } else {
+        th.classList.add('inactive');
+      }
     }
   });
 }
@@ -487,7 +515,8 @@ function updateMuxDiagram() {
   
   const MUX_WIDTH = 50;
   const MUX_HEIGHT = 100;
-  const X_SPACING = 120;
+  const X_SPACING = 140;
+  const INPUT_LENGTH = 20;
   
   function calcLayout(node, x, y) {
     node.x = x;
@@ -495,8 +524,8 @@ function updateMuxDiagram() {
     if (node.isSplit) {
       let child0 = node.children[0];
       let child1 = node.children[1];
-      calcLayout(child0, x - X_SPACING, y - MUX_HEIGHT * 0.35);
-      calcLayout(child1, x - X_SPACING, y + MUX_HEIGHT * 0.35);
+      calcLayout(child0, x - X_SPACING, y - MUX_HEIGHT * 0.45);
+      calcLayout(child1, x - X_SPACING, y + MUX_HEIGHT * 0.45);
     }
   }
   
@@ -510,45 +539,6 @@ function updateMuxDiagram() {
       let child1 = node.children[1];
       let color = VAPORWAVE_COLORS[node.depth % 3];
       
-      let wire0 = document.createElementNS(svgNS, 'line');
-      wire0.setAttribute('x1', child0.x);
-      wire0.setAttribute('y1', child0.y);
-      wire0.setAttribute('x2', node.x - MUX_WIDTH);
-      wire0.setAttribute('y2', node.y - MUX_HEIGHT/4);
-      wire0.setAttribute('stroke', currentState.activePath.startsWith(child0.path) ? 'var(--primary)' : 'var(--border)');
-      wire0.setAttribute('stroke-width', currentState.activePath.startsWith(child0.path) ? '4' : '2');
-      svg.insertBefore(wire0, svg.firstChild);
-      
-      let hit0 = wire0.cloneNode();
-      hit0.setAttribute('stroke', 'transparent');
-      hit0.setAttribute('stroke-width', '20');
-      hit0.style.cursor = 'pointer';
-      hit0.addEventListener('click', () => {
-        currentState.activePath = child0.path;
-        updateMuxVisualization();
-      });
-      svg.appendChild(hit0);
-
-      let wire1 = document.createElementNS(svgNS, 'line');
-      wire1.setAttribute('x1', child1.x);
-      wire1.setAttribute('y1', child1.y);
-      wire1.setAttribute('x2', node.x - MUX_WIDTH);
-      wire1.setAttribute('y2', node.y + MUX_HEIGHT/4);
-      wire1.setAttribute('stroke', currentState.activePath.startsWith(child1.path) ? 'var(--primary)' : 'var(--border)');
-      wire1.setAttribute('stroke-width', currentState.activePath.startsWith(child1.path) ? '4' : '2');
-      svg.insertBefore(wire1, svg.firstChild);
-      
-      let hit1 = wire1.cloneNode();
-      hit1.setAttribute('stroke', 'transparent');
-      hit1.setAttribute('stroke-width', '20');
-      hit1.style.cursor = 'pointer';
-      hit1.addEventListener('click', () => {
-        currentState.activePath = child1.path;
-        updateMuxVisualization();
-      });
-      svg.appendChild(hit1);
-
-      let polygon = document.createElementNS(svgNS, 'polygon');
       let xL = node.x - MUX_WIDTH;
       let xR = node.x;
       let yT1 = node.y - MUX_HEIGHT/2;
@@ -556,12 +546,88 @@ function updateMuxDiagram() {
       let yT2 = node.y - MUX_HEIGHT/4;
       let yB2 = node.y + MUX_HEIGHT/4;
       
+      let input0Y = node.y - MUX_HEIGHT/4;
+      let input1Y = node.y + MUX_HEIGHT/4;
+      
+      // Draw wires for child0
+      let w0_color = currentState.activePath.startsWith(child0.path) ? 'var(--primary)' : 'var(--border)';
+      let w0_width = currentState.activePath.startsWith(child0.path) ? '4' : '2';
+      
+      if (!child0.isSplit) {
+        // Short straight line for leaf
+        let line = document.createElementNS(svgNS, 'line');
+        line.setAttribute('x1', xL - INPUT_LENGTH);
+        line.setAttribute('y1', input0Y);
+        line.setAttribute('x2', xL);
+        line.setAttribute('y2', input0Y);
+        line.setAttribute('stroke', w0_color);
+        line.setAttribute('stroke-width', w0_width);
+        svg.insertBefore(line, svg.firstChild);
+        
+        let hit = line.cloneNode();
+        hit.setAttribute('stroke', 'transparent');
+        hit.setAttribute('stroke-width', '20');
+        hit.style.cursor = 'pointer';
+        hit.addEventListener('click', () => {
+          currentState.activePath = child0.path;
+          updateMuxVisualization();
+        });
+        svg.appendChild(hit);
+      } else {
+        // Jog line for MUX
+        let path = document.createElementNS(svgNS, 'path');
+        let d = `M ${child0.x} ${child0.y} H ${child0.x + 20} V ${input0Y} H ${xL}`;
+        path.setAttribute('d', d);
+        path.setAttribute('fill', 'none');
+        path.setAttribute('stroke', w0_color);
+        path.setAttribute('stroke-width', w0_width);
+        svg.insertBefore(path, svg.firstChild);
+      }
+
+      // Draw wires for child1
+      let w1_color = currentState.activePath.startsWith(child1.path) ? 'var(--primary)' : 'var(--border)';
+      let w1_width = currentState.activePath.startsWith(child1.path) ? '4' : '2';
+      
+      if (!child1.isSplit) {
+        // Short straight line for leaf
+        let line = document.createElementNS(svgNS, 'line');
+        line.setAttribute('x1', xL - INPUT_LENGTH);
+        line.setAttribute('y1', input1Y);
+        line.setAttribute('x2', xL);
+        line.setAttribute('y2', input1Y);
+        line.setAttribute('stroke', w1_color);
+        line.setAttribute('stroke-width', w1_width);
+        svg.insertBefore(line, svg.firstChild);
+        
+        let hit = line.cloneNode();
+        hit.setAttribute('stroke', 'transparent');
+        hit.setAttribute('stroke-width', '20');
+        hit.style.cursor = 'pointer';
+        hit.addEventListener('click', () => {
+          currentState.activePath = child1.path;
+          updateMuxVisualization();
+        });
+        svg.appendChild(hit);
+      } else {
+        // Jog line for MUX
+        let path = document.createElementNS(svgNS, 'path');
+        let d = `M ${child1.x} ${child1.y} H ${child1.x + 20} V ${input1Y} H ${xL}`;
+        path.setAttribute('d', d);
+        path.setAttribute('fill', 'none');
+        path.setAttribute('stroke', w1_color);
+        path.setAttribute('stroke-width', w1_width);
+        svg.insertBefore(path, svg.firstChild);
+      }
+
+      // Mux body (Trapezoid)
+      let polygon = document.createElementNS(svgNS, 'polygon');
       polygon.setAttribute('points', `${xL},${yT1} ${xR},${yT2} ${xR},${yB2} ${xL},${yB1}`);
       polygon.setAttribute('fill', 'var(--surface)');
       polygon.setAttribute('stroke', color);
       polygon.setAttribute('stroke-width', '2');
       svg.appendChild(polygon);
       
+      // Select Line
       let textSel = document.createElementNS(svgNS, 'text');
       textSel.setAttribute('x', node.x - MUX_WIDTH/2);
       textSel.setAttribute('y', node.y + MUX_HEIGHT/2 + 20);
@@ -580,17 +646,18 @@ function updateMuxDiagram() {
       lineSel.setAttribute('stroke-width', '2');
       svg.appendChild(lineSel);
       
+      // 0/1 Labels
       let text0 = document.createElementNS(svgNS, 'text');
-      text0.setAttribute('x', node.x - MUX_WIDTH + 8);
-      text0.setAttribute('y', node.y - MUX_HEIGHT/4 + 4);
+      text0.setAttribute('x', xL + 8);
+      text0.setAttribute('y', input0Y + 4);
       text0.setAttribute('fill', 'var(--text)');
       text0.setAttribute('font-size', '12px');
       text0.textContent = '0';
       svg.appendChild(text0);
       
       let text1 = document.createElementNS(svgNS, 'text');
-      text1.setAttribute('x', node.x - MUX_WIDTH + 8);
-      text1.setAttribute('y', node.y + MUX_HEIGHT/4 + 4);
+      text1.setAttribute('x', xL + 8);
+      text1.setAttribute('y', input1Y + 4);
       text1.setAttribute('fill', 'var(--text)');
       text1.setAttribute('font-size', '12px');
       text1.textContent = '1';
@@ -601,13 +668,25 @@ function updateMuxDiagram() {
     } else {
       let val = getLeafValue(node.path);
       let leafText = document.createElementNS(svgNS, 'text');
-      leafText.setAttribute('x', node.x - 10);
-      leafText.setAttribute('y', node.y + 5);
+      
+      let textX = node.x - 5; 
+      let textY = node.y + 5;
+      
+      leafText.setAttribute('x', textX);
+      leafText.setAttribute('y', textY);
       leafText.setAttribute('text-anchor', 'end');
       leafText.setAttribute('fill', 'var(--text)');
       leafText.setAttribute('font-size', '16px');
       leafText.setAttribute('font-weight', 'bold');
-      leafText.textContent = val;
+      
+      // If val contains ' (e.g. A'), render overline
+      if (val.includes("'")) {
+        leafText.setAttribute('text-decoration', 'overline');
+        leafText.textContent = val.replace("'", "");
+      } else {
+        leafText.textContent = val;
+      }
+      
       svg.appendChild(leafText);
     }
   }

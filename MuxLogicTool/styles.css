@@ -93,8 +93,8 @@ body.dark {
 .workspace {
   display: flex;
   flex-direction: column;
-  padding: 2rem;
-  gap: 2rem;
+  padding: 1rem;
+  gap: 1rem;
   align-items: center;
   background-color: var(--bg);
 }
@@ -103,7 +103,7 @@ body.dark {
   background-color: var(--surface);
   border: 1px solid var(--border);
   border-radius: 0.75rem;
-  padding: 1.5rem 2.5rem;
+  padding: 1rem 2rem;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -142,6 +142,12 @@ body.dark {
   padding: 0;
   width: var(--kmap-cell-size);
   height: var(--kmap-cell-size);
+  transition: opacity 0.2s ease;
+}
+
+.kmap-table th.inactive .kmap-gray-code,
+.kmap-table th.inactive .kmap-corner-label {
+  opacity: var(--inactive-opacity);
 }
 
 .kmap-table td {
@@ -258,8 +264,15 @@ body.dark {
 
 .kmap-input-controls {
   display: flex;
+  flex-direction: column;
   gap: 0.5rem;
   justify-content: center;
+  align-items: center;
+}
+
+.kmap-input-row {
+  display: flex;
+  gap: 0.5rem;
 }
 
 .mux-input-btn {
@@ -286,7 +299,7 @@ body.dark {
   background-color: var(--surface);
   border: 1px solid var(--border);
   border-radius: 1rem;
-  padding: 2rem;
+  padding: 1rem;
   width: 100%;
   box-sizing: border-box;
 }
