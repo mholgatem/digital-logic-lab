@@ -80,6 +80,23 @@ function initEventListeners() {
     btn.addEventListener('click', (e) => {
       if (currentState.selections.length > 0 && currentState.activePath !== "") {
         currentState.leafInputs[currentState.activePath] = e.currentTarget.dataset.val;
+        
+        let { nodes } = rebuildTree();
+        let leaves = Object.values(nodes).filter(n => !n.isSplit).map(n => n.path);
+        leaves.sort();
+        
+        let currentIndex = leaves.indexOf(currentState.activePath);
+        if (currentIndex !== -1) {
+          for (let i = 1; i < leaves.length; i++) {
+            let idx = (currentIndex + i) % leaves.length;
+            let path = leaves[idx];
+            if (getLeafValue(path) === "?") {
+              currentState.activePath = path;
+              break;
+            }
+          }
+        }
+        
         updateMuxVisualization();
       }
     });
@@ -524,8 +541,10 @@ function updateMuxDiagram() {
     if (node.isSplit) {
       let child0 = node.children[0];
       let child1 = node.children[1];
-      calcLayout(child0, x - X_SPACING, y - MUX_HEIGHT * 0.45);
-      calcLayout(child1, x - X_SPACING, y + MUX_HEIGHT * 0.45);
+      let y0 = child0.isSplit ? y - MUX_HEIGHT * 0.45 : y - MUX_HEIGHT * 0.25;
+      let y1 = child1.isSplit ? y + MUX_HEIGHT * 0.45 : y + MUX_HEIGHT * 0.25;
+      calcLayout(child0, x - X_SPACING, y0);
+      calcLayout(child1, x - X_SPACING, y1);
     }
   }
   
@@ -669,8 +688,8 @@ function updateMuxDiagram() {
       let val = getLeafValue(node.path);
       let leafText = document.createElementNS(svgNS, 'text');
       
-      let textX = node.x - 5; 
-      let textY = node.y + 5;
+      let textX = node.x + 70; 
+      let textY = node.y - 15;
       
       leafText.setAttribute('x', textX);
       leafText.setAttribute('y', textY);
