@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Decoder Games - Digital Logic Lab</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="light">
+  <header class="main-header">
+    <div class="container">
+      <div class="header-left">
+        <a href="../" class="back-link">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+          Back
+        </a>
+        <h1>Decoder Games</h1>
+      </div>
+      <div class="header-actions">
+        <button id="tutorialBtn" class="icon-btn" title="Tutorial">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+        </button>
+        <button id="settingsBtn" class="icon-btn" title="Settings">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="toolbar">
+      <div class="mode-selector">
+        <button class="mode-btn active" data-mode="experiment">Experiment</button>
+        <button class="mode-btn" data-mode="challenge">Challenge</button>
+      </div>
+      <button id="actionBtn" class="primary">Analyze Circuit</button>
+    </div>
+
+    <div class="workspace">
+      <div id="leftPanel" class="panel">
+        <!-- Decoder / Game UI will be rendered here -->
+      </div>
+
+      <div id="rightPanel" class="panel">
+        <!-- Truth Table / Target Function will be rendered here -->
+      </div>
+    </div>
+  </main>
+
+  <div id="tutorialDialog" class="dialog-backdrop hidden">
+    <div class="dialog">
+      <h2>Decoder Games Tutorial</h2>
+      <p>Learn binary-to-decimal decoding and logic building.</p>
+      <div class="tutorial-step">
+        <p><strong>Experiment Mode:</strong> Interact with a 2-to-4 decoder to see how inputs map to active outputs.</p>
+        <p><strong>Challenge Mode:</strong> Wire decoders together to build a target logic function.</p>
+      </div>
+      <div class="dialog-actions">
+        <button id="closeTutorial" class="primary">Got it!</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="settingsDialog" class="dialog-backdrop hidden">
+    <div class="dialog">
+      <h2>Module Settings</h2>
+      <div class="form-row">
+        <span>Dark Mode</span>
+        <label class="switch">
+          <input type="checkbox" id="darkModeToggle">
+          <span class="slider round"></span>
+        </label>
+      </div>
+      <div class="dialog-actions">
+        <button id="closeSettings" class="primary">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,261 @@
+:root {
+  --bg: #f6f7fb;
+  --bg-muted: #e9ebf3;
+  --text: #1f2630;
+  --primary: #4a6cf7;
+  --border: #cfd5e4;
+  --accent: #f0f4ff;
+  --surface: #ffffff;
+
+  /* Vaporwave Palette */
+  --vw-orange: #FF5E00;
+  --vw-fuchsia: #FF00FF;
+  --vw-blue: #00FFFF;
+  --vw-purple: #8A2BE2;
+}
+
+body.dark {
+  --bg: #111827;
+  --bg-muted: #1f2937;
+  --text: #ffffff;
+  --primary: #8b9cf9;
+  --border: #374151;
+  --accent: #1f2937;
+  --surface: #0b1221;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.back-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition: color 0.2s;
+}
+
+.back-link:hover {
+  color: var(--primary);
+}
+
+.header-actions {
+  display: flex;
+  flex-direction: row;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.toolbar {
+  background-color: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0.75rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.mode-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.mode-btn {
+  background-color: var(--bg);
+  border: 1px solid var(--border);
+  padding: 0.4rem 0.875rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--text);
+  font-size: 0.875rem;
+  transition: all 0.2s;
+}
+
+.mode-btn:hover {
+  border-color: var(--primary);
+}
+
+.mode-btn.active {
+  background-color: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.workspace {
+  display: flex;
+  flex-direction: row;
+  padding: 2rem;
+  gap: 2rem;
+  align-items: stretch;
+  background-color: var(--bg);
+  min-height: 500px;
+}
+
+.panel {
+  flex: 1;
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  overflow: auto;
+}
+
+.tutorial-step {
+  margin-top: 1.5rem;
+  background-color: var(--bg);
+  padding: 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+/* Decoder Symbol & Circuit */
+.decoder-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  position: relative;
+}
+
+.decoder-block {
+  border: 4px solid var(--border);
+  background-color: var(--bg);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 20px 0;
+  box-sizing: border-box;
+  z-index: 2;
+}
+
+.decoder-title {
+  text-align: center;
+  font-weight: bold;
+  font-size: 1.2rem;
+  color: var(--text);
+  margin-top: -10px;
+}
+
+/* Pins */
+.pin {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pin-label {
+  font-weight: bold;
+  color: var(--muted);
+  width: 20px;
+  text-align: center;
+}
+
+/* Toggles & LEDs */
+.toggle-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 5px;
+  border: 2px solid var(--border);
+  background-color: var(--surface);
+  color: var(--text);
+  font-weight: bold;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.toggle-btn.active {
+  background-color: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.led {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background-color: #333; /* Off state */
+  border: 2px solid var(--border);
+  transition: background-color 0.2s, box-shadow 0.2s;
+}
+
+.led.on {
+  background-color: var(--vw-blue); /* Neon Blue */
+  box-shadow: 0 0 15px var(--vw-blue);
+  border-color: var(--vw-blue);
+}
+
+/* Active Low Indicator (Bubble) */
+.bubble {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background-color: var(--surface);
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: none;
+}
+
+.active-low .bubble {
+  display: block;
+}
+
+/* SVG Circuit Overlay */
+.circuit-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1; /* Below the block borders conceptually, but SVG draws over */
+}
+
+/* Truth Table */
+.truth-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.truth-table th, .truth-table td {
+  border: 1px solid var(--border);
+  padding: 8px;
+  color: var(--text);
+}
+
+.truth-table th {
+  background-color: var(--bg);
+  font-weight: bold;
+}
+
+.truth-table tr.active-row {
+  background-color: rgba(255, 94, 0, 0.2); /* Faded Neon Orange */
+  border: 2px solid var(--vw-orange);
+}
+
+.truth-table tr.inactive-row {
+  opacity: 0.3;
+}
+
+
