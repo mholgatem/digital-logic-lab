@@ -6,6 +6,7 @@
   --border: #cfd5e4;
   --accent: #f0f4ff;
   --surface: #ffffff;
+  --muted: #6b7280;
 
   /* Vaporwave Palette */
   --vw-orange: #FF5E00;
@@ -95,8 +96,8 @@ body.dark {
 .workspace {
   display: flex;
   flex-direction: row;
-  padding: 2rem;
-  gap: 2rem;
+  padding: 1rem 0;
+  gap: 1rem;
   align-items: stretch;
   background-color: var(--bg);
   min-height: 500px;
@@ -107,11 +108,16 @@ body.dark {
   background-color: var(--surface);
   border: 1px solid var(--border);
   border-radius: 0.75rem;
-  padding: 1.5rem;
+  padding: 1rem;
   display: flex;
   flex-direction: column;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   overflow: auto;
+}
+
+div#leftPanel {
+    min-width: 425px;
+    overflow: hidden;
 }
 
 .tutorial-step {
@@ -192,12 +198,11 @@ body.dark {
   border-radius: 50%;
   background-color: #333; /* Off state */
   border: 2px solid var(--border);
-  transition: background-color 0.2s, box-shadow 0.2s;
+  transition: background-color 0.2s;
 }
 
 .led.on {
   background-color: var(--vw-blue); /* Neon Blue */
-  box-shadow: 0 0 15px var(--vw-blue);
   border-color: var(--vw-blue);
 }
 
@@ -222,7 +227,7 @@ body.dark {
   width: 100%;
   height: 100%;
   pointer-events: none;
-  z-index: 1; /* Below the block borders conceptually, but SVG draws over */
+  z-index: 1;
 }
 
 /* Truth Table */
@@ -245,7 +250,7 @@ body.dark {
 }
 
 .truth-table tr.active-row {
-  background-color: rgba(255, 94, 0, 0.2); /* Faded Neon Orange */
+  background-color: rgba(255, 94, 0, 0.2);
   border: 2px solid var(--vw-orange);
 }
 
@@ -262,20 +267,20 @@ body.dark {
   display: flex;
   justify-content: space-around;
   width: 100%;
-  gap: 40px;
+  gap: 20px;
 }
 
 .decoder-block.challenge {
-  border: 3px solid var(--vw-purple) !important;
-  box-shadow: 0 0 10px var(--vw-purple);
+  border: 2px solid var(--vw-purple) !important;
 }
 
 .or-gate-container {
-  margin-top: 40px;
+  margin-top: 20px;
   display: flex;
   flex-direction: column;
   align-items: center;
   position: relative;
+  width: 100%;
 }
 
 .target-function-display {
@@ -283,7 +288,6 @@ body.dark {
   font-weight: bold;
   color: var(--vw-fuchsia);
   margin-bottom: 1rem;
-  text-shadow: 0 0 10px var(--vw-fuchsia);
 }
 
 /* Dropdown Selectors */
@@ -295,7 +299,7 @@ body.dark {
   padding: 2px 5px;
   font-weight: bold;
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   outline: none;
 }
 
@@ -303,38 +307,185 @@ body.dark {
   border-color: var(--primary);
 }
 
-/* OR Gate Symbol */
-.or-gate-body {
-  width: 100px;
-  height: 80px;
-  background-color: var(--surface);
-  border: 3px solid var(--vw-blue);
-  box-shadow: 0 0 10px var(--vw-blue);
-  border-radius: 0 50% 50% 0;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-}
-
-.or-gate-body::before {
-  content: "";
-  position: absolute;
-  left: -15px;
-  top: -3px;
-  width: 30px;
-  height: calc(100% + 6px);
-  background-color: var(--bg);
-  border-right: 3px solid var(--vw-blue);
-  border-radius: 50%;
+/* OR Gate SVG Classes */
+.or-gate-svg {
+  filter: none;
 }
 
 /* Logic Match Highlighting */
 .match-neon {
   background-color: rgba(255, 94, 0, 0.4) !important;
   border: 2px solid var(--vw-orange) !important;
-  box-shadow: 0 0 15px var(--vw-orange);
 }
 
+.hidden {
+  display: none !important;
+}
 
+/* SVG Signal Classes */
+.signal-path {
+  stroke-width: 3;
+  fill: none;
+  transition: stroke 0.2s, stroke-opacity 0.2s;
+}
+
+.signal-dot {
+  transition: fill 0.2s;
+}
+
+/* S1 Signals (Purple) */
+.signal-s1 { stroke: rgba(138, 43, 226, 0.3); }
+.signal-s1.high { stroke: var(--vw-purple); }
+.signal-s1-fill { fill: rgba(138, 43, 226, 0.3); }
+.signal-s1-fill.high { fill: var(--vw-purple); }
+
+/* S1 NOT Signals (Purple) */
+.signal-ns1 { stroke: rgba(138, 43, 226, 0.3); }
+.signal-ns1.high { stroke: var(--vw-purple); }
+.signal-ns1-fill { fill: rgba(138, 43, 226, 0.3); }
+.signal-ns1-fill.high { fill: var(--vw-purple); }
+
+/* S0 Signals (Blue) */
+.signal-s0 { stroke: rgba(0, 255, 255, 0.3); }
+.signal-s0.high { stroke: var(--vw-blue); }
+.signal-s0-fill { fill: rgba(0, 255, 255, 0.3); }
+.signal-s0-fill.high { fill: var(--vw-blue); }
+
+/* S0 NOT Signals (Blue) */
+.signal-ns0 { stroke: rgba(0, 255, 255, 0.3); }
+.signal-ns0.high { stroke: var(--vw-blue); }
+.signal-ns0-fill { fill: rgba(0, 255, 255, 0.3); }
+.signal-ns0-fill.high { fill: var(--vw-blue); }
+
+/* Enable Signals (Orange) */
+.signal-e { stroke: var(--border); }
+.signal-e.high { stroke: var(--vw-orange); }
+.signal-e-fill { fill: var(--border); }
+.signal-e-fill.high { fill: var(--vw-orange); }
+
+/* Output Signals (Cyan/Neon Blue) */
+.signal-out { stroke: var(--border); }
+.signal-out.high { stroke: var(--vw-blue); }
+
+/* Gate Classes */
+.signal-gate0, .signal-gate1, .signal-gate2, .signal-gate3 {
+  stroke: var(--border);
+}
+.signal-gate0.high, .signal-gate1.high, .signal-gate2.high, .signal-gate3.high {
+  stroke: var(--vw-blue);
+}
+
+/* Inverter Bubble Styling */
+.inverter-bubble {
+  fill: var(--surface);
+  transition: fill 0.2s, stroke 0.2s;
+}
+
+/* Modal Dialogs */
+.dialog-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+}
+
+.dialog {
+  background-color: var(--surface);
+  padding: 2rem;
+  border-radius: 1rem;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+.dialog h2 {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 2rem;
+}
+
+button.primary {
+  background-color: var(--primary);
+  color: white;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+button.primary:hover {
+  background-color: #3a5bd9;
+}
+
+.form-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+/* Switch UI */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 24px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--bg-muted);
+  transition: .4s;
+  border: 1px solid var(--border);
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 4px;
+  bottom: 3px;
+  background-color: white;
+  transition: .4s;
+}
+
+input:checked + .slider {
+  background-color: var(--primary);
+}
+
+input:checked + .slider:before {
+  transform: translateX(26px);
+}
+
+.slider.round {
+  border-radius: 24px;
+}
+
+.slider.round:before {
+  border-radius: 50%;
+}

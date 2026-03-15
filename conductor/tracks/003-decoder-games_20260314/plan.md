@@ -13,7 +13,7 @@
 - [x] Task: Conductor - User Manual Verification 'Phase 1' (Protocol in workflow.md)
 
 ## Phase 2: Challenge Mode Logic & UI Overhaul
-- [ ] Task: Update Challenge Logic in `generateNewChallenge`
+- [~] Task: Update Challenge Logic in `generateNewChallenge`
     - [ ] Ensure at least one active-low enable if minterm 0 is present
     - [ ] Ensure at least one active-high enable if minterm 7 is present
 - [ ] Task: Refine Styles in `styles.css`
