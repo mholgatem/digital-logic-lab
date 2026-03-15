@@ -27,7 +27,7 @@ A comprehensive suite of interactive, web-based tools and games designed to simp
 - Visualize K-map symmetry and Multiplexer logic.
 - Interactive symmetry splitting and Mux tree visualization.
 
-### Decoder Games (In Development - Track 003)
+### Decoder Games (Live)
 - **Decoding Puzzles:** Binary-to-Decimal challenges.
 - **Truth Tables:** Interactive construction of decoder logic.
 - **Circuit Visuals:** Real-time visualization of decoder circuit behavior.
