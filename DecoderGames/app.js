@@ -205,7 +205,7 @@ function renderChallengeMode() {
       <div class="or-gate-container">
         <div style="font-weight: bold; margin-bottom: 10px;">Implementation (OR Gate)</div>
         <div style="display: flex; align-items: center; gap: 0; position: relative; height: 140px; width: 100%; justify-content: center;">
-          <div class="or-inputs" style="display: flex; flex-direction: column; gap: 5px; z-index: 2; margin-right: -5px;">
+          <div class="or-inputs" style="display: flex; flex-direction: column; gap: 1px; z-index: 2; margin-right: -5px;">
             ${challengeState.orInputs.map((val, idx) => {
               const totalInputs = challengeState.orInputs.length;
               const offset = (idx - (totalInputs - 1) / 2) * 25;
@@ -221,7 +221,7 @@ function renderChallengeMode() {
               `;
             }).join('')}
           </div>
-          <svg width="120" height="120" viewBox="0 0 120 100" style="z-index: 1;">
+          <svg width="100" height="120" viewBox="0 0 100 100" style="z-index: 1;">
             <!-- OR Gate Body -->
             <path d="M 10 10 Q 40 50 10 90 Q 80 90 95 50 Q 80 10 10 10 Z" fill="var(--surface)" stroke="var(--text)" stroke-width="3" />
             <line x1="95" y1="50" x2="130" y2="50" stroke="var(--border)" stroke-width="2" />
@@ -251,6 +251,16 @@ function renderChallengeMode() {
   });
 
   renderChallengeTruthTable();
+}
+
+function getMintermExpression(s1, s0, i) {
+  const b1 = (i >> 1) & 1;
+  const b0 = i & 1;
+  
+  const s1Part = b1 ? s1 : `<span style="text-decoration: overline">${s1}</span>`;
+  const s0Part = b0 ? s0 : `<span style="text-decoration: overline">${s0}</span>`;
+  
+  return `${s1Part}${s0Part}`;
 }
 
 function renderChallengeDecoder(idx) {
@@ -285,18 +295,18 @@ function renderChallengeDecoder(idx) {
           <select class="select-input decoder-input-select" data-decoder="${idx}" data-pin="S1" style="pointer-events: auto;">
             ${['A','B','C'].map(v => `<option value="${v}" ${d.inputs.S1 === v ? 'selected' : ''}>${v}</option>`).join('')}
           </select>
-          <span style="font-size: 0.65rem; font-weight: bold; color: var(--muted); margin-top: -16px;">S1</span>
+          <span style="font-size: 0.65rem; font-weight: bold; color: var(--muted); margin-top: -15px;">S1</span>
         </div>
         <div style="display: flex; align-items: center; gap: 4px;">
           <select class="select-input decoder-input-select" data-decoder="${idx}" data-pin="S0" style="pointer-events: auto;">
             ${['A','B','C'].map(v => `<option value="${v}" ${d.inputs.S0 === v ? 'selected' : ''}>${v}</option>`).join('')}
           </select>
-          <span style="font-size: 0.65rem; font-weight: bold; color: var(--muted); margin-top: -18px;">S0</span>
+          <span style="font-size: 0.65rem; font-weight: bold; color: var(--muted); margin-top: -17px;">S0</span>
         </div>
       </div>
 
-      <div style="position: absolute; bottom: -14px; left: 55px; display: flex; flex-direction: column; align-items: center;">
-        <span style="font-size: 0.65rem; font-weight: bold; color: var(--muted); margin-bottom: 6px; margin-left: 22px;">E</span>
+      <div style="position: absolute; bottom: -15px; left: 55px; display: flex; flex-direction: column; align-items: center;">
+        <span style="font-size: 0.65rem; font-weight: bold; color: var(--muted); margin-bottom: 2px; margin-left: 18px;">E</span>
         <select class="select-input decoder-input-select" data-decoder="${idx}" data-pin="E" style="pointer-events: auto;">
           ${['A','B','C'].map(v => `<option value="${v}" ${d.inputs.E === v ? 'selected' : ''}>${v}</option>`).join('')}
         </select>
@@ -308,9 +318,15 @@ function renderChallengeDecoder(idx) {
         <div style="font-size: 0.85rem; font-weight: bold; color: var(--vw-purple);">${id}</div>
       </div>
 
-      <!-- Output Labels -->
-      <div style="position: absolute; right: -5px; top: 32px; display: flex; flex-direction: column; gap: 17px; font-size: 0.7rem; font-weight: bold; color: var(--muted); text-align: left; width: 35px;">
-        <div>${id}0</div><div>${id}1</div><div>${id}2</div><div>${id}3</div>
+      <!-- Output Labels & Expressions -->
+      <div style="position: absolute; right: -35px; top: 30px; display: flex; flex-direction: column; gap: 14px; font-size: 0.7rem; font-weight: bold; color: var(--muted); text-align: left; width: 70px;">
+        ${[0,1,2,3].map(i => {
+          const pinName = `${id}${i}`;
+          const isSelected = challengeState.orInputs.includes(pinName);
+          const exp = getMintermExpression(d.inputs.S1, d.inputs.S0, i);
+          const color = isSelected ? 'var(--vw-orange)' : 'var(--muted)';
+          return `<div style="height: 16px; line-height: 16px; color: ${color};">${pinName}: ${exp}</div>`;
+        }).join('')}
       </div>
     </div>
   `;

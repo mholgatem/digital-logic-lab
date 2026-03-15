@@ -13,14 +13,18 @@
 - [x] Task: Conductor - User Manual Verification 'Phase 1' (Protocol in workflow.md)
 
 ## Phase 2: Challenge Mode Logic & UI Overhaul
-- [~] Task: Update Challenge Logic in `generateNewChallenge`
-    - [ ] Ensure at least one active-low enable if minterm 0 is present
-    - [ ] Ensure at least one active-high enable if minterm 7 is present
-- [ ] Task: Refine Styles in `styles.css`
-    - [ ] Remove neon glow (box-shadows/text-shadows) from all elements while keeping Vaporwave colors
-- [ ] Task: Redesign Challenge UI Components in `app.js`
-    - [ ] Draw the OR gate using SVG instead of CSS shapes
-    - [ ] Redraw decoder blocks: smaller size, explicit lines for inputs/outputs, aligned labels
+- [x] Task: Update Challenge Logic in `generateNewChallenge`
+    - [x] Ensure at least one active-low enable if minterm 0 is present
+    - [x] Ensure at least one active-high enable if minterm 7 is present
+- [x] Task: Refine Styles in `styles.css`
+    - [x] Remove neon glow (box-shadows/text-shadows) from all elements while keeping Vaporwave colors
+- [x] Task: Redesign Challenge UI Components in `app.js`
+    - [x] Draw the OR gate using SVG instead of CSS shapes
+    - [x] Redraw decoder blocks: smaller size, explicit lines for inputs/outputs, aligned labels
+- [~] Task: Implement Minterm Expression Display in Challenge Mode
+    - [ ] Add `getMintermExpression` helper to generate boolean strings (e.g., $\bar{A}B$)
+    - [ ] Use `text-decoration: overline` for complements
+    - [ ] Update `renderChallengeDecoder` to display these expressions next to output pins
 - [ ] Task: Refine SVG Circuit Visualization (Remaining Details)
     - [ ] Ensure all internal signal paths are correctly highlighted for all combinations
     - [ ] Add tooltips or labels for internal components within the circuit view
