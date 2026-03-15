@@ -1,11 +1,13 @@
 # Implementation Plan - Decoder Games (Track 003)
 
-## Phase 1: Core Logic Validation & Testing Framework
-- [ ] Task: Initialize test environment (using `jsdom` and a test runner like `jest`)
-- [ ] Task: Implement comprehensive unit tests for `app.js` logic
-    - [ ] Test `computeOutputs` for various S1, S0, and E inputs (including active-low)
-    - [ ] Test `evaluateCircuit` for challenge mode verification
-    - [ ] Test `generateNewChallenge` to ensure valid target minterms
+## Phase 1: SVG Circuit Refactoring (Experiment Mode)
+- [ ] Task: Refactor SVG generation to use persistent elements and CSS classes
+    - [ ] Modify `renderExperimentMode` to only generate the static SVG skeleton once (if it doesn't exist)
+    - [ ] Add unique IDs or classes to each SVG path and component (e.g., `cS1`, `cNS1`, `cS0`, `cNS0`, `cE`, `cOut0`, `cOut1`, `cOut2`, `cOut3`)
+    - [ ] Implement `updateCircuitClasses()` to toggle CSS classes on SVG elements based on current input/output state
+- [ ] Task: Define CSS classes for SVG signals in `styles.css`
+    - [ ] Create `.signal-high` and `.signal-low` classes for different signal types (S1, S0, Enable, Outputs)
+    - [ ] Ensure classes work correctly with both Dark and Light themes
 - [ ] Task: Fix identified logic issues in `app.js`
     - [ ] Ensure all input combinations correctly trigger the `match-neon` effect in the truth table
 - [ ] Task: Conductor - User Manual Verification 'Phase 1' (Protocol in workflow.md)
@@ -13,12 +15,11 @@
 ## Phase 2: Feature Completion & Persistence
 - [ ] Task: Implement progress persistence
     - [ ] Use `localStorage` to save completed challenges or high scores within the existing `app.js` state
-    - [ ] Write tests for state persistence (mocking `localStorage`)
 - [ ] Task: Enhance Challenge Mode UI
     - [ ] Improve the "OR Gate" visualization and pin selection for better clarity
     - [ ] Add animations or a celebratory effect for the "Challenge Complete" state
-- [ ] Task: Refine SVG Circuit Visualization
-    - [ ] Ensure all signal paths are correctly highlighted for all input combinations in Experiment mode
+- [ ] Task: Refine SVG Circuit Visualization (Remaining Details)
+    - [ ] Ensure all internal signal paths (not just the main inputs/outputs) are correctly highlighted for all combinations
     - [ ] Add tooltips or labels for internal components within the circuit view
 - [ ] Task: Conductor - User Manual Verification 'Phase 2' (Protocol in workflow.md)
 
