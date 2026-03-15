@@ -1,26 +1,35 @@
-# Implementation Plan - Decoder Games
+# Implementation Plan - Decoder Games (Track 003)
 
-## Phase 1: Scaffolding & Vaporwave Theme
-- [ ] Task: Create module directory `/DecoderGames/` with `index.html`, `styles.css`, and `app.js`.
-- [ ] Task: Set up the base layout, navigation, and dark/light mode toggle.
-- [ ] Task: Implement the Vaporwave color palette CSS variables and base styling.
-- [ ] Task: Conductor - User Manual Verification 'Phase 1: Scaffolding' (Protocol in workflow.md)
+## Phase 1: Refactoring & Testing Framework
+- [ ] Task: Initialize test environment (using `jsdom` and `jest` or `mocha`)
+- [ ] Task: Refactor Core Decoder Logic into a separate module
+    - [ ] Write unit tests for decoder logic (N-to-2^N, active-high/low enable)
+    - [ ] Extract logic from `app.js` into `src/logic/DecoderLogic.js`
+- [ ] Task: Refactor Challenge/Puzzle Logic into a separate module
+    - [ ] Write unit tests for challenge generation and evaluation
+    - [ ] Extract logic into `src/logic/ChallengeManager.js`
+- [ ] Task: Conductor - User Manual Verification 'Phase 1' (Protocol in workflow.md)
 
-## Phase 2: Experiment Mode & Internal Logic
-- [ ] Task: Implement the 2-to-4 decoder interactive UI (inputs, enable toggle, output LEDs).
-- [ ] Task: Create the interactive 2-to-4 truth table with decimal values mapping to the UI state.
-- [ ] Task: Build the 'Analyze Circuit' SVG view with NOT/AND gates and crossover wiring.
-- [ ] Task: Implement dynamic active-path highlighting for the internal SVG wires.
-- [ ] Task: Conductor - User Manual Verification 'Phase 2: Experiment Mode' (Protocol in workflow.md)
+## Phase 2: Feature Completion & Persistence
+- [ ] Task: Implement progress persistence
+    - [ ] Use `localStorage` to save completed challenges or high scores
+    - [ ] Write tests for state persistence
+- [ ] Task: Enhance Challenge Mode UI
+    - [ ] Improve the "OR Gate" visualization and pin selection
+    - [ ] Add animations for "Challenge Complete" state
+- [ ] Task: Refine SVG Circuit Visualization
+    - [ ] Ensure all signal paths are correctly highlighted in all input combinations
+    - [ ] Add labels for internal gates in the circuit view
+- [ ] Task: Conductor - User Manual Verification 'Phase 2' (Protocol in workflow.md)
 
-## Phase 3: Challenge Mode Engine & UI
-- [ ] Task: Implement the problem generator (target function `f`, minterms, random decoder enable types).
-- [ ] Task: Build the Challenge Mode UI (two decoders, OR gate, input dropdowns for A, B, C and Y0-Z3).
-- [ ] Task: Render the 8-row target truth table with inactive dimming for non-minterms.
-- [ ] Task: Conductor - User Manual Verification 'Phase 3: Challenge Mode UI' (Protocol in workflow.md)
-
-## Phase 4: Dynamic Circuit Evaluation
-- [ ] Task: Write the evaluation logic to compute the truth table of the user's wired circuit in real-time.
-- [ ] Task: Implement the neon orange highlighting logic for matched minterm rows.
-- [ ] Task: Add completion state/feedback when the user successfully builds the full function.
-- [ ] Task: Conductor - User Manual Verification 'Phase 4: Dynamic Evaluation' (Protocol in workflow.md)
+## Phase 3: Final Integration & Accessibility
+- [ ] Task: Final UI Polish & Theme Consistency
+    - [ ] Audit for Dark/Light mode contrast in all components
+    - [ ] Refine "Vaporwave" aesthetic (colors, gradients)
+- [ ] Task: Accessibility Audit
+    - [ ] Ensure all interactive elements (mode buttons, toggles, selects) are keyboard-accessible
+    - [ ] Add ARIA labels to SVG elements and dynamic UI components
+- [ ] Task: Documentation & Cleanup
+    - [ ] Add JSDoc comments to all modules
+    - [ ] Update README in `DecoderGames/` folder
+- [ ] Task: Conductor - User Manual Verification 'Phase 3' (Protocol in workflow.md)
