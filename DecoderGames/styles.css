@@ -209,14 +209,9 @@ body.dark {
   border: 2px solid var(--border);
   background-color: var(--surface);
   position: absolute;
-  bottom: -8px;
+  bottom: -16px;
   left: 50%;
   transform: translateX(-50%);
-  display: none;
-}
-
-.active-low .bubble {
-  display: block;
 }
 
 /* SVG Circuit Overlay */
@@ -254,8 +249,92 @@ body.dark {
   border: 2px solid var(--vw-orange);
 }
 
-.truth-table tr.inactive-row {
-  opacity: 0.3;
+/* Challenge Mode Layout */
+.challenge-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  align-items: center;
+  width: 100%;
+}
+
+.decoders-row {
+  display: flex;
+  justify-content: space-around;
+  width: 100%;
+  gap: 40px;
+}
+
+.decoder-block.challenge {
+  border: 3px solid var(--vw-purple) !important;
+  box-shadow: 0 0 10px var(--vw-purple);
+}
+
+.or-gate-container {
+  margin-top: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+.target-function-display {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: var(--vw-fuchsia);
+  margin-bottom: 1rem;
+  text-shadow: 0 0 10px var(--vw-fuchsia);
+}
+
+/* Dropdown Selectors */
+.select-input {
+  background-color: var(--surface);
+  border: 2px solid var(--border);
+  color: var(--text);
+  border-radius: 4px;
+  padding: 2px 5px;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 0.9rem;
+  outline: none;
+}
+
+.select-input:focus {
+  border-color: var(--primary);
+}
+
+/* OR Gate Symbol */
+.or-gate-body {
+  width: 100px;
+  height: 80px;
+  background-color: var(--surface);
+  border: 3px solid var(--vw-blue);
+  box-shadow: 0 0 10px var(--vw-blue);
+  border-radius: 0 50% 50% 0;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+.or-gate-body::before {
+  content: "";
+  position: absolute;
+  left: -15px;
+  top: -3px;
+  width: 30px;
+  height: calc(100% + 6px);
+  background-color: var(--bg);
+  border-right: 3px solid var(--vw-blue);
+  border-radius: 50%;
+}
+
+/* Logic Match Highlighting */
+.match-neon {
+  background-color: rgba(255, 94, 0, 0.4) !important;
+  border: 2px solid var(--vw-orange) !important;
+  box-shadow: 0 0 15px var(--vw-orange);
 }
 
 
