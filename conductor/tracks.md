@@ -24,5 +24,5 @@ This registry tracks the progress and status of different modules and feature tr
 
 ---
 
-- [ ] **Track: Mux Logic Tool Instructional Updates. Enhance the Mux Logic Tool by adding an instructional speech bubble that guides students through the process of finding K-map symmetry and building multiplexer logic. Includes layout adjustments to shift the K-map left and provide reactive, step-by-step guidance.**
+- [x] **Track: Mux Logic Tool Instructional Updates. Enhance the Mux Logic Tool by adding an instructional speech bubble that guides students through the process of finding K-map symmetry and building multiplexer logic. Includes layout adjustments to shift the K-map left and provide reactive, step-by-step guidance.**
 *Link: [./tracks/004-mux-instructional_20260315/](./tracks/004-mux-instructional_20260315/)*
