@@ -1022,7 +1022,7 @@ function updateInstructions() {
   if (fullyValidSels.length === 0) {
     if (validSels.length === 0) {
       // Deviation was an axis choice
-      textEl.textContent = "Uh-Oh! Looks like you are going to require more muxes than are available on this difficulty level. Lets undo that!";
+      textEl.innerHTML = "Uh-Oh! <br>Looks like you are going to require more muxes than are available on this difficulty level. <br><br>Lets undo that!";
       const undoBtn = document.createElement('button');
       undoBtn.className = 'bubble-btn undo';
       undoBtn.textContent = 'Undo Selection';
@@ -1030,7 +1030,7 @@ function updateInstructions() {
       controlsEl.appendChild(undoBtn);
     } else {
       // Deviation was an input choice
-      textEl.innerHTML = "Uh-Oh! That's not a solution for the logic problem. Try again?<br>";
+      textEl.innerHTML = "Uh-Oh! <br>That's not a solution for the logic problem. <br><br>Try again?<br>";
       const resetBtn = document.createElement('button');
       resetBtn.className = 'bubble-btn';
       resetBtn.textContent = 'Reset Problem';
@@ -1046,7 +1046,7 @@ function updateInstructions() {
   let allDetermined = leaves.every(n => getLeafValue(n.path) !== "?");
 
   if (allDetermined) {
-    textEl.textContent = "Great job! You've solved the logic problem using multiplexers. Click 'New Problem' to try another one!";
+    textEl.innerHTML = "Great job! You've solved the logic problem using multiplexers. <br><br>Click 'New Problem' to try another one!";
     return;
   }
 
@@ -1064,7 +1064,7 @@ function updateInstructions() {
   const isInitialSymmetry = currentState.selections.length === 1 && Object.keys(currentState.leafInputs).length === 0 && currentState.activePath === "0";
 
   if (isInitialSymmetry) {
-     textEl.innerHTML = `Great! You chose symmetry on <strong>${axis}</strong>.<br>When <strong>${axis}</strong> is <strong>${focus}</strong>, do we have symmetry? If so, what is the input value?`;
+     textEl.innerHTML = `Great! You chose symmetry on <strong>${axis}</strong>.<br>When <strong>${axis}</strong> is <strong>${focus}</strong>, do we have symmetry? <br><br>If so, what is the input value?`;
   } else {
      // Check if we are at the very start of a NEW mux branch (before any inputs filled for this mux)
      // A "new mux" prompt is shown if the user just ADDED a selection at this nodePath 
@@ -1077,9 +1077,9 @@ function updateInstructions() {
 
      if (isNewMuxPrompt) {
         const muxNum = (currentState.selections.length === 2) ? "2nd" : "3rd";
-        textEl.innerHTML = `That's right! You need a <strong>${muxNum}</strong> mux to solve this. When <strong>${axis}</strong> is <strong>${focus}</strong>, what is the input?`;
+        textEl.innerHTML = `That's right! You need a <strong>${muxNum}</strong> mux to solve this. <br><br>When <strong>${axis}</strong> is <strong>${focus}</strong>, what is the input?`;
      } else {
-        textEl.innerHTML = `Now, when <strong>${axis}</strong> is <strong>${focus}</strong>, is there symmetry? If so, what is the input?`;
+        textEl.innerHTML = `Now, when <strong>${axis}</strong> is <strong>${focus}</strong>, is there symmetry? <br><br>If so, what is the input?`;
      }
   }
 
