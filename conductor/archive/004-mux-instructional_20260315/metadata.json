@@ -1,0 +1,8 @@
+{
+  "track_id": "004-mux-instructional_20260315",
+  "type": "feature",
+  "status": "new",
+  "created_at": "2026-03-15T18:40:00Z",
+  "updated_at": "2026-03-15T18:40:00Z",
+  "description": "Lets update the Mux Logic Tool (in folder MuxLogicTool/). It works great, but I would like to move the kmap pane left a bit and implement a speech bubble that helps walk the student through solving the mux problem."
+}
