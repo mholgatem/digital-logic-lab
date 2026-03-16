@@ -4,7 +4,8 @@ let currentState = {
   kmapValues: Array(8).fill(0),
   selections: [], // e.g., [{ path: '', var: 'A' }, { path: '0', var: 'C' }]
   activePath: '',
-  leafInputs: {} // e.g., { '0': 'A', '10': '1' }
+  leafInputs: {}, // e.g., { '0': 'A', '10': '1' }
+  validSolutions: [] // Pre-calculated valid Mux trees
 };
 
 // DOM Elements
@@ -66,6 +67,223 @@ function initTheme() {
   applyTheme(savedTheme);
 }
 
+/**
+ * Finds all valid Mux tree solutions for the given K-map and difficulty.
+ * A solution is an object: { selections: [...], leafInputs: { path: val } }
+ */
+function findAllSolutions(values, maxMuxes) {
+  let results = [];
+  
+  function solve(selections, muxesUsed) {
+    let { nodes } = rebuildTreeWithSelections(selections);
+    let leaves = Object.values(nodes).filter(n => !n.isSplit);
+    
+    // Check if this selection set CAN be solved with leaf inputs
+    const literals = ["0", "1", "A", "A'", "B", "B'", "C", "C'"];
+    let leafOptions = {};
+    let possible = true;
+
+    for (const leaf of leaves) {
+      let validForLeaf = [];
+      for (const lit of literals) {
+        const v = lit.replace("'", "");
+        if (['A','B','C'].includes(v) && leaf.vars.includes(v)) continue;
+        if (verifyLeafLogic(leaf.path, lit, values, selections)) {
+          validForLeaf.push(lit);
+        }
+      }
+      if (validForLeaf.length === 0) {
+        possible = false;
+        break;
+      }
+      leafOptions[leaf.path] = validForLeaf;
+    }
+
+    if (possible) {
+      // Generate all combinations of leaf inputs
+      function combine(index, currentInputs) {
+        if (index === leaves.length) {
+          results.push({
+            selections: JSON.parse(JSON.stringify(selections)),
+            leafInputs: JSON.parse(JSON.stringify(currentInputs))
+          });
+          return;
+        }
+        const path = leaves[index].path;
+        for (const lit of leafOptions[path]) {
+          currentInputs[path] = lit;
+          combine(index + 1, currentInputs);
+        }
+      }
+      combine(0, {});
+    }
+
+    // Try splitting further
+    if (muxesUsed < maxMuxes) {
+      for (const leaf of leaves) {
+        const remainingVars = ["A", "B", "C"].filter(v => !leaf.vars.includes(v));
+        for (const v of remainingVars) {
+          selections.push({ path: leaf.path, var: v });
+          solve(selections, muxesUsed + 1);
+          selections.pop();
+        }
+      }
+    }
+  }
+
+  solve([], 0);
+  
+  // Deduplicate results
+  let unique = [];
+  let seen = new Set();
+  results.forEach(r => {
+    // Sort selections to avoid permutation duplicates of the same tree
+    const sortedSels = [...r.selections].sort((a,b) => a.path.localeCompare(b.path) || a.var.localeCompare(b.var));
+    const key = JSON.stringify(sortedSels) + JSON.stringify(r.leafInputs);
+    if (!seen.has(key)) {
+      unique.push(r);
+      seen.add(key);
+    }
+  });
+
+  return unique;
+}
+
+function verifyLeafLogic(path, lit, kmap, selections) {
+  for (let i = 0; i < 8; i++) {
+    const cellPath = getCellPathWithSelections(i, selections);
+    if (cellPath.startsWith(path)) {
+      const target = kmap[i];
+      let result;
+      if (lit === "0") result = 0;
+      else if (lit === "1") result = 1;
+      else {
+        const v = lit.replace("'", "");
+        const bit = getVarValue(i, v);
+        result = lit.includes("'") ? (bit ? 0 : 1) : bit;
+      }
+      if (result !== target) return false;
+    }
+  }
+  return true;
+}
+
+function getCellPathWithSelections(i, selections) {
+  let path = "";
+  let currentSel = selections.find(s => s.path === path);
+  while (currentSel) {
+    const v = currentSel.var;
+    const val = getVarValue(i, v);
+    path += val.toString();
+    currentSel = selections.find(s => s.path === path);
+  }
+  return path;
+}
+
+function rebuildTreeWithSelections(selections) {
+  const root = { path: '', rects: [{x:0, y:0, w:4, h:2}], vars: [], isSplit: false, depth: 0 };
+  const nodes = { '': root };
+  selections.forEach(sel => {
+    let node = nodes[sel.path];
+    if (!node) return;
+    node.isSplit = true;
+    node.splitVar = sel.var;
+    let { rects0, rects1 } = splitRects(node.rects, sel.var);
+    let child0 = { path: node.path + '0', rects: rects0, vars: [...node.vars, sel.var], isSplit: false, depth: node.depth + 1 };
+    let child1 = { path: node.path + '1', rects: rects1, vars: [...node.vars, sel.var], isSplit: false, depth: node.depth + 1 };
+    node.children = { 0: child0, 1: child1 };
+    nodes[child0.path] = child0;
+    nodes[child1.path] = child1;
+  });
+  return { root, nodes };
+}
+
+/**
+ * Checks if a specific sub-region of the K-map (defined by path) is symmetric on a variable.
+ */
+function isSymmetricOnAxis(path, v) {
+  const values = currentState.kmapValues;
+  const mask = (v === 'A') ? 4 : (v === 'B' ? 2 : 1);
+  
+  const matchingIndices = [];
+  for (let i = 0; i < 8; i++) {
+    if (getCellPath(i).startsWith(path)) {
+      matchingIndices.push(i);
+    }
+  }
+
+  for (const i of matchingIndices) {
+    if (!(i & mask)) {
+      const pair = i | mask;
+      if (matchingIndices.includes(pair)) {
+        if (values[i] !== values[pair]) return false;
+      }
+    }
+  }
+  return true;
+}
+
+/**
+ * Evaluates the entire constructed Mux tree and compares it against the target K-map.
+ * @returns {boolean} - True if the solution is correct.
+ */
+function verifySolution() {
+  const { nodes } = rebuildTree();
+  
+  for (let i = 0; i < 8; i++) {
+    let currentPath = "";
+    while (nodes[currentPath] && nodes[currentPath].isSplit) {
+      const v = nodes[currentPath].splitVar;
+      const bit = getVarValue(i, v);
+      currentPath += bit.toString();
+    }
+    
+    const leafVal = getLeafValue(currentPath);
+    const targetVal = currentState.kmapValues[i];
+    
+    let result;
+    if (leafVal === "0") result = 0;
+    else if (leafVal === "1") result = 1;
+    else if (leafVal === "A") result = getVarValue(i, 'A');
+    else if (leafVal === "A'") result = getVarValue(i, 'A') ? 0 : 1;
+    else if (leafVal === "B") result = getVarValue(i, 'B');
+    else if (leafVal === "B'") result = getVarValue(i, 'B') ? 0 : 1;
+    else if (leafVal === "C") result = getVarValue(i, 'C');
+    else if (leafVal === "C'") result = getVarValue(i, 'C') ? 0 : 1;
+    else return false;
+    
+    if (result !== targetVal) return false;
+  }
+  return true;
+}
+
+/**
+ * Handles the selection of an input value for the active leaf node in the Mux tree.
+ */
+function handleInputSelection(val) {
+  if (currentState.selections.length > 0 && currentState.activePath !== "") {
+    currentState.leafInputs[currentState.activePath] = val;
+    
+    let { nodes } = rebuildTree();
+    let leaves = Object.values(nodes).filter(n => !n.isSplit).map(n => n.path);
+    leaves.sort();
+    
+    let currentIndex = leaves.indexOf(currentState.activePath);
+    if (currentIndex !== -1) {
+      for (let i = 1; i < leaves.length; i++) {
+        let idx = (currentIndex + i) % leaves.length;
+        let path = leaves[idx];
+        if (getLeafValue(path) === "?") {
+          currentState.activePath = path;
+          break;
+        }
+      }
+    }
+    
+    updateMuxVisualization();
+  }
+}
+
 function initEventListeners() {
   document.querySelectorAll('.difficulty-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
@@ -78,27 +296,7 @@ function initEventListeners() {
 
   document.querySelectorAll('.mux-input-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
-      if (currentState.selections.length > 0 && currentState.activePath !== "") {
-        currentState.leafInputs[currentState.activePath] = e.currentTarget.dataset.val;
-        
-        let { nodes } = rebuildTree();
-        let leaves = Object.values(nodes).filter(n => !n.isSplit).map(n => n.path);
-        leaves.sort();
-        
-        let currentIndex = leaves.indexOf(currentState.activePath);
-        if (currentIndex !== -1) {
-          for (let i = 1; i < leaves.length; i++) {
-            let idx = (currentIndex + i) % leaves.length;
-            let path = leaves[idx];
-            if (getLeafValue(path) === "?") {
-              currentState.activePath = path;
-              break;
-            }
-          }
-        }
-        
-        updateMuxVisualization();
-      }
+      handleInputSelection(e.currentTarget.dataset.val);
     });
   });
 
@@ -209,6 +407,12 @@ function generateNewProblem() {
   }
 
   currentState.kmapValues = values;
+  currentState.validSolutions = findAllSolutions(values, currentState.difficulty);
+  
+  if (currentState.validSolutions.length === 0) {
+    return generateNewProblem();
+  }
+
   resetProblem();
 }
 
@@ -254,10 +458,6 @@ function renderKMap() {
       input.value = currentState.kmapValues[truthTableIdx];
       input.readOnly = true;
       input.dataset.index = truthTableIdx;
-      
-      input.addEventListener('click', () => {
-         // Placeholder: interaction with cells if needed
-      });
       
       td.appendChild(input);
       tr.appendChild(td);
@@ -307,28 +507,7 @@ function getSplitLineSegments(rects, V) {
 }
 
 function rebuildTree() {
-  const root = { path: '', rects: [{x:0, y:0, w:4, h:2}], vars: [], isSplit: false, depth: 0 };
-  const nodes = { '': root };
-  
-  currentState.selections.forEach(sel => {
-    let node = nodes[sel.path];
-    if (!node) return; 
-    
-    node.isSplit = true;
-    node.splitVar = sel.var;
-    node.segments = getSplitLineSegments(node.rects, sel.var);
-    
-    let { rects0, rects1 } = splitRects(node.rects, sel.var);
-    
-    let child0 = { path: node.path + '0', rects: rects0, vars: [...node.vars, sel.var], isSplit: false, depth: node.depth + 1 };
-    let child1 = { path: node.path + '1', rects: rects1, vars: [...node.vars, sel.var], isSplit: false, depth: node.depth + 1 };
-    
-    node.children = { 0: child0, 1: child1 };
-    nodes[child0.path] = child0;
-    nodes[child1.path] = child1;
-  });
-  
-  return { root, nodes };
+  return rebuildTreeWithSelections(currentState.selections);
 }
 
 function renderSymmetryControls() {
@@ -734,6 +913,7 @@ function updateMuxVisualization() {
   renderSymmetryControls();
   renderSymmetryLines();
   updateMuxDiagram();
+  updateInstructions();
 }
 
 function handleSymmetryClick(path, v) {
@@ -798,13 +978,126 @@ function exportPng() {
     link.download = `mux-logic-problem.png`;
     link.href = canvas.toDataURL();
     link.click();
-    
+
     // Restore state
     if (controls) controls.style.display = oldControlsDisplay;
     inactiveElements.forEach(el => el.classList.add('inactive'));
     tempDivs.forEach(({input, div}) => {
       input.style.display = '';
       div.remove();
+    });
+  });
+}
+
+/**
+ * Updates the content and controls of the instructional speech bubble based on current state.
+ */
+function updateInstructions() {
+  const textEl = document.getElementById('instructionText');
+  const controlsEl = document.getElementById('bubbleControls');
+  if (!textEl || !controlsEl) return;
+
+  controlsEl.innerHTML = '';
+
+  // 1. Initial State
+  if (currentState.selections.length === 0) {
+    textEl.textContent = "Start by finding symmetry in the kmap. Click a line of symmetry to see the result.";
+    return;
+  }
+
+  // Real-time verification against pre-calculated solutions
+  const matchesSelections = (userSels, solSels) => {
+    // Check if user's current tree structure matches a prefix of this solution
+    return userSels.every(us => solSels.some(ss => ss.path === us.path && ss.var === us.var));
+  };
+
+  const matchesLeafInputs = (userInputs, solInputs) => {
+    return Object.entries(userInputs).every(([path, val]) => solInputs[path] === val);
+  };
+
+  let validSels = currentState.validSolutions.filter(sol => matchesSelections(currentState.selections, sol.selections));
+  let fullyValidSels = validSels.filter(sol => matchesLeafInputs(currentState.leafInputs, sol.leafInputs));
+
+  // Determine error state
+  if (fullyValidSels.length === 0) {
+    if (validSels.length === 0) {
+      // Deviation was an axis choice
+      textEl.innerHTML = "Uh-Oh! <br>Looks like you are going to require more muxes than are available on this difficulty level. <br><br>Lets undo that!";
+      const undoBtn = document.createElement('button');
+      undoBtn.className = 'bubble-btn undo';
+      undoBtn.textContent = 'Undo Selection';
+      undoBtn.onclick = undoAction;
+      controlsEl.appendChild(undoBtn);
+    } else {
+      // Deviation was an input choice
+      textEl.innerHTML = "Uh-Oh! <br>That's not a solution for the logic problem. <br><br>Try again?<br>";
+      const resetBtn = document.createElement('button');
+      resetBtn.className = 'bubble-btn';
+      resetBtn.textContent = 'Reset Problem';
+      resetBtn.onclick = resetProblem;
+      controlsEl.appendChild(resetBtn);
+    }
+    return;
+  }
+
+  // Check if current problem is finished
+  let { nodes } = rebuildTree();
+  let leaves = Object.values(nodes).filter(n => !n.isSplit);
+  let allDetermined = leaves.every(n => getLeafValue(n.path) !== "?");
+
+  if (allDetermined) {
+    textEl.innerHTML = "Great job! You've solved the logic problem using multiplexers. <br><br>Click 'New Problem' to try another one!";
+    return;
+  }
+
+  // Instructional State
+  // Find the selection that corresponds to the current activePath's parent
+  const nodePath = currentState.activePath.slice(0, -1);
+  const relevantSel = currentState.selections.find(s => s.path === nodePath);
+  
+  if (!relevantSel) return; // Should not happen if selections exist
+
+  const axis = relevantSel.var;
+  const focus = currentState.activePath.slice(-1); 
+  
+  // Logic to determine if we just selected a NEW mux or if we are evaluating inputs
+  const isInitialSymmetry = currentState.selections.length === 1 && Object.keys(currentState.leafInputs).length === 0 && currentState.activePath === "0";
+
+  if (isInitialSymmetry) {
+     textEl.innerHTML = `Great! You chose symmetry on <strong>${axis}</strong>.<br>When <strong>${axis}</strong> is <strong>${focus}</strong>, do we have symmetry? <br><br>If so, what is the input value?`;
+  } else {
+     // Check if we are at the very start of a NEW mux branch (before any inputs filled for this mux)
+     // A "new mux" prompt is shown if the user just ADDED a selection at this nodePath 
+     // AND hasn't provided any inputs for its children yet.
+     const muxHasInputs = Object.keys(currentState.leafInputs).some(pk => pk.startsWith(nodePath));
+     
+     // We only show the "That's right" prompt if the relevant selection is the MOST RECENT one
+     const isLatestSelection = currentState.selections[currentState.selections.length - 1] === relevantSel;
+     const isNewMuxPrompt = isLatestSelection && !muxHasInputs && nodePath !== "";
+
+     if (isNewMuxPrompt) {
+        const muxNum = (currentState.selections.length === 2) ? "2nd" : "3rd";
+        textEl.innerHTML = `That's right! You need a <strong>${muxNum}</strong> mux to solve this. <br><br>When <strong>${axis}</strong> is <strong>${focus}</strong>, what is the input?`;
+     } else {
+        textEl.innerHTML = `Now, when <strong>${axis}</strong> is <strong>${focus}</strong>, is there symmetry? <br><br>If so, what is the input?`;
+     }
+  }
+
+  // Render Buttons
+  const row1 = ["A'", "B'", "C'", "0"];
+  const row2 = ["A", "B", "C", "1"];
+  
+  [row1, row2].forEach(row => {
+    row.forEach(opt => {
+      const btn = document.createElement('button');
+      btn.className = 'bubble-btn';
+      if (opt.endsWith("'")) {
+        btn.innerHTML = `<span style="text-decoration: overline">${opt[0]}</span>`;
+      } else {
+        btn.textContent = opt;
+      }
+      btn.onclick = () => handleInputSelection(opt);
+      controlsEl.appendChild(btn);
     });
   });
 }
