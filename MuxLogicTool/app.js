@@ -66,6 +66,30 @@ function initTheme() {
   applyTheme(savedTheme);
 }
 
+function handleInputSelection(val) {
+  if (currentState.selections.length > 0 && currentState.activePath !== "") {
+    currentState.leafInputs[currentState.activePath] = val;
+    
+    let { nodes } = rebuildTree();
+    let leaves = Object.values(nodes).filter(n => !n.isSplit).map(n => n.path);
+    leaves.sort();
+    
+    let currentIndex = leaves.indexOf(currentState.activePath);
+    if (currentIndex !== -1) {
+      for (let i = 1; i < leaves.length; i++) {
+        let idx = (currentIndex + i) % leaves.length;
+        let path = leaves[idx];
+        if (getLeafValue(path) === "?") {
+          currentState.activePath = path;
+          break;
+        }
+      }
+    }
+    
+    updateMuxVisualization();
+  }
+}
+
 function initEventListeners() {
   document.querySelectorAll('.difficulty-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
@@ -78,27 +102,7 @@ function initEventListeners() {
 
   document.querySelectorAll('.mux-input-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
-      if (currentState.selections.length > 0 && currentState.activePath !== "") {
-        currentState.leafInputs[currentState.activePath] = e.currentTarget.dataset.val;
-        
-        let { nodes } = rebuildTree();
-        let leaves = Object.values(nodes).filter(n => !n.isSplit).map(n => n.path);
-        leaves.sort();
-        
-        let currentIndex = leaves.indexOf(currentState.activePath);
-        if (currentIndex !== -1) {
-          for (let i = 1; i < leaves.length; i++) {
-            let idx = (currentIndex + i) % leaves.length;
-            let path = leaves[idx];
-            if (getLeafValue(path) === "?") {
-              currentState.activePath = path;
-              break;
-            }
-          }
-        }
-        
-        updateMuxVisualization();
-      }
+      handleInputSelection(e.currentTarget.dataset.val);
     });
   });
 
