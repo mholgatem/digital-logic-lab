@@ -112,7 +112,7 @@ body.dark {
 .instructional-container {
   flex: 1;
   display: flex;
-  justify-content: center;
+  justify-content: left;
   align-items: flex-start;
   padding-top: 1rem;
 }

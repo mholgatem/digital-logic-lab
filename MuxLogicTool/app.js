@@ -1001,7 +1001,7 @@ function updateInstructions() {
 
   // 1. Initial State
   if (currentState.selections.length === 0) {
-    textEl.textContent = "Start by finding symmetry in the kmap. Click a line of symmetry to see the result.";
+    textEl.textContent = "Start by choosing a line of symmetry in the kmap. Click an axis to see the result.";
     return;
   }
 
@@ -1064,7 +1064,7 @@ function updateInstructions() {
   const isInitialSymmetry = currentState.selections.length === 1 && Object.keys(currentState.leafInputs).length === 0 && currentState.activePath === "0";
 
   if (isInitialSymmetry) {
-     textEl.innerHTML = `Great! You chose symmetry on <strong>${axis}</strong>.<br>When <strong>${axis}</strong> is <strong>${focus}</strong>, do we have symmetry? <br><br>If so, what is the input value?`;
+     textEl.innerHTML = `Great! You chose symmetry on <strong>${axis}</strong>.<br>When <strong>${axis}</strong> is <strong>${focus}</strong>, is there a single value that describes those boxes? <br><br>If so, what is it? <br>(if not, select another line of symmetry)`;
   } else {
      // Check if we are at the very start of a NEW mux branch (before any inputs filled for this mux)
      // A "new mux" prompt is shown if the user just ADDED a selection at this nodePath 
