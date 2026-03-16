@@ -99,6 +99,103 @@ body.dark {
   background-color: var(--bg);
 }
 
+.top-row-layout {
+  display: flex;
+  width: 100%;
+  max-width: 1000px;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 2rem;
+  margin-bottom: 1rem;
+}
+
+.instructional-container {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 1rem;
+}
+
+.speech-bubble {
+  position: relative;
+  background: var(--surface);
+  border: 3px solid var(--primary);
+  border-radius: 1.25rem;
+  padding: 1.25rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 320px;
+  min-height: 80px;
+  transition: all 0.3s ease;
+}
+
+.speech-bubble::before {
+  content: '';
+  position: absolute;
+  left: -12px;
+  top: 40px;
+  width: 0;
+  height: 0;
+  border-top: 12px solid transparent;
+  border-bottom: 12px solid transparent;
+  border-right: 12px solid var(--primary);
+}
+
+.speech-bubble::after {
+  content: '';
+  position: absolute;
+  left: -8px;
+  top: 40px;
+  width: 0;
+  height: 0;
+  border-top: 12px solid transparent;
+  border-bottom: 12px solid transparent;
+  border-right: 12px solid var(--surface);
+}
+
+#instructionText {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.5;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.bubble-controls {
+  margin-top: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.bubble-btn {
+  padding: 0.4rem 0.8rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+}
+
+.bubble-btn:hover {
+  border-color: var(--primary);
+  background: var(--accent);
+}
+
+.bubble-btn.undo {
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+.bubble-btn.undo:hover {
+  background: #fef2f2;
+}
+
 .kmap-container {
   background-color: var(--surface);
   border: 1px solid var(--border);

@@ -53,30 +53,39 @@
     </div>
 
     <div class="workspace">
-      <div id="kmapContainer" class="kmap-container">
-        <div class="kmap-grid-wrapper">
-          <div class="kmap-grid-collection">
-            <div class="kmap-submap">
-              <div id="kmapTableContainer">
-                <!-- Table will be injected here -->
+      <div class="top-row-layout">
+        <div id="kmapContainer" class="kmap-container">
+          <div class="kmap-grid-wrapper">
+            <div class="kmap-grid-collection">
+              <div class="kmap-submap">
+                <div id="kmapTableContainer">
+                  <!-- Table will be injected here -->
+                </div>
               </div>
             </div>
+            <svg id="symmetryOverlay" class="symmetry-overlay"></svg>
           </div>
-          <svg id="symmetryOverlay" class="symmetry-overlay"></svg>
+          <div class="kmap-input-controls">
+            <div style="font-weight: 700; color: var(--muted); font-size: 0.875rem; margin-bottom: 0.25rem;">Input Options</div>
+            <div class="kmap-input-row">
+              <button class="mux-input-btn" data-val="A'"><span style="text-decoration: overline">A</span></button>
+              <button class="mux-input-btn" data-val="B'"><span style="text-decoration: overline">B</span></button>
+              <button class="mux-input-btn" data-val="C'"><span style="text-decoration: overline">C</span></button>
+              <button class="mux-input-btn" data-val="0">0</button>
+            </div>
+            <div class="kmap-input-row">
+              <button class="mux-input-btn" data-val="A">A</button>
+              <button class="mux-input-btn" data-val="B">B</button>
+              <button class="mux-input-btn" data-val="C">C</button>
+              <button class="mux-input-btn" data-val="1">1</button>
+            </div>
+          </div>
         </div>
-        <div class="kmap-input-controls">
-          <div style="font-weight: 700; color: var(--muted); font-size: 0.875rem; margin-bottom: 0.25rem;">Input Options</div>
-          <div class="kmap-input-row">
-            <button class="mux-input-btn" data-val="A'"><span style="text-decoration: overline">A</span></button>
-            <button class="mux-input-btn" data-val="B'"><span style="text-decoration: overline">B</span></button>
-            <button class="mux-input-btn" data-val="C'"><span style="text-decoration: overline">C</span></button>
-            <button class="mux-input-btn" data-val="0">0</button>
-          </div>
-          <div class="kmap-input-row">
-            <button class="mux-input-btn" data-val="A">A</button>
-            <button class="mux-input-btn" data-val="B">B</button>
-            <button class="mux-input-btn" data-val="C">C</button>
-            <button class="mux-input-btn" data-val="1">1</button>
+
+        <div id="instructionalContainer" class="instructional-container">
+          <div id="speechBubble" class="speech-bubble">
+            <p id="instructionText">Start by finding symmetry in the kmap. Click a line of symmetry to see the result.</p>
+            <div id="bubbleControls" class="bubble-controls"></div>
           </div>
         </div>
       </div>
