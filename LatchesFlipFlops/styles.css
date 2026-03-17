@@ -1,0 +1,67 @@
+/* Styles for Latches & Flip-Flops module */
+
+.responsive-container {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.controls-container {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+    padding: 1rem;
+    background-color: var(--bg-secondary);
+    border-radius: 8px;
+}
+
+.devices-row {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 2rem;
+}
+
+.timing-container {
+    width: 100%;
+    overflow-x: auto;
+    background-color: var(--bg-secondary);
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+/* Modal styling placeholder */
+.modal {
+    display: flex;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: rgba(0, 0, 0, 0.8);
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal.hidden {
+    display: none;
+}
+
+.modal-content {
+    background-color: var(--bg-primary);
+    padding: 2rem;
+    border-radius: 8px;
+    position: relative;
+    min-width: 300px;
+    min-height: 200px;
+}
+
+.close-button {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 1.5rem;
+    cursor: pointer;
+}

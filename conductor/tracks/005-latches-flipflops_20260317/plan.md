@@ -1,10 +1,10 @@
 # Implementation Plan: Latches & Flip-Flop Helpers
 
 ## Phase 1: Core Setup & HTML Structure
-- [ ] Task: Create `LatchesFlipFlops` directory, `index.html`, `styles.css`, and `app.js`.
-- [ ] Task: Set up the base HTML structure linking CSS and JS, and ensure responsive layout containers.
-- [ ] Task: Define the row container for the devices and basic placeholders for the Latch, D flip-flop, T flip-flop, and JK flip-flop.
-- [ ] Task: Create the global input controls (Clock Auto/Manual toggle, Common Data toggle, J toggle, K toggle).
+- [x] Task: Create `LatchesFlipFlops` directory, `index.html`, `styles.css`, and `app.js`.
+- [x] Task: Set up the base HTML structure linking CSS and JS, and ensure responsive layout containers.
+- [x] Task: Define the row container for the devices and basic placeholders for the Latch, D flip-flop, T flip-flop, and JK flip-flop.
+- [x] Task: Create the global input controls (Clock Auto/Manual toggle, Common Data toggle, J toggle, K toggle).
 - [ ] Task: Conductor - User Manual Verification 'Core Setup & HTML Structure' (Protocol in workflow.md)
 
 ## Phase 2: Theming & Visual Styling

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Latches & Flip-Flops Helper</title>
+    <link rel="stylesheet" href="../styles.css"> <!-- Global styles -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>Latches & Flip-Flops</h1>
+        <a href="../" class="back-link">← Back to Labs</a>
+    </header>
+
+    <main id="app-container" class="responsive-container">
+        <section id="controls-section" class="controls-container">
+            <div class="control-group">
+                <label>Clock Mode:</label>
+                <button id="clock-mode-btn">Auto (1 Hz)</button>
+                <button id="clock-pulse-btn" disabled>Pulse</button>
+                <div class="indicator" id="clock-indicator">CLK: 0</div>
+            </div>
+            <div class="control-group">
+                <label>Common Data:</label>
+                <button id="data-toggle-btn">D: 0</button>
+            </div>
+            <div class="control-group">
+                <label>J Input:</label>
+                <button id="j-toggle-btn">J: 0</button>
+            </div>
+            <div class="control-group">
+                <label>K Input:</label>
+                <button id="k-toggle-btn">K: 0</button>
+            </div>
+        </section>
+        
+        <section id="devices-section" class="devices-row">
+            <div class="device-block" id="latch-device">
+                <div class="device-symbol">Latch</div>
+                <button class="analyze-btn" data-device="latch">Analyze circuit</button>
+            </div>
+            <div class="device-block" id="d-ff-device">
+                <div class="device-symbol">D Flip-Flop</div>
+                <button class="analyze-btn" data-device="d-ff">Analyze circuit</button>
+            </div>
+            <div class="device-block" id="t-ff-device">
+                <div class="device-symbol">T Flip-Flop</div>
+                <button class="analyze-btn" data-device="t-ff">Analyze circuit</button>
+            </div>
+            <div class="device-block" id="jk-ff-device">
+                <div class="device-symbol">JK Flip-Flop</div>
+                <button class="analyze-btn" data-device="jk-ff">Analyze circuit</button>
+            </div>
+        </section>
+
+        <section id="timing-section" class="timing-container">
+            <!-- Timing diagram -->
+        </section>
+    </main>
+
+    <!-- Modal Overlay -->
+    <div id="analyze-modal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <div id="circuit-visualization"></div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
