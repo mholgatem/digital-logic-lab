@@ -26,13 +26,13 @@
 
 ## Phase 4: Circuit Visualization (Modal Overlays)
 - [x] Task: Write unit tests for modal overlay opening/closing logic. (Skipped per user request)
-- [~] Task: Implement modal overlay structure in HTML/CSS.
-- [ ] Task: Create SVG or DOM-based representations of internal logic gates and wires for each device.
-- [ ] Task: Implement logic to dynamically apply active/inactive CSS classes to wires in the modal based on current device state.
-- [ ] Task: Conductor - User Manual Verification 'Circuit Visualization (Modal Overlays)' (Protocol in workflow.md)
+- [x] Task: Implement modal overlay structure in HTML/CSS.
+- [x] Task: Create SVG or DOM-based representations of internal logic gates and wires for each device.
+- [x] Task: Implement logic to dynamically apply active/inactive CSS classes to wires in the modal based on current device state.
+- [x] Task: Conductor - User Manual Verification 'Circuit Visualization (Modal Overlays)' (Protocol in workflow.md)
 
 ## Phase 5: Timing Diagram
-- [ ] Task: Set up HTML5 Canvas element below the circuitry for the timing diagram.
+- [~] Task: Set up HTML5 Canvas element below the circuitry for the timing diagram.
 - [ ] Task: Implement the data structure to track history of Clock, Data, and device Q outputs.
 - [ ] Task: Write the rendering loop to draw the scrolling time window based on the history data.
 - [ ] Task: Add UI controls allowing the user to select which device Q outputs to include in the diagram.
