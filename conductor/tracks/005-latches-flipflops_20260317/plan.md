@@ -7,26 +7,26 @@
 - [x] Task: Create the global input controls (Clock Auto/Manual toggle, Common Data toggle, J toggle, K toggle).
 - [x] Task: Conductor - User Manual Verification 'Core Setup & HTML Structure' (Protocol in workflow.md)
 
-## Phase 2: Theming & Visual Styling
+## Phase 2: Theming & Visual Styling [checkpoint: 5713888]
 - [x] Task: Implement vaporwave CSS variables matching the Decoder Games.
 - [x] Task: Style the global input controls (buttons/switches).
 - [x] Task: Style the block symbols for the four devices, including the "Analyze circuit" buttons.
 - [x] Task: Create CSS classes for active (glow + neon color) and inactive (dim) wires.
-- [ ] Task: Conductor - User Manual Verification 'Theming & Visual Styling' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Theming & Visual Styling' (Protocol in workflow.md)
 
 ## Phase 3: Logic Implementation & Interaction
-- [ ] Task: Write unit tests for Clock logic (auto mode timer at 1 Hz, manual increment).
-- [ ] Task: Implement Clock logic and state management.
-- [ ] Task: Write unit tests for the Latch logic and data toggle interactions.
-- [ ] Task: Implement Latch logic.
-- [ ] Task: Write unit tests for D, T, and JK flip-flop logic based on inputs and clock state.
-- [ ] Task: Implement D, T, and JK flip-flop logic.
-- [ ] Task: Connect global UI toggles to update internal logic states and device output states (Q).
-- [ ] Task: Conductor - User Manual Verification 'Logic Implementation & Interaction' (Protocol in workflow.md)
+- [x] Task: Write unit tests for Clock logic (auto mode timer at 1 Hz, manual increment).
+- [x] Task: Implement Clock logic and state management.
+- [x] Task: Write unit tests for the Latch logic and data toggle interactions. (Skipped per user request)
+- [x] Task: Implement Latch logic.
+- [x] Task: Write unit tests for D, T, and JK flip-flop logic based on inputs and clock state. (Skipped per user request)
+- [x] Task: Implement D, T, and JK flip-flop logic.
+- [x] Task: Connect global UI toggles to update internal logic states and device output states (Q).
+- [x] Task: Conductor - User Manual Verification 'Logic Implementation & Interaction' (Protocol in workflow.md)
 
 ## Phase 4: Circuit Visualization (Modal Overlays)
-- [ ] Task: Write unit tests for modal overlay opening/closing logic.
-- [ ] Task: Implement modal overlay structure in HTML/CSS.
+- [x] Task: Write unit tests for modal overlay opening/closing logic. (Skipped per user request)
+- [~] Task: Implement modal overlay structure in HTML/CSS.
 - [ ] Task: Create SVG or DOM-based representations of internal logic gates and wires for each device.
 - [ ] Task: Implement logic to dynamically apply active/inactive CSS classes to wires in the modal based on current device state.
 - [ ] Task: Conductor - User Manual Verification 'Circuit Visualization (Modal Overlays)' (Protocol in workflow.md)
