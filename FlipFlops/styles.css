@@ -1,0 +1,521 @@
+/* ── CSS Variables (copied from DecoderGames) ────────────────────────── */
+:root {
+  --bg: #f6f7fb;
+  --bg-muted: #e9ebf3;
+  --text: #1f2630;
+  --primary: #4a6cf7;
+  --border: #cfd5e4;
+  --accent: #f0f4ff;
+  --surface: #ffffff;
+  --muted: #6b7280;
+
+  /* Vaporwave Palette */
+  --vw-orange: #FF5E00;
+  --vw-fuchsia: #FF00FF;
+  --vw-blue: #00FFFF;
+  --vw-purple: #8A2BE2;
+  --vw-green: #39FF14;
+}
+
+body {
+    font-family: Inter, sans-serif;
+    background-color: var(--bg);
+    color: var(--text);
+    margin: 0px;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+body.dark {
+  --bg: #111827;
+  --bg-muted: #1f2937;
+  --text: #ffffff;
+  --primary: #8b9cf9;
+  --border: #374151;
+  --accent: #1f2937;
+  --surface: #0b1221;
+  background-color: var(--bg);
+  color: var(--text);
+}
+
+/* ── Header ───────────────────────────────────────────────────────────── */
+.main-header {
+    margin-bottom: 3rem;
+    padding: 2rem 0px;
+    border-bottom: 1px solid var(--border);
+}
+
+.main-header .container
+ {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.container {
+	max-width: 2000px;
+    margin: 0px auto;
+    padding: 0px 1.5rem;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.back-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition: color 0.2s;
+}
+.back-link:hover { color: var(--primary); }
+
+.header-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.icon-btn {
+    cursor: pointer;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    padding: 0.5rem;
+    transition: background-color 0.2s;
+}
+
+.icon-btn:hover {
+  background-color: var(--border);
+}
+
+/* ── Toolbar ──────────────────────────────────────────────────────────── */
+.toolbar {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  transition: background-color 0.3s, border-color 0.3s;
+}
+
+.controls-left,
+.controls-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+/* ── Shared Button Styles (DecoderGames pattern) ──────────────────────── */
+.mode-btn {
+  background-color: var(--bg);
+  border: 1px solid var(--border);
+  padding: 0.4rem 0.875rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--text);
+  font-size: 0.875rem;
+  transition: all 0.2s;
+}
+.mode-btn:hover { border-color: var(--primary); }
+.mode-btn.active {
+  background-color: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.toggle-btn {
+  width: 44px;
+  height: 36px;
+  border-radius: 0.4rem;
+  border: 1px solid var(--border);
+  background-color: var(--surface);
+  color: var(--text);
+  font-weight: bold;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.toggle-btn:hover { border-color: var(--primary); }
+.toggle-btn.active {
+  background-color: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.clk-pulse-btn {
+  width: auto;
+  padding: 0 0.75rem;
+  font-size: 0.8rem;
+}
+
+button.primary {
+  background-color: var(--primary);
+  color: white;
+  border: none;
+  padding: 0.45rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+button.primary:hover { background-color: #3a5bd9; }
+button.primary.active {
+  background-color: var(--vw-orange);
+  border-color: var(--vw-orange);
+}
+
+/* ── LED indicator ────────────────────────────────────────────────────── */
+.led-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.led {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background-color: #333;
+  border: 2px solid var(--border);
+  transition: background-color 0.2s, border-color 0.2s;
+  flex-shrink: 0;
+}
+.led.on {
+  background-color: var(--vw-orange);
+  border-color: var(--vw-orange);
+  box-shadow: 0 0 6px var(--vw-orange);
+}
+.led.q-on {
+  background-color: var(--vw-purple);
+  border-color: var(--vw-purple);
+  box-shadow: 0 0 6px var(--vw-purple);
+}
+
+.led-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* ── Circuits section ─────────────────────────────────────────────────── */
+.circuits-section {
+  padding: 1rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* ── Bus Layer ────────────────────────────────────────────────────────── */
+.bus-layer {
+  margin: 0 0 0 0;
+}
+
+.bus-label {
+  font-size: 8px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  dominant-baseline: auto;
+}
+
+.bus-h {
+  stroke-width: 3;
+  fill: none;
+}
+.bus-v {
+  stroke-width: 2;
+  fill: none;
+}
+
+/* ── Signal Wire Classes ──────────────────────────────────────────────── */
+.signal-path {
+  stroke-width: 3;
+  fill: none;
+  transition: stroke 0.2s, filter 0.2s;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* CLK — orange */
+.sig-clk              { stroke: rgba(255, 94, 0, 0.28); }
+.sig-clk.high         { stroke: var(--vw-orange); filter: drop-shadow(0 0 4px var(--vw-orange)); }
+
+/* D / T — cyan */
+.sig-d                { stroke: rgba(0, 255, 255, 0.28); }
+.sig-d.high           { stroke: var(--vw-blue); filter: drop-shadow(0 0 4px var(--vw-blue)); }
+
+/* J — green */
+.sig-j                { stroke: rgba(57, 255, 20, 0.28); }
+.sig-j.high           { stroke: var(--vw-green); filter: drop-shadow(0 0 4px var(--vw-green)); }
+
+/* K — fuchsia */
+.sig-k                { stroke: rgba(255, 0, 255, 0.28); }
+.sig-k.high           { stroke: var(--vw-fuchsia); filter: drop-shadow(0 0 4px var(--vw-fuchsia)); }
+
+/* Q — purple */
+.sig-q                { stroke: rgba(138, 43, 226, 0.28); }
+.sig-q.high           { stroke: var(--vw-purple); filter: drop-shadow(0 0 4px var(--vw-purple)); }
+
+/* Internal nodes — dim border → cyan when active */
+.sig-internal         { stroke: rgba(100, 116, 139, 0.35); }
+.sig-internal.high    { stroke: var(--vw-blue); filter: drop-shadow(0 0 3px var(--vw-blue)); }
+
+/* ── Gate / Symbol SVG elements ───────────────────────────────────────── */
+.device-box {
+  fill: var(--surface);
+  stroke: var(--border);
+  stroke-width: 2;
+  transition: fill 0.3s, stroke 0.3s;
+}
+
+.gate-box {
+  fill: var(--bg-muted);
+  stroke: var(--border);
+  stroke-width: 1.5;
+  rx: 3;
+  transition: fill 0.3s, stroke 0.3s;
+}
+
+.gate-bubble {
+  fill: var(--bg-muted);
+  stroke: var(--border);
+  stroke-width: 1.5;
+  transition: fill 0.3s, stroke 0.3s;
+}
+
+.clk-triangle {
+  fill: none;
+  stroke: var(--border);
+  stroke-width: 1.5;
+  stroke-linejoin: miter;
+  transition: stroke 0.3s;
+}
+
+.pin-text {
+  fill: var(--text);
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  dominant-baseline: middle;
+}
+
+.pin-right {
+  text-anchor: end;
+}
+
+.device-label {
+  fill: var(--muted);
+  font-family: 'Inter', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.gate-label {
+  fill: var(--text);
+  font-family: 'Inter', sans-serif;
+  font-size: 8px;
+  font-weight: 700;
+  dominant-baseline: middle;
+}
+
+.pin-text-sm {
+  fill: var(--muted);
+  font-family: 'Inter', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  dominant-baseline: middle;
+}
+
+/* ── Circuit Cards ────────────────────────────────────────────────────── */
+.circuits-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: stretch;
+}
+
+.circuit-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 0.875rem 0.75rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.625rem;
+  transition: background-color 0.3s, border-color 0.2s;
+  min-width: 0;
+}
+.circuit-card:hover { border-color: var(--vw-orange); }
+
+.card-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* Show/hide symbol vs circuit SVG */
+.circuit-svg { display: none; }
+
+body.analyze-on .circuit-svg  { display: block; }
+body.analyze-on .symbol-svg   { display: none; }
+
+/* ── JK input controls ────────────────────────────────────────────────── */
+.jk-inputs {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.jk-row {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.jk-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.sig-d-label { color: var(--vw-blue); }
+.sig-j-label { color: var(--vw-green); }
+.sig-k-label { color: var(--vw-fuchsia); }
+
+/* ── Q Output row ─────────────────────────────────────────────────────── */
+.q-output {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: auto;
+}
+
+.q-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Per-card timing trace ─────────────────────────────────────────────── */
+.card-timing {
+  width: 100%;
+  border-top: 1px solid var(--border);
+  padding-top: 0.4rem;
+  margin-top: 0.25rem;
+  transition: border-color 0.3s;
+}
+
+.card-timing svg {
+  display: block;
+}
+
+/* ── Dialog (Settings) ────────────────────────────────────────────────── */
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+}
+
+.dialog {
+  background-color: var(--surface);
+  padding: 2rem;
+  border-radius: 1rem;
+  max-width: 420px;
+  width: 90%;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+.dialog h2 {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  color: var(--text);
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 2rem;
+}
+
+.form-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  color: var(--text);
+}
+
+/* Toggle switch */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 24px;
+}
+
+.switch input { opacity: 0; width: 0; height: 0; }
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background-color: var(--bg-muted);
+  transition: .4s;
+  border: 1px solid var(--border);
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 4px;
+  bottom: 3px;
+  background-color: white;
+  transition: .4s;
+}
+
+input:checked + .slider { background-color: var(--primary); }
+input:checked + .slider:before { transform: translateX(26px); }
+
+.slider.round { border-radius: 24px; }
+.slider.round:before { border-radius: 50%; }
+
+.hidden { display: none !important; }
+
+/* ── Responsive ───────────────────────────────────────────────────────── */
+@media (max-width: 700px) {
+  .circuits-row {
+    flex-direction: column;
+  }
+  .circuit-card {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: space-between;
+  }
+}

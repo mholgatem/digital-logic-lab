@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Latches &amp; Flip-Flops - Digital Logic Lab</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="light">
+
+  <header class="main-header">
+    <div class="container">
+      <div class="header-left">
+        <a href="../" class="back-link">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+          Back
+        </a>
+        <h1>Latches & Flip-Flops</h1>
+      </div>
+      <div class="header-actions">
+        <button id="tutorialBtn" class="icon-btn" title="Tutorial">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+        </button>
+        <button id="settingsBtn" class="icon-btn" title="Settings">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="circuits-section">
+
+      <!-- ① Circuit Cards (top) -->
+      <div class="circuits-row">
+
+        <!-- ── D Latch ── -->
+        <div class="circuit-card" id="card-latch">
+          <div class="card-title">D Latch</div>
+		  
+		  <div class="jk-inputs">
+            <div class="jk-row">
+              <span class="jk-label sig-d-label">D</span>
+              <button id="d-toggle-btn" class="d-toggle-btn toggle-btn">0</button>
+            </div>
+          </div>
+
+          <svg class="symbol-svg" viewBox="0 0 160 130" width="100%" aria-label="D Latch symbol">
+            <line id="latch-sym-d"   class="sig-d   signal-path" x1="8"  y1="50" x2="45" y2="50"/>
+            <line id="latch-sym-clk" class="sig-clk signal-path" x1="8"  y1="88" x2="45" y2="88"/>
+            <line id="latch-sym-q"   class="sig-q   signal-path" x1="115" y1="50" x2="152" y2="50"/>
+            <rect x="45" y="25" width="70" height="80" class="device-box"/>
+            <text x="53" y="55"  class="pin-text">D</text>
+            <text x="53" y="93"  class="pin-text">C</text>
+            <text x="105" y="55" class="pin-text pin-right">Q</text>
+            <text x="80"  y="75" class="device-label" text-anchor="middle">D LATCH</text>
+          </svg>
+
+          <svg class="circuit-svg" viewBox="0 0 290 185" width="100%" aria-label="D Latch circuit">
+            <line id="latch-w-d" class="sig-d signal-path high" x1="13" y1="50" x2="52" y2="50"/>
+            <line id="latch-w-clk" class="sig-clk signal-path" x1="13" y1="135" x2="52" y2="135"/>
+            <polyline id="latch-w-d-branch" class="sig-d signal-path high" points="30,50 30,65 105,65"/>
+            <rect x="40" y="40" width="32" height="20" class="gate-box"/>
+            <text x="58" y="54" class="gate-label" text-anchor="middle">INV</text>
+            <circle cx="75" cy="50" r="3.5" class="gate-bubble"/>
+            <polyline id="latch-w-notd" class="sig-internal signal-path" points="78,50 90,50 90,100 105,100"/>
+            <polyline id="latch-w-clk-n1" class="sig-clk signal-path" points="52,135 80,135 80,76 105,76"/>
+            <polyline id="latch-w-clk-n2" class="sig-clk signal-path" points="80,135 80,115 105,115"/>
+            <rect x="105" y="52" width="40" height="34" class="gate-box"/>
+            <text x="125" y="73" class="gate-label" text-anchor="middle">NAND</text>
+            <circle cx="148" cy="69" r="3.5" class="gate-bubble"/>
+            <line id="latch-w-sbar" class="sig-internal signal-path" x1="151" y1="69" x2="185" y2="69"/>
+            <rect x="105" y="100" width="40" height="34" class="gate-box"/>
+            <text x="125" y="121" class="gate-label" text-anchor="middle">NAND</text>
+            <circle cx="148" cy="117" r="3.5" class="gate-bubble"/>
+            <line id="latch-w-rbar" class="sig-internal signal-path" x1="151" y1="117" x2="185" y2="117"/>
+            <rect x="185" y="55" width="40" height="34" class="gate-box"/>
+            <text x="205" y="76" class="gate-label" text-anchor="middle">NAND</text>
+            <circle cx="228" cy="72" r="3.5" class="gate-bubble"/>
+            <rect x="185" y="100" width="40" height="34" class="gate-box"/>
+            <text x="205" y="121" class="gate-label" text-anchor="middle">NAND</text>
+            <circle cx="228" cy="117" r="3.5" class="gate-bubble"/>
+            <line id="latch-w-q" class="sig-q signal-path" x1="231" y1="72" x2="270" y2="72"/>
+            <polyline id="latch-w-qfb" class="sig-q signal-path" points="258,72 258,150 178,150 178,110 185,110"/>
+            <polyline id="latch-w-qbarfb" class="sig-internal signal-path high" points="228,117 244,117 244,165 165,165 165,79 185,79"/>
+            <text x="0" y="50" class="pin-text-sm">D</text>
+            <text x="1" y="135" class="pin-text-sm">C</text>
+            <text x="273" y="72" class="pin-text-sm">Q</text>
+          </svg>
+
+          <div class="q-output">
+            <div id="latch-led" class="led"></div>
+            <span class="q-label">Q = <span id="latch-q-val">0</span></span>
+          </div>
+          <div class="card-timing">
+            <svg id="timing-latch"></svg>
+          </div>
+        </div>
+
+        <!-- ── D Flip-Flop ── -->
+        <div class="circuit-card" id="card-dff">
+          <div class="card-title">D Flip-Flop</div>
+		  
+		  <div class="jk-inputs">
+            <div class="jk-row">
+              <span class="jk-label sig-d-label">D</span>
+              <button id="d-toggle-btn" class="d-toggle-btn toggle-btn">0</button>
+            </div>
+          </div>
+
+          <svg class="symbol-svg" viewBox="0 0 160 130" width="100%" aria-label="D Flip-Flop symbol">
+            <line id="dff-sym-d"   class="sig-d   signal-path" x1="8"   y1="50" x2="45"  y2="50"/>
+            <line id="dff-sym-clk" class="sig-clk signal-path" x1="8"   y1="88" x2="45"  y2="88"/>
+            <line id="dff-sym-q"   class="sig-q   signal-path" x1="115" y1="50" x2="152" y2="50"/>
+            <rect x="45" y="25" width="70" height="80" class="device-box"/>
+            <polyline points="45,81 56,88 45,95" class="clk-triangle"/>
+            <text x="53" y="55"  class="pin-text">D</text>
+            <text x="105" y="55" class="pin-text pin-right">Q</text>
+            <text x="80"  y="73" class="device-label" text-anchor="middle">D FF</text>
+          </svg>
+
+          <svg class="circuit-svg" viewBox="0 0 290 185" width="100%" aria-label="D Flip-Flop circuit">
+            <!-- Master latch block -->
+            <rect x="35"  y="28"  width="80" height="72" class="gate-box"/>
+            <text x="75"  y="63"  class="gate-label" text-anchor="middle">Master</text>
+            <text x="75"  y="77"  class="gate-label" text-anchor="middle">Latch</text>
+            <!-- Slave latch block -->
+            <rect x="175" y="28"  width="80" height="72" class="gate-box"/>
+            <text x="215" y="63"  class="gate-label" text-anchor="middle">Slave</text>
+            <text x="215" y="77"  class="gate-label" text-anchor="middle">Latch</text>
+            <!-- CLK inverter (below, between blocks) -->
+            <rect x="110" y="128" width="30" height="18" class="gate-box"/>
+            <text x="125" y="141" class="gate-label" text-anchor="middle">INV</text>
+            <circle cx="143" cy="137" r="3.5" class="gate-bubble"/>
+            <!-- D input wire -->
+            <line id="dff-w-d"       class="sig-d       signal-path" x1="13"  y1="48"  x2="35"  y2="48"/>
+            <!-- Master Q → Slave D -->
+            <line id="dff-w-mq"      class="sig-internal signal-path" x1="115" y1="48"  x2="175" y2="48"/>
+            <!-- Slave Q output -->
+            <line id="dff-w-q"       class="sig-q        signal-path" x1="255" y1="48"  x2="275" y2="48"/>
+            <!-- CLK main line → INV gate -->
+            <line id="dff-w-clk"     class="sig-clk     signal-path" x1="13"  y1="137" x2="110" y2="137"/>
+            <!-- CLK branch → Master enable (enters from bottom) -->
+            <polyline id="dff-w-clk2" class="sig-clk    signal-path" points="60,137 60,100"/>
+            <!-- NOT-CLK from INV output → Slave enable (orange: still clock-derived) -->
+            <line id="dff-w-clkinv"  class="sig-clk     signal-path" x1="146" y1="137" x2="162" y2="137"/>
+            <polyline id="dff-w-clkinv2" class="sig-clk  signal-path" points="162,137 195,137 195,100"/>
+            <text x="0"   y="48"  class="pin-text-sm">D</text>
+            <text x="1"   y="137" class="pin-text-sm">C</text>
+            <text x="277" y="48"  class="pin-text-sm">Q</text>
+          </svg>
+
+          <div class="q-output">
+            <div id="dff-led" class="led"></div>
+            <span class="q-label">Q = <span id="dff-q-val">0</span></span>
+          </div>
+          <div class="card-timing">
+            <svg id="timing-dff"></svg>
+          </div>
+        </div>
+
+        <!-- ── T Flip-Flop ── -->
+        <div class="circuit-card" id="card-tff">
+          <div class="card-title">T Flip-Flop</div>
+		  
+		  <div class="jk-inputs">
+            <div class="jk-row">
+              <span class="jk-label sig-d-label">T</span>
+              <button id="d-toggle-btn" class="d-toggle-btn toggle-btn">0</button>
+            </div>
+          </div>
+
+          <svg class="symbol-svg" viewBox="0 0 160 130" width="100%" aria-label="T Flip-Flop symbol">
+            <line id="tff-sym-d"   class="sig-d   signal-path" x1="8"   y1="50" x2="45"  y2="50"/>
+            <line id="tff-sym-clk" class="sig-clk signal-path" x1="8"   y1="88" x2="45"  y2="88"/>
+            <line id="tff-sym-q"   class="sig-q   signal-path" x1="115" y1="50" x2="152" y2="50"/>
+            <rect x="45" y="25" width="70" height="80" class="device-box"/>
+            <polyline points="45,81 56,88 45,95" class="clk-triangle"/>
+            <text x="53" y="55"  class="pin-text">T</text>
+            <text x="105" y="55" class="pin-text pin-right">Q</text>
+            <text x="80"  y="73" class="device-label" text-anchor="middle">T FF</text>
+          </svg>
+
+          <svg class="circuit-svg" viewBox="0 0 290 185" width="100%" aria-label="T Flip-Flop circuit">
+            <!-- XOR gate -->
+            <rect x="70"  y="37"  width="45" height="36" class="gate-box"/>
+            <text x="92"  y="59"  class="gate-label" text-anchor="middle">XOR</text>
+            <!-- D-FF block (tall enough for CLK entry near bottom) -->
+            <rect x="165" y="28"  width="80" height="93" class="gate-box"/>
+            <text x="205" y="62"  class="gate-label" text-anchor="middle">D-FF</text>
+            <!-- CLK triangle aligned with CLK wire entry on left edge -->
+            <polyline points="165,108 176,115 165,122" class="clk-triangle"/>
+            <!-- T input wire (enters XOR top input) -->
+            <line id="tff-w-t"       class="sig-d       signal-path" x1="13"  y1="47"  x2="70"  y2="47"/>
+            <!-- XOR output → D-FF D input -->
+            <line id="tff-w-xorout"  class="sig-internal signal-path" x1="115" y1="55"  x2="165" y2="55"/>
+            <!-- CLK: goes right then turns up into D-FF left side -->
+            <polyline id="tff-w-clk" class="sig-clk     signal-path" points="13,150 148,150 148,115 165,115"/>
+            <!-- Q output wire -->
+            <line id="tff-w-q"       class="sig-q        signal-path" x1="245" y1="55"  x2="275" y2="55"/>
+            <!-- Q feedback → XOR bottom input -->
+            <polyline id="tff-w-qfb" class="sig-q signal-path" points="260,55 260,168 48,168 48,67 70,67"/>
+            <text x="0"   y="47"  class="pin-text-sm">T</text>
+            <text x="1"   y="150" class="pin-text-sm">C</text>
+            <text x="277" y="55"  class="pin-text-sm">Q</text>
+          </svg>
+
+          <div class="q-output">
+            <div id="tff-led" class="led"></div>
+            <span class="q-label">Q = <span id="tff-q-val">0</span></span>
+          </div>
+          <div class="card-timing">
+            <svg id="timing-tff"></svg>
+          </div>
+        </div>
+
+        <!-- ── JK Flip-Flop ── -->
+        <div class="circuit-card" id="card-jkff">
+          <div class="card-title">JK Flip-Flop</div>
+
+          <div class="jk-inputs">
+            <div class="jk-row">
+              <span class="jk-label sig-j-label">J</span>
+              <button id="j-toggle-btn" class="toggle-btn">0</button>
+            </div>
+            <div class="jk-row">
+              <span class="jk-label sig-k-label">K</span>
+              <button id="k-toggle-btn" class="toggle-btn">0</button>
+            </div>
+          </div>
+
+          <svg class="symbol-svg" viewBox="0 0 160 155" width="100%" aria-label="JK Flip-Flop symbol">
+            <line id="jkff-sym-j"   class="sig-j   signal-path" x1="8"   y1="42"  x2="45"  y2="42"/>
+            <line id="jkff-sym-clk" class="sig-clk signal-path" x1="8"   y1="77"  x2="45"  y2="77"/>
+            <line id="jkff-sym-k"   class="sig-k   signal-path" x1="8"   y1="112" x2="45"  y2="112"/>
+            <line id="jkff-sym-q"   class="sig-q   signal-path" x1="115" y1="42"  x2="152" y2="42"/>
+            <rect x="45" y="20" width="70" height="115" class="device-box"/>
+            <polyline points="45,70 56,77 45,84" class="clk-triangle"/>
+            <text x="53"  y="47"  class="pin-text">J</text>
+            <text x="53"  y="117" class="pin-text">K</text>
+            <text x="105" y="47"  class="pin-text pin-right">Q</text>
+            <text x="80"  y="85"  class="device-label" text-anchor="middle">JK FF</text>
+          </svg>
+
+          <svg class="circuit-svg" viewBox="0 0 290 220" width="100%" aria-label="JK Flip-Flop circuit">
+            <!-- J AND gate (top) -->
+            <rect x="75"  y="30"  width="45" height="30" class="gate-box"/>
+            <text x="97"  y="49"  class="gate-label" text-anchor="middle">AND</text>
+            <!-- K inverter -->
+            <rect x="22"  y="118" width="30" height="18" class="gate-box"/>
+            <text x="37"  y="130" class="gate-label" text-anchor="middle">INV</text>
+            <circle cx="55" cy="127" r="3.5" class="gate-bubble"/>
+            <!-- K AND gate (bottom) -->
+            <rect x="75"  y="118" width="45" height="30" class="gate-box"/>
+            <text x="97"  y="137" class="gate-label" text-anchor="middle">AND</text>
+            <!-- OR gate -->
+            <rect x="152" y="58"  width="38" height="62" class="gate-box"/>
+            <text x="171" y="93"  class="gate-label" text-anchor="middle">OR</text>
+            <!-- D-FF block -->
+            <rect x="208" y="52"  width="58" height="76" class="gate-box"/>
+            <text x="237" y="87"  class="gate-label" text-anchor="middle">D-FF</text>
+            <!-- CLK triangle aligned with CLK entry at y=115 -->
+            <polyline points="208,108 219,115 208,122" class="clk-triangle"/>
+            <!-- J input wire -->
+            <line id="jkff-w-j"     class="sig-j       signal-path" x1="13"  y1="42"  x2="75"  y2="42"/>
+            <!-- K input wire -->
+            <line id="jkff-w-k"     class="sig-k       signal-path" x1="13"  y1="127" x2="22"  y2="127"/>
+            <!-- NOT-K wire (after INV bubble) -->
+            <line id="jkff-w-kinv"  class="sig-internal signal-path" x1="58"  y1="127" x2="75"  y2="127"/>
+            <!-- CLK wire: stops at turn point x=193, no overlap with turn-up segment -->
+            <line id="jkff-w-clk"   class="sig-clk     signal-path" x1="13"  y1="185" x2="193" y2="185"/>
+            <!-- CLK turn-up: clean route from x=193 up to D-FF CLK input at y=115 -->
+            <polyline id="jkff-w-clk2" class="sig-clk   signal-path" points="193,185 193,115 208,115"/>
+            <!-- J-AND output → OR top input -->
+            <polyline id="jkff-w-jand" class="sig-internal signal-path" points="120,45 140,45 140,75 152,75"/>
+            <!-- K-AND output → OR bottom input -->
+            <polyline id="jkff-w-kand" class="sig-internal signal-path" points="120,133 140,133 140,105 152,105"/>
+            <!-- OR → D-FF input -->
+            <line id="jkff-w-or"    class="sig-internal signal-path" x1="190" y1="89"  x2="208" y2="89"/>
+            <!-- Q output stub -->
+            <line id="jkff-w-q"     class="sig-q        signal-path" x1="266" y1="80"  x2="277" y2="80"/>
+            <!-- Q feedback → J-AND bottom input: routed at x=59, right of K-INV body (x=22-52) -->
+            <polyline id="jkff-w-qfb"    class="sig-q       signal-path" points="272,80 272,197 59,197 59,48 75,48"/>
+            <!-- Qbar feedback → K-AND bottom input: stops at y=139, below K-INV box (y=118-136) -->
+            <polyline id="jkff-w-qbarfb" class="sig-internal signal-path" points="272,80 280,80 280,207 42,207 42,139 75,139"/>
+            <text x="0"   y="42"  class="pin-text-sm" style="fill:var(--vw-green)">J</text>
+            <text x="0"   y="127" class="pin-text-sm" style="fill:var(--vw-fuchsia)">K</text>
+            <text x="0"   y="185" class="pin-text-sm">C</text>
+            <text x="279" y="80"  class="pin-text-sm">Q</text>
+          </svg>
+
+          <div class="q-output">
+            <div id="jkff-led" class="led"></div>
+            <span class="q-label">Q = <span id="jkff-q-val">0</span></span>
+          </div>
+          <div class="card-timing">
+            <svg id="timing-jkff"></svg>
+          </div>
+        </div>
+
+      </div><!-- /.circuits-row -->
+
+      <!-- ② Bus layer (below cards) -->
+      <div class="bus-layer">
+        <svg id="busSVG" width="100%" height="44" preserveAspectRatio="none">
+          <line id="bus-clk"    class="sig-clk bus-h" x1="4%"  y1="12" x2="87.5%" y2="12"/>
+          <line id="bus-clk-d0" class="sig-clk bus-v" x1="12.5%" y1="12" x2="12.5%" y2="0"/>
+          <line id="bus-clk-d1" class="sig-clk bus-v" x1="37.5%" y1="12" x2="37.5%" y2="0"/>
+          <line id="bus-clk-d2" class="sig-clk bus-v" x1="62.5%" y1="12" x2="62.5%" y2="0"/>
+          <line id="bus-clk-d3" class="sig-clk bus-v" x1="87.5%" y1="12" x2="87.5%" y2="0"/>
+          <line id="bus-d"      class="sig-d   bus-h" x1="2%"  y1="30" x2="60.5%" y2="30"/>
+          <line id="bus-d-d0"   class="sig-d   bus-v" x1="10.5%" y1="30" x2="10.5%" y2="0"/>
+          <line id="bus-d-d1"   class="sig-d   bus-v" x1="35.5%" y1="30" x2="35.5%" y2="0"/>
+          <line id="bus-d-d2"   class="sig-d   bus-v" x1="60.5%" y1="30" x2="60.5%" y2="0"/>
+          <text x="2%" y="10" class="bus-label" style="fill:var(--vw-orange)">CLK</text>
+          <text x="2%" y="28" class="bus-label" style="fill:var(--vw-blue)">D</text>
+        </svg>
+      </div>
+
+      <!-- ③ Toolbar (below bus, above timing) -->
+      <div class="toolbar">
+        <div class="controls-left">
+          <button id="clock-mode-btn" class="mode-btn active">Manual</button>
+          <button id="clock-pulse-btn" class="toggle-btn clk-pulse-btn" title="Pulse clock">CLK ↑</button>
+          <div class="led-wrap">
+            <div id="clk-led" class="led"></div>
+            <span id="clock-indicator" class="led-label">CLK: 0</span>
+          </div>
+        </div>
+        <div class="controls-right">
+          <button id="analyze-btn" class="primary">Analyze Circuits</button>
+        </div>
+      </div>
+
+    </div><!-- /.circuits-section -->
+  </main>
+
+  <!-- Settings Dialog -->
+  <div id="settingsDialog" class="dialog-backdrop hidden">
+    <div class="dialog">
+      <h2>Settings</h2>
+      <div class="form-row">
+        <span>Dark Mode</span>
+        <label class="switch">
+          <input type="checkbox" id="darkModeToggle">
+          <span class="slider round"></span>
+        </label>
+      </div>
+      <div class="dialog-actions">
+        <button id="closeSettings" class="primary">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
