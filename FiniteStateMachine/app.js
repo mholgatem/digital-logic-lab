@@ -1,3 +1,24 @@
+function setCookie(name, value, days) {
+  let expires = '';
+  if (days) {
+    const d = new Date();
+    d.setTime(d.getTime() + days * 86400000);
+    expires = '; expires=' + d.toUTCString();
+  }
+  document.cookie = name + '=' + (value || '') + expires + '; path=/';
+}
+
+function getCookie(name) {
+  const eq = name + '=';
+  for (let c of document.cookie.split(';')) {
+    c = c.trim();
+    if (c.indexOf(eq) === 0) return c.substring(eq.length);
+  }
+  return null;
+}
+
+const THEME_COOKIE = 'dll_theme';
+
 const state = {
   name: 'Untitled Machine',
   type: 'moore',
@@ -5049,8 +5070,9 @@ function attachEvents() {
   });
 
   document.getElementById('toggleTheme').addEventListener('click', () => {
-    document.body.classList.toggle('dark');
-    document.body.classList.toggle('light');
+    const isDark = document.body.classList.toggle('dark');
+    document.body.classList.toggle('light', !isDark);
+    setCookie(THEME_COOKIE, isDark ? 'dark' : 'light', 365);
     settingsMenu.classList.add('hidden');
   });
 
@@ -6087,6 +6109,10 @@ function getSVGPoint(clientX, clientY) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  const savedTheme = getCookie(THEME_COOKIE) || 'light';
+  document.body.classList.toggle('dark', savedTheme === 'dark');
+  document.body.classList.toggle('light', savedTheme !== 'dark');
+
   populateStateCountSelectors();
   attachEvents();
   updateControls();

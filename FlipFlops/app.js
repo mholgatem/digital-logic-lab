@@ -38,6 +38,13 @@ function getCookie(name) {
 }
 
 const THEME_COOKIE = 'dll_theme';
+const SIZE_COOKIE  = 'dll_circuit_size';
+
+function applyCircuitSize(px) {
+  document.querySelectorAll('.circuit-card').forEach(el => {
+    el.style.minWidth = px + 'px';
+  });
+}
 
 function applyTheme(theme) {
   if (theme === 'dark') {
@@ -115,11 +122,12 @@ function renderLatchCircuit() {
   setHigh('latch-w-clk-n2',    clock);
   setHigh('latch-w-notd',      notD);
   // sBar=1 means gate output is high (NAND output)
-  setHigh('latch-w-sbar',      !sBar);  // high when driving SR
-  setHigh('latch-w-rbar',      !rBar);
+  setHigh('latch-w-sbar',      sBar);  // high when driving SR
+  setHigh('latch-w-rbar',      rBar);
   setHigh('latch-w-q',         q);
   setHigh('latch-w-qfb',       q);
   setHigh('latch-w-qbarfb',    q ^ 1);
+  setHigh('latch-w-qbar',     q ^ 1);
 }
 
 function renderDffCircuit() {
@@ -446,6 +454,19 @@ function init() {
   const savedTheme = getCookie(THEME_COOKIE) || 'light';
   applyTheme(savedTheme);
 
+  // Circuit size
+  const sizeSlider = document.getElementById('circuitSizeSlider');
+  const savedSize  = getCookie(SIZE_COOKIE);
+  const size = savedSize !== null ? savedSize : 0;
+  if (sizeSlider) sizeSlider.value = size;
+  if (savedSize !== null) applyCircuitSize(size);
+  if (sizeSlider) {
+    sizeSlider.addEventListener('input', () => {
+      applyCircuitSize(sizeSlider.value);
+      setCookie(SIZE_COOKIE, sizeSlider.value, 365);
+    });
+  }
+
   // Settings dialog
   const settingsBtn  = document.getElementById('settingsBtn');
   const settingsDlg  = document.getElementById('settingsDialog');
@@ -488,15 +509,16 @@ function init() {
   }
 
   // D toggle
-  const dBtn = document.getElementById('d-toggle-btn');
-  if (dBtn) {
+  const dBtns = document.querySelectorAll('.d-toggle-btn');
+
+  dBtns.forEach((dBtn) => {
     dBtn.addEventListener('click', () => {
       window.appState.data ^= 1;
       processLogic(false);
       updateLastHistory();
       render();
     });
-  }
+  });
 
   // J toggle
   const jBtn = document.getElementById('j-toggle-btn');
