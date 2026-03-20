@@ -14,7 +14,7 @@
 - [x] Task: Create CSS classes for active (glow + neon color) and inactive (dim) wires.
 - [x] Task: Conductor - User Manual Verification 'Theming & Visual Styling' (Protocol in workflow.md)
 
-## Phase 3: Logic Implementation & Interaction
+## Phase 3: Logic Implementation & Interaction [checkpoint: c77ee9b]
 - [x] Task: Write unit tests for Clock logic (auto mode timer at 1 Hz, manual increment).
 - [x] Task: Implement Clock logic and state management.
 - [x] Task: Write unit tests for the Latch logic and data toggle interactions. (Skipped per user request)
@@ -24,16 +24,20 @@
 - [x] Task: Connect global UI toggles to update internal logic states and device output states (Q).
 - [x] Task: Conductor - User Manual Verification 'Logic Implementation & Interaction' (Protocol in workflow.md)
 
-## Phase 4: Circuit Visualization (Modal Overlays)
+## Phase 4: Circuit Visualization (Modal Overlays) [checkpoint: b81384e]
 - [x] Task: Write unit tests for modal overlay opening/closing logic. (Skipped per user request)
 - [x] Task: Implement modal overlay structure in HTML/CSS.
 - [x] Task: Create SVG or DOM-based representations of internal logic gates and wires for each device.
 - [x] Task: Implement logic to dynamically apply active/inactive CSS classes to wires in the modal based on current device state.
 - [x] Task: Conductor - User Manual Verification 'Circuit Visualization (Modal Overlays)' (Protocol in workflow.md)
 
-## Phase 5: Timing Diagram
-- [~] Task: Set up HTML5 Canvas element below the circuitry for the timing diagram.
-- [ ] Task: Implement the data structure to track history of Clock, Data, and device Q outputs.
-- [ ] Task: Write the rendering loop to draw the scrolling time window based on the history data.
-- [ ] Task: Add UI controls allowing the user to select which device Q outputs to include in the diagram.
-- [ ] Task: Conductor - User Manual Verification 'Timing Diagram' (Protocol in workflow.md)
+## Phase 5: Full Visual Redesign (DecoderGames Aesthetic)
+- [x] Task: Rewrite index.html — sticky header, toolbar, bus layer, 4 inline circuit cards, timing section, settings dialog.
+- [x] Task: Rewrite styles.css — DecoderGames CSS variables, signal wire classes (sig-clk/d/j/k/q/internal), circuit cards, bus layer, timing section.
+- [x] Task: Rewrite app.js — processLogic (unchanged), per-device circuit wire render, SVG timing diagram (8 signal rows, history[] up to 64 samples), theme cookie, settings dialog.
+- [x] Task: Bus layer SVG — CLK (orange) bus to all 4 cards, D (cyan) bus to first 3 cards.
+- [x] Task: Symbol SVGs per card — IEEE-style rectangular blocks with animated wire stubs.
+- [x] Task: Circuit SVGs per card — D Latch (INV+2NAND+SR), D-FF (master-slave), T-FF (XOR+DFF), JK-FF (AND/OR+DFF).
+- [x] Task: Analyze Circuits global toggle — body.analyze-on class switches all 4 cards simultaneously.
+- [x] Task: SVG timing trace — 8 rows (CLK/D/J/K/Q_L/Q_D/Q_T/Q_JK), color-coded, scrolling waveform.
+- [x] Task: Conductor - User Manual Verification 'Full Visual Redesign' (Protocol in workflow.md)

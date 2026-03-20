@@ -61,36 +61,36 @@
           </svg>
 
           <svg class="circuit-svg" viewBox="0 0 290 185" width="100%" aria-label="D Latch circuit">
-            <line id="latch-w-d" class="sig-d signal-path high" x1="13" y1="50" x2="52" y2="50"/>
-            <line id="latch-w-clk" class="sig-clk signal-path" x1="13" y1="135" x2="52" y2="135"/>
-            <polyline id="latch-w-d-branch" class="sig-d signal-path high" points="30,50 30,65 105,65"/>
-            <rect x="40" y="40" width="32" height="20" class="gate-box"/>
-            <text x="58" y="54" class="gate-label" text-anchor="middle">INV</text>
-            <circle cx="75" cy="50" r="3.5" class="gate-bubble"/>
-            <polyline id="latch-w-notd" class="sig-internal signal-path" points="78,50 90,50 90,100 105,100"/>
-            <polyline id="latch-w-clk-n1" class="sig-clk signal-path" points="52,135 80,135 80,76 105,76"/>
-            <polyline id="latch-w-clk-n2" class="sig-clk signal-path" points="80,135 80,115 105,115"/>
-            <rect x="105" y="52" width="40" height="34" class="gate-box"/>
+            <line id="latch-w-d" class="sig-d signal-path" x1="13" y1="65" x2="105" y2="65"></line>
+            <line id="latch-w-clk" class="sig-clk signal-path" x1="13" y1="145" x2="52" y2="145"></line>
+            <polyline id="latch-w-d-branch" class="sig-d signal-path" points="30,65 30,130 38,130"></polyline>
+            <rect x="40" y="120" width="32" height="20" class="gate-box"></rect>
+            <text x="58" y="130" class="gate-label" text-anchor="middle">INV</text>
+            <circle cx="75" cy="130" r="3.5" class="gate-bubble"></circle>
+            <polyline id="latch-w-notd" class="sig-internal signal-path high" points="78,130 90,130 90,130 105,130"></polyline>
+            <polyline id="latch-w-clk-n1" class="sig-clk signal-path" points="52,145 90,145 90,76 105,76"></polyline>
+            <polyline id="latch-w-clk-n2" class="sig-clk signal-path" points="90,145 90,150 105,150"></polyline>
+            <rect x="105" y="55" width="40" height="34" class="gate-box"></rect>
             <text x="125" y="73" class="gate-label" text-anchor="middle">NAND</text>
-            <circle cx="148" cy="69" r="3.5" class="gate-bubble"/>
-            <line id="latch-w-sbar" class="sig-internal signal-path" x1="151" y1="69" x2="185" y2="69"/>
-            <rect x="105" y="100" width="40" height="34" class="gate-box"/>
-            <text x="125" y="121" class="gate-label" text-anchor="middle">NAND</text>
-            <circle cx="148" cy="117" r="3.5" class="gate-bubble"/>
-            <line id="latch-w-rbar" class="sig-internal signal-path" x1="151" y1="117" x2="185" y2="117"/>
-            <rect x="185" y="55" width="40" height="34" class="gate-box"/>
-            <text x="205" y="76" class="gate-label" text-anchor="middle">NAND</text>
-            <circle cx="228" cy="72" r="3.5" class="gate-bubble"/>
-            <rect x="185" y="100" width="40" height="34" class="gate-box"/>
-            <text x="205" y="121" class="gate-label" text-anchor="middle">NAND</text>
-            <circle cx="228" cy="117" r="3.5" class="gate-bubble"/>
-            <line id="latch-w-q" class="sig-q signal-path" x1="231" y1="72" x2="270" y2="72"/>
-            <polyline id="latch-w-qfb" class="sig-q signal-path" points="258,72 258,150 178,150 178,110 185,110"/>
-            <polyline id="latch-w-qbarfb" class="sig-internal signal-path high" points="228,117 244,117 244,165 165,165 165,79 185,79"/>
-            <text x="0" y="50" class="pin-text-sm">D</text>
-            <text x="1" y="135" class="pin-text-sm">C</text>
+            <circle cx="148" cy="69" r="3.5" class="gate-bubble"></circle>
+            <line id="latch-w-sbar" class="sig-internal signal-path" x1="151" y1="69" x2="185" y2="69"></line>
+            <rect x="105" y="123" width="40" height="34" class="gate-box"></rect>
+            <text x="125" y="141" class="gate-label" text-anchor="middle">NAND</text>
+            <circle cx="148" cy="140" r="3.5" class="gate-bubble"></circle>
+            <line id="latch-w-rbar" class="sig-internal signal-path" x1="151" y1="140" x2="185" y2="140"></line>
+            <rect x="185" y="55" width="40" height="34" class="gate-box"></rect>
+            <text x="205" y="73" class="gate-label" text-anchor="middle">NAND</text>
+            <circle cx="228" cy="72" r="3.5" class="gate-bubble"></circle>
+            <rect x="185" y="123" width="40" height="34" class="gate-box"></rect>
+            <text x="205" y="141" class="gate-label" text-anchor="middle">NAND</text>
+            <circle cx="228" cy="140" r="3.5" class="gate-bubble"></circle>
+            <line id="latch-w-q" class="sig-q signal-path" x1="231" y1="72" x2="270" y2="72"></line>
+            <line id="latch-w-qbar" class="sig-q signal-path" x1="231" y1="140" x2="270" y2="140"></line><polyline id="latch-w-qfb" class="sig-q signal-path" points="258,72 258,90 165,115 165,130 185,130"></polyline>
+            <polyline id="latch-w-qbarfb" class="sig-q signal-path high" points="250,140 250,122 165,90 165,79 185,79"></polyline>
+            <text x="0" y="65" class="pin-text-sm">D</text>
+            <text x="1" y="145" class="pin-text-sm">C</text>
             <text x="273" y="72" class="pin-text-sm">Q</text>
-          </svg>
+          <text x="273" y="140" class="pin-text-sm">Q'</text></svg>
 
           <div class="q-output">
             <div id="latch-led" class="led"></div>
@@ -248,50 +248,51 @@
 
           <svg class="circuit-svg" viewBox="0 0 290 220" width="100%" aria-label="JK Flip-Flop circuit">
             <!-- J AND gate (top) -->
-            <rect x="75"  y="30"  width="45" height="30" class="gate-box"/>
-            <text x="97"  y="49"  class="gate-label" text-anchor="middle">AND</text>
+            <rect x="75" y="30" width="45" height="30" class="gate-box"></rect>
+            <text x="97" y="49" class="gate-label" text-anchor="middle">AND</text>
             <!-- K inverter -->
-            <rect x="22"  y="118" width="30" height="18" class="gate-box"/>
-            <text x="37"  y="130" class="gate-label" text-anchor="middle">INV</text>
-            <circle cx="55" cy="127" r="3.5" class="gate-bubble"/>
+            <rect x="22" y="118" width="30" height="18" class="gate-box"></rect>
+            <text x="37" y="130" class="gate-label" text-anchor="middle">INV</text>
+            <circle cx="55" cy="127" r="3.5" class="gate-bubble"></circle>
             <!-- K AND gate (bottom) -->
-            <rect x="75"  y="118" width="45" height="30" class="gate-box"/>
-            <text x="97"  y="137" class="gate-label" text-anchor="middle">AND</text>
+            <rect x="75" y="118" width="45" height="30" class="gate-box"></rect>
+            <text x="97" y="137" class="gate-label" text-anchor="middle">AND</text>
             <!-- OR gate -->
-            <rect x="152" y="58"  width="38" height="62" class="gate-box"/>
-            <text x="171" y="93"  class="gate-label" text-anchor="middle">OR</text>
+            <rect x="152" y="58" width="38" height="62" class="gate-box"></rect>
+            <text x="171" y="93" class="gate-label" text-anchor="middle">OR</text>
             <!-- D-FF block -->
-            <rect x="208" y="52"  width="58" height="76" class="gate-box"/>
-            <text x="237" y="87"  class="gate-label" text-anchor="middle">D-FF</text>
+            <rect x="208" y="52" width="58" height="76" class="gate-box"></rect>
+            <text x="237" y="87" class="gate-label" text-anchor="middle">D-FF</text>
             <!-- CLK triangle aligned with CLK entry at y=115 -->
-            <polyline points="208,108 219,115 208,122" class="clk-triangle"/>
+            <polyline points="208,108 219,115 208,122" class="clk-triangle"></polyline>
             <!-- J input wire -->
-            <line id="jkff-w-j"     class="sig-j       signal-path" x1="13"  y1="42"  x2="75"  y2="42"/>
+            <line id="jkff-w-j" class="sig-j signal-path" x1="13" y1="53" x2="74" y2="53"></line>
             <!-- K input wire -->
-            <line id="jkff-w-k"     class="sig-k       signal-path" x1="13"  y1="127" x2="22"  y2="127"/>
+            <line id="jkff-w-k" class="sig-k signal-path" x1="13" y1="127" x2="22" y2="127"></line>
             <!-- NOT-K wire (after INV bubble) -->
-            <line id="jkff-w-kinv"  class="sig-internal signal-path" x1="58"  y1="127" x2="75"  y2="127"/>
+            <line id="jkff-w-kinv" class="sig-internal signal-path high" x1="58" y1="127" x2="75" y2="127"></line>
             <!-- CLK wire: stops at turn point x=193, no overlap with turn-up segment -->
-            <line id="jkff-w-clk"   class="sig-clk     signal-path" x1="13"  y1="185" x2="193" y2="185"/>
+            <line id="jkff-w-clk" class="sig-clk signal-path" x1="13" y1="185" x2="193" y2="185"></line>
             <!-- CLK turn-up: clean route from x=193 up to D-FF CLK input at y=115 -->
-            <polyline id="jkff-w-clk2" class="sig-clk   signal-path" points="193,185 193,115 208,115"/>
+            <polyline id="jkff-w-clk2" class="sig-clk signal-path" points="193,185 193,115 208,115"></polyline>
             <!-- J-AND output → OR top input -->
-            <polyline id="jkff-w-jand" class="sig-internal signal-path" points="120,45 140,45 140,75 152,75"/>
+            <polyline id="jkff-w-jand" class="sig-internal signal-path" points="120,45 140,45 140,75 152,75"></polyline>
             <!-- K-AND output → OR bottom input -->
-            <polyline id="jkff-w-kand" class="sig-internal signal-path" points="120,133 140,133 140,105 152,105"/>
+            <polyline id="jkff-w-kand" class="sig-internal signal-path high" points="120,133 140,133 140,105 152,105"></polyline>
             <!-- OR → D-FF input -->
-            <line id="jkff-w-or"    class="sig-internal signal-path" x1="190" y1="89"  x2="208" y2="89"/>
-            <!-- Q output stub -->
-            <line id="jkff-w-q"     class="sig-q        signal-path" x1="266" y1="80"  x2="277" y2="80"/>
-            <!-- Q feedback → J-AND bottom input: routed at x=59, right of K-INV body (x=22-52) -->
-            <polyline id="jkff-w-qfb"    class="sig-q       signal-path" points="272,80 272,197 59,197 59,48 75,48"/>
-            <!-- Qbar feedback → K-AND bottom input: stops at y=139, below K-INV box (y=118-136) -->
-            <polyline id="jkff-w-qbarfb" class="sig-internal signal-path" points="272,80 280,80 280,207 42,207 42,139 75,139"/>
-            <text x="0"   y="42"  class="pin-text-sm" style="fill:var(--vw-green)">J</text>
-            <text x="0"   y="127" class="pin-text-sm" style="fill:var(--vw-fuchsia)">K</text>
-            <text x="0"   y="185" class="pin-text-sm">C</text>
-            <text x="279" y="80"  class="pin-text-sm">Q</text>
-          </svg>
+            <line id="jkff-w-or" class="sig-internal signal-path high" x1="190" y1="89" x2="208" y2="89"></line>
+            
+            
+            <!-- Qat feedback → J-AND bottom input: routed at x=59, right of K-INV body (x=22-52) -->
+            <polyline id="jkff-w-qbarfb" class="sig-q signal-path" points="267,95 272,95 272,20 59,20 59,40 75,40"></polyline>
+            <!-- Q feedback → K-AND bottom input: stops at y=139, below K-INV box (y=118-136) -->
+            <polyline id="jkff-w-qfb" class="sig-q signal-path high" points="267,80 280,80 280,207 42,207 42,139 75,139"></polyline>
+            <text x="0" y="53" class="pin-text-sm" style="fill:var(--vw-green)">J</text>
+            <text x="0" y="127" class="pin-text-sm" style="fill:var(--vw-fuchsia)">K</text>
+            <text x="0" y="185" class="pin-text-sm">C</text>
+            <text x="253" y="80" class="pin-text-sm">Q</text>
+          <text x="253" y="95" class="pin-text-sm">Q'</text>
+		  </svg>
 
           <div class="q-output">
             <div id="jkff-led" class="led"></div>
@@ -304,24 +305,7 @@
 
       </div><!-- /.circuits-row -->
 
-      <!-- ② Bus layer (below cards) -->
-      <div class="bus-layer">
-        <svg id="busSVG" width="100%" height="44" preserveAspectRatio="none">
-          <line id="bus-clk"    class="sig-clk bus-h" x1="4%"  y1="12" x2="87.5%" y2="12"/>
-          <line id="bus-clk-d0" class="sig-clk bus-v" x1="12.5%" y1="12" x2="12.5%" y2="0"/>
-          <line id="bus-clk-d1" class="sig-clk bus-v" x1="37.5%" y1="12" x2="37.5%" y2="0"/>
-          <line id="bus-clk-d2" class="sig-clk bus-v" x1="62.5%" y1="12" x2="62.5%" y2="0"/>
-          <line id="bus-clk-d3" class="sig-clk bus-v" x1="87.5%" y1="12" x2="87.5%" y2="0"/>
-          <line id="bus-d"      class="sig-d   bus-h" x1="2%"  y1="30" x2="60.5%" y2="30"/>
-          <line id="bus-d-d0"   class="sig-d   bus-v" x1="10.5%" y1="30" x2="10.5%" y2="0"/>
-          <line id="bus-d-d1"   class="sig-d   bus-v" x1="35.5%" y1="30" x2="35.5%" y2="0"/>
-          <line id="bus-d-d2"   class="sig-d   bus-v" x1="60.5%" y1="30" x2="60.5%" y2="0"/>
-          <text x="2%" y="10" class="bus-label" style="fill:var(--vw-orange)">CLK</text>
-          <text x="2%" y="28" class="bus-label" style="fill:var(--vw-blue)">D</text>
-        </svg>
-      </div>
-
-      <!-- ③ Toolbar (below bus, above timing) -->
+      <!-- ③ Toolbar -->
       <div class="toolbar">
         <div class="controls-left">
           <button id="clock-mode-btn" class="mode-btn active">Manual</button>
@@ -349,6 +333,10 @@
           <input type="checkbox" id="darkModeToggle">
           <span class="slider round"></span>
         </label>
+      </div>
+      <div class="form-row">
+        <span>Circuit Size</span>
+        <input type="range" id="circuitSizeSlider" min="0" max="600" style="flex:1">
       </div>
       <div class="dialog-actions">
         <button id="closeSettings" class="primary">Close</button>
