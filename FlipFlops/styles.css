@@ -15,6 +15,7 @@
   --vw-blue: #00FFFF;
   --vw-purple: #8A2BE2;
   --vw-green: #39FF14;
+  --vw-red: #FF2D55;
 }
 
 body {
@@ -157,6 +158,16 @@ body.dark {
   color: white;
   border-color: var(--primary);
 }
+.toggle-btn.set-btn.active {
+  background-color: var(--vw-green);
+  color: #000;
+  border-color: var(--vw-green);
+}
+.toggle-btn.reset-btn.active {
+  background-color: var(--vw-red);
+  color: #fff;
+  border-color: var(--vw-red);
+}
 
 .clk-pulse-btn {
   width: auto;
@@ -268,6 +279,14 @@ button.primary.active {
 /* K — fuchsia */
 .sig-k                { stroke: rgba(255, 0, 255, 0.28); }
 .sig-k.high           { stroke: var(--vw-fuchsia); filter: drop-shadow(0 0 4px var(--vw-fuchsia)); }
+
+/* S (Set) — green */
+.sig-s                { stroke: rgba(57, 255, 20, 0.28); }
+.sig-s.high           { stroke: var(--vw-green); filter: drop-shadow(0 0 4px var(--vw-green)); }
+
+/* R (Reset) — red */
+.sig-r                { stroke: rgba(255, 45, 85, 0.28); }
+.sig-r.high           { stroke: var(--vw-red); filter: drop-shadow(0 0 4px var(--vw-red)); }
 
 /* Q — purple */
 .sig-q                { stroke: rgba(138, 43, 226, 0.28); }
@@ -402,6 +421,25 @@ body.analyze-on .symbol-svg   { display: none; }
 .sig-d-label { color: var(--vw-blue); }
 .sig-j-label { color: var(--vw-green); }
 .sig-k-label { color: var(--vw-fuchsia); }
+.sig-s-label { color: var(--vw-green); }
+.sig-r-label { color: var(--vw-red); }
+
+/* ── Mode label (D Latch) ─────────────────────────────────────────────── */
+.mode-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.5rem;
+  border-radius: 0.35rem;
+  background-color: var(--bg-muted);
+  color: var(--muted);
+  transition: background-color 0.2s, color 0.2s;
+}
+.mode-label.transparent {
+  background-color: rgba(0, 255, 255, 0.15);
+  color: var(--vw-blue);
+}
 
 /* ── Q Output row ─────────────────────────────────────────────────────── */
 .q-output {

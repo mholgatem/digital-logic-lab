@@ -4,14 +4,13 @@ window.appState = {
   clockMode: 'manual',
   clockInterval: null,
   clockPhase: 3,   // starts at 3 so first tick wraps to 0 → CLK=0 first column
-  data: 0,
   j: 0,
   k: 0,
   analyzeMode: false,
   devices: {
-    latch: { q: 0 },
-    d_ff:  { q: 0 },
-    t_ff:  { q: 0 },
+    latch: { q: 0, d: 0 },
+    d_ff:  { q: 0, d: 0, s: 0, r: 0 },
+    t_ff:  { q: 0, t: 0, s: 0, r: 0 },
     jk_ff: { q: 0 }
   },
   history: []
@@ -64,17 +63,29 @@ function processLogic(isRisingEdge) {
 
   // D Latch: transparent when CLK=1
   if (s.clock === 1) {
-    s.devices.latch.q = s.data;
+    s.devices.latch.q = s.devices.latch.d;
   }
 
-  // Flip-flops: edge-triggered
+  // D Flip-Flop: async Set/Reset override; else edge-triggered
+  if (s.devices.d_ff.s === 1) {
+    s.devices.d_ff.q = 1;
+  } else if (s.devices.d_ff.r === 1) {
+    s.devices.d_ff.q = 0;
+  } else if (isRisingEdge) {
+    s.devices.d_ff.q = s.devices.d_ff.d;
+  }
+
+  // T Flip-Flop: async Set/Reset override; else edge-triggered
+  if (s.devices.t_ff.s === 1) {
+    s.devices.t_ff.q = 1;
+  } else if (s.devices.t_ff.r === 1) {
+    s.devices.t_ff.q = 0;
+  } else if (isRisingEdge) {
+    if (s.devices.t_ff.t === 1) s.devices.t_ff.q ^= 1;
+  }
+
+  // JK Flip-Flop: edge-triggered
   if (isRisingEdge) {
-    s.devices.d_ff.q = s.data;
-
-    if (s.data === 1) {
-      s.devices.t_ff.q ^= 1;
-    }
-
     const { j, k } = s;
     if (j === 1 && k === 0) {
       s.devices.jk_ff.q = 1;
@@ -100,17 +111,15 @@ function setHighAll(ids, active) {
 
 // ── Bus render ─────────────────────────────────────────────────────────
 function renderBus() {
-  const { clock, data } = window.appState;
+  const { clock } = window.appState;
   const clkIds = ['bus-clk', 'bus-clk-d0', 'bus-clk-d1', 'bus-clk-d2', 'bus-clk-d3'];
-  const dIds   = ['bus-d',   'bus-d-d0',   'bus-d-d1',   'bus-d-d2'];
   setHighAll(clkIds, clock);
-  setHighAll(dIds, data);
 }
 
 // ── Per-device circuit wire render ─────────────────────────────────────
 function renderLatchCircuit() {
-  const { clock, data } = window.appState;
-  const q   = window.appState.devices.latch.q;
+  const { clock } = window.appState;
+  const { d: data, q } = window.appState.devices.latch;
   const notD = data ^ 1;
   const sBar = !(data & clock) ? 1 : 0;  // active low when D&CLK
   const rBar = !(notD & clock) ? 1 : 0;
@@ -131,8 +140,8 @@ function renderLatchCircuit() {
 }
 
 function renderDffCircuit() {
-  const { clock, data } = window.appState;
-  const q = window.appState.devices.d_ff.q;
+  const { clock } = window.appState;
+  const { d: data, q } = window.appState.devices.d_ff;
   const clkInv = clock ^ 1;
 
   setHigh('dff-w-d',       data);
@@ -145,8 +154,8 @@ function renderDffCircuit() {
 }
 
 function renderTffCircuit() {
-  const { clock, data } = window.appState;
-  const q    = window.appState.devices.t_ff.q;
+  const { clock } = window.appState;
+  const { t: data, q } = window.appState.devices.t_ff;
   const xorOut = data ^ q;
 
   setHigh('tff-w-t',       data);
@@ -180,23 +189,27 @@ function renderJkffCircuit() {
 
 // ── Symbol wire render (shown when analyze=off) ─────────────────────────
 function renderSymbols() {
-  const { clock, data, j, k } = window.appState;
+  const { clock, j, k } = window.appState;
   const { latch, d_ff, t_ff, jk_ff } = window.appState.devices;
 
   // D Latch
-  setHigh('latch-sym-d',   data);
+  setHigh('latch-sym-d',   latch.d);
   setHigh('latch-sym-clk', clock);
   setHigh('latch-sym-q',   latch.q);
 
   // D-FF
-  setHigh('dff-sym-d',   data);
+  setHigh('dff-sym-d',   d_ff.d);
   setHigh('dff-sym-clk', clock);
   setHigh('dff-sym-q',   d_ff.q);
+  setHigh('dff-sym-s',   d_ff.s);
+  setHigh('dff-sym-r',   d_ff.r);
 
   // T-FF
-  setHigh('tff-sym-d',   data);
+  setHigh('tff-sym-d',   t_ff.t);
   setHigh('tff-sym-clk', clock);
   setHigh('tff-sym-q',   t_ff.q);
+  setHigh('tff-sym-s',   t_ff.s);
+  setHigh('tff-sym-r',   t_ff.r);
 
   // JK-FF
   setHigh('jkff-sym-j',   j);
@@ -207,7 +220,8 @@ function renderSymbols() {
 
 // ── Q output indicators ────────────────────────────────────────────────
 function renderOutputs() {
-  const devs = window.appState.devices;
+  const s = window.appState;
+  const devs = s.devices;
 
   const map = [
     ['latch', devs.latch.q],
@@ -222,6 +236,14 @@ function renderOutputs() {
     if (led) led.classList.toggle('q-on', !!q);
     if (val) val.textContent = q;
   });
+
+  // D Latch mode label
+  const modeLabel = document.getElementById('latch-mode');
+  if (modeLabel) {
+    const transparent = s.clock === 1;
+    modeLabel.textContent = transparent ? 'Transparent Mode' : 'Memory Mode';
+    modeLabel.classList.toggle('transparent', transparent);
+  }
 }
 
 // ── Toolbar / CLK render ───────────────────────────────────────────────
@@ -234,16 +256,22 @@ function renderClockUI() {
 }
 
 function renderInputBtns() {
-  const { data, j, k } = window.appState;
+  const { j, k } = window.appState;
+  const { latch, d_ff, t_ff } = window.appState.devices;
 
-  const dBtns = document.querySelectorAll('.d-toggle-btn');
-  const jBtn = document.getElementById('j-toggle-btn');
-  const kBtn = document.getElementById('k-toggle-btn');
+  const latchDBtn = document.getElementById('latch-d-btn');
+  const dffDBtn   = document.getElementById('dff-d-btn');
+  const tffTBtn   = document.getElementById('tff-t-btn');
+  const jBtn      = document.getElementById('j-toggle-btn');
+  const kBtn      = document.getElementById('k-toggle-btn');
+  const dffSBtn   = document.getElementById('dff-s-btn');
+  const dffRBtn   = document.getElementById('dff-r-btn');
+  const tffSBtn   = document.getElementById('tff-s-btn');
+  const tffRBtn   = document.getElementById('tff-r-btn');
 
-  dBtns.forEach((btn) => {
-    btn.textContent = data;
-    btn.classList.toggle('active', !!data);
-  });
+  if (latchDBtn) { latchDBtn.textContent = latch.d; latchDBtn.classList.toggle('active', !!latch.d); }
+  if (dffDBtn)   { dffDBtn.textContent   = d_ff.d;  dffDBtn.classList.toggle('active',   !!d_ff.d);  }
+  if (tffTBtn)   { tffTBtn.textContent   = t_ff.t;  tffTBtn.classList.toggle('active',   !!t_ff.t);  }
 
   if (jBtn) {
     jBtn.textContent = j;
@@ -254,6 +282,11 @@ function renderInputBtns() {
     kBtn.textContent = k;
     kBtn.classList.toggle('active', !!k);
   }
+
+  if (dffSBtn) { dffSBtn.textContent = d_ff.s; dffSBtn.classList.toggle('active', !!d_ff.s); }
+  if (dffRBtn) { dffRBtn.textContent = d_ff.r; dffRBtn.classList.toggle('active', !!d_ff.r); }
+  if (tffSBtn) { tffSBtn.textContent = t_ff.s; tffSBtn.classList.toggle('active', !!t_ff.s); }
+  if (tffRBtn) { tffRBtn.textContent = t_ff.r; tffRBtn.classList.toggle('active', !!t_ff.r); }
 }
 
 // ── Full render ────────────────────────────────────────────────────────
@@ -321,7 +354,9 @@ function makeSnapshot() {
   const s = window.appState;
   return {
     clk:  s.clock,
-    d:    s.data,
+    d_l:  s.devices.latch.d,
+    d_d:  s.devices.d_ff.d,
+    d_t:  s.devices.t_ff.t,
     j:    s.j,
     k:    s.k,
     q_l:  s.devices.latch.q,
@@ -422,17 +457,17 @@ function renderCardTiming(svgId, rows) {
 function renderTiming() {
   renderCardTiming('timing-latch', [
     { key: 'clk', label: 'C', color: 'var(--vw-orange)' },
-    { key: 'd',   label: 'D', color: 'var(--vw-blue)'   },
+    { key: 'd_l', label: 'D', color: 'var(--vw-blue)'   },
     { key: 'q_l', label: 'Q', color: 'var(--vw-purple)' }
   ]);
   renderCardTiming('timing-dff', [
     { key: 'clk', label: 'C', color: 'var(--vw-orange)' },
-    { key: 'd',   label: 'D', color: 'var(--vw-blue)'   },
+    { key: 'd_d', label: 'D', color: 'var(--vw-blue)'   },
     { key: 'q_d', label: 'Q', color: 'var(--vw-purple)' }
   ]);
   renderCardTiming('timing-tff', [
     { key: 'clk', label: 'C', color: 'var(--vw-orange)' },
-    { key: 'd',   label: 'T', color: 'var(--vw-blue)'   },
+    { key: 'd_t', label: 'T', color: 'var(--vw-blue)'   },
     { key: 'q_t', label: 'Q', color: 'var(--vw-purple)' }
   ]);
   renderCardTiming('timing-jkff', [
@@ -508,17 +543,38 @@ function init() {
     });
   }
 
-  // D toggle
-  const dBtns = document.querySelectorAll('.d-toggle-btn');
-
-  dBtns.forEach((dBtn) => {
-    dBtn.addEventListener('click', () => {
-      window.appState.data ^= 1;
+  // D Latch input toggle
+  const latchDBtn = document.getElementById('latch-d-btn');
+  if (latchDBtn) {
+    latchDBtn.addEventListener('click', () => {
+      window.appState.devices.latch.d ^= 1;
       processLogic(false);
       updateLastHistory();
       render();
     });
-  });
+  }
+
+  // D Flip-Flop input toggle
+  const dffDBtn = document.getElementById('dff-d-btn');
+  if (dffDBtn) {
+    dffDBtn.addEventListener('click', () => {
+      window.appState.devices.d_ff.d ^= 1;
+      processLogic(false);
+      updateLastHistory();
+      render();
+    });
+  }
+
+  // T Flip-Flop input toggle
+  const tffTBtn = document.getElementById('tff-t-btn');
+  if (tffTBtn) {
+    tffTBtn.addEventListener('click', () => {
+      window.appState.devices.t_ff.t ^= 1;
+      processLogic(false);
+      updateLastHistory();
+      render();
+    });
+  }
 
   // J toggle
   const jBtn = document.getElementById('j-toggle-btn');
@@ -535,6 +591,46 @@ function init() {
   if (kBtn) {
     kBtn.addEventListener('click', () => {
       window.appState.k ^= 1;
+      updateLastHistory();
+      render();
+    });
+  }
+
+  // D-FF Set/Reset
+  const dffSBtn = document.getElementById('dff-s-btn');
+  if (dffSBtn) {
+    dffSBtn.addEventListener('click', () => {
+      window.appState.devices.d_ff.s ^= 1;
+      processLogic(false);
+      updateLastHistory();
+      render();
+    });
+  }
+  const dffRBtn = document.getElementById('dff-r-btn');
+  if (dffRBtn) {
+    dffRBtn.addEventListener('click', () => {
+      window.appState.devices.d_ff.r ^= 1;
+      processLogic(false);
+      updateLastHistory();
+      render();
+    });
+  }
+
+  // T-FF Set/Reset
+  const tffSBtn = document.getElementById('tff-s-btn');
+  if (tffSBtn) {
+    tffSBtn.addEventListener('click', () => {
+      window.appState.devices.t_ff.s ^= 1;
+      processLogic(false);
+      updateLastHistory();
+      render();
+    });
+  }
+  const tffRBtn = document.getElementById('tff-r-btn');
+  if (tffRBtn) {
+    tffRBtn.addEventListener('click', () => {
+      window.appState.devices.t_ff.r ^= 1;
+      processLogic(false);
       updateLastHistory();
       render();
     });

@@ -42,13 +42,15 @@
         <!-- ── D Latch ── -->
         <div class="circuit-card" id="card-latch">
           <div class="card-title">Transparent High - D Latch</div>
-		  
+
 		  <div class="jk-inputs">
             <div class="jk-row">
               <span class="jk-label sig-d-label">D</span>
-              <button id="d-toggle-btn" class="d-toggle-btn toggle-btn">0</button>
+              <button id="latch-d-btn" class="toggle-btn">0</button>
             </div>
           </div>
+
+          <div id="latch-mode" class="mode-label">Memory Mode</div>
 
           <svg class="symbol-svg" viewBox="0 0 160 130" width="100%" aria-label="D Latch symbol">
             <line id="latch-sym-d"   class="sig-d   signal-path" x1="8"  y1="50" x2="45" y2="50"/>
@@ -105,11 +107,19 @@
         <!-- ── D Flip-Flop ── -->
         <div class="circuit-card" id="card-dff">
           <div class="card-title">Positive Edge - D Flip-Flop</div>
-		  
+
 		  <div class="jk-inputs">
             <div class="jk-row">
               <span class="jk-label sig-d-label">D</span>
-              <button id="d-toggle-btn" class="d-toggle-btn toggle-btn">0</button>
+              <button id="dff-d-btn" class="toggle-btn">0</button>
+            </div>
+            <div class="jk-row">
+              <span class="jk-label sig-s-label">S</span>
+              <button id="dff-s-btn" class="toggle-btn set-btn">0</button>
+            </div>
+            <div class="jk-row">
+              <span class="jk-label sig-r-label">R</span>
+              <button id="dff-r-btn" class="toggle-btn reset-btn">0</button>
             </div>
           </div>
 
@@ -117,11 +127,15 @@
             <line id="dff-sym-d"   class="sig-d   signal-path" x1="8"   y1="50" x2="45"  y2="50"/>
             <line id="dff-sym-clk" class="sig-clk signal-path" x1="8"   y1="88" x2="45"  y2="88"/>
             <line id="dff-sym-q"   class="sig-q   signal-path" x1="115" y1="50" x2="152" y2="50"/>
+            <line id="dff-sym-s"   class="sig-s   signal-path" x1="80"  y1="8"  x2="80"  y2="25"/>
+            <line id="dff-sym-r"   class="sig-r   signal-path" x1="80"  y1="105" x2="80" y2="122"/>
             <rect x="45" y="25" width="70" height="80" class="device-box"/>
             <polyline points="45,81 56,88 45,95" class="clk-triangle"/>
             <text x="53" y="55"  class="pin-text">D</text>
             <text x="105" y="55" class="pin-text pin-right">Q</text>
             <text x="80"  y="73" class="device-label" text-anchor="middle">D FF</text>
+            <text x="76"  y="34" class="pin-text" font-size="9">S</text>
+            <text x="76"  y="99" class="pin-text" font-size="9">R</text>
           </svg>
 
           <svg class="circuit-svg" viewBox="0 0 290 185" width="100%" aria-label="D Flip-Flop circuit">
@@ -167,11 +181,19 @@
         <!-- ── T Flip-Flop ── -->
         <div class="circuit-card" id="card-tff">
           <div class="card-title">Positive Edge - T Flip-Flop</div>
-		  
+
 		  <div class="jk-inputs">
             <div class="jk-row">
               <span class="jk-label sig-d-label">T</span>
-              <button id="d-toggle-btn" class="d-toggle-btn toggle-btn">0</button>
+              <button id="tff-t-btn" class="toggle-btn">0</button>
+            </div>
+            <div class="jk-row">
+              <span class="jk-label sig-s-label">S</span>
+              <button id="tff-s-btn" class="toggle-btn set-btn">0</button>
+            </div>
+            <div class="jk-row">
+              <span class="jk-label sig-r-label">R</span>
+              <button id="tff-r-btn" class="toggle-btn reset-btn">0</button>
             </div>
           </div>
 
@@ -179,11 +201,15 @@
             <line id="tff-sym-d"   class="sig-d   signal-path" x1="8"   y1="50" x2="45"  y2="50"/>
             <line id="tff-sym-clk" class="sig-clk signal-path" x1="8"   y1="88" x2="45"  y2="88"/>
             <line id="tff-sym-q"   class="sig-q   signal-path" x1="115" y1="50" x2="152" y2="50"/>
+            <line id="tff-sym-s"   class="sig-s   signal-path" x1="80"  y1="8"  x2="80"  y2="25"/>
+            <line id="tff-sym-r"   class="sig-r   signal-path" x1="80"  y1="105" x2="80" y2="122"/>
             <rect x="45" y="25" width="70" height="80" class="device-box"/>
             <polyline points="45,81 56,88 45,95" class="clk-triangle"/>
             <text x="53" y="55"  class="pin-text">T</text>
             <text x="105" y="55" class="pin-text pin-right">Q</text>
             <text x="80"  y="73" class="device-label" text-anchor="middle">T FF</text>
+            <text x="76"  y="34" class="pin-text" font-size="9">S</text>
+            <text x="76"  y="99" class="pin-text" font-size="9">R</text>
           </svg>
 
           <svg class="circuit-svg" viewBox="0 0 290 185" width="100%" aria-label="T Flip-Flop circuit">
