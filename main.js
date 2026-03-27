@@ -36,7 +36,8 @@ function applyTheme(theme) {
 }
 
 function initTheme() {
-  const savedTheme = getCookie(THEME_COOKIE) || 'light';
+  const savedTheme = getCookie(THEME_COOKIE) || 'dark';
+  if (!getCookie(THEME_COOKIE)) setCookie(THEME_COOKIE, 'dark', 365);
   applyTheme(savedTheme);
 }
 
