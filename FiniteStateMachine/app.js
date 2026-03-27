@@ -6109,7 +6109,8 @@ function getSVGPoint(clientX, clientY) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  const savedTheme = getCookie(THEME_COOKIE) || 'light';
+  const savedTheme = getCookie(THEME_COOKIE) || 'dark';
+  if (!getCookie(THEME_COOKIE)) setCookie(THEME_COOKIE, 'dark', 365);
   document.body.classList.toggle('dark', savedTheme === 'dark');
   document.body.classList.toggle('light', savedTheme !== 'dark');
 
