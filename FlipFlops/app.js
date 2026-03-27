@@ -354,6 +354,7 @@ function makeSnapshot() {
   const s = window.appState;
   return {
     clk:  s.clock,
+    w:    s.clockMode === 'manual' ? 2 : 1,
     d_l:  s.devices.latch.d,
     d_d:  s.devices.d_ff.d,
     d_t:  s.devices.t_ff.t,
@@ -387,20 +388,31 @@ const T_LABEL  = 24;
 const T_SAMPLE = 16;
 const T_PAD_V  = 3;
 
-function renderCardTiming(svgId, rows) {
+function renderCardTiming(svgId, rows, edgeType) {
   const svg = document.getElementById(svgId);
   if (!svg) return;
 
-  // Compute how many samples fit in the card width
-  const card     = svg.closest('.circuit-card');
-  const cardW    = card ? card.clientWidth : 200;
-  const drawW    = Math.max(cardW - 2, 80);                    // SVG viewBox width ≈ card width
-  const nVisible = Math.max(4, Math.floor((drawW - T_LABEL) / T_SAMPLE));
+  // Compute how many samples fit in the card width (each sample carries its own width)
+  const card    = svg.closest('.circuit-card');
+  const cardW   = card ? card.clientWidth : 200;
+  const drawW   = Math.max(cardW - 2, 80);                    // SVG viewBox width ≈ card width
 
-  // Auto-scroll: always show the latest nVisible samples
-  const hist  = window.appState.history;
-  const slice = hist.length > nVisible ? hist.slice(hist.length - nVisible) : hist;
+  // Walk backwards through history, accumulating pixel widths, until we fill the diagram
+  const hist    = window.appState.history;
+  const maxDraw = drawW - T_LABEL;
+  let totalW = 0, start = hist.length;
+  while (start > 0) {
+    const w = (hist[start - 1].w || 1) * T_SAMPLE;
+    if (totalW + w > maxDraw) break;
+    totalW += w;
+    start--;
+  }
+  const slice = hist.slice(start);
   const n     = slice.length;
+
+  // Precompute x positions as a cumulative sum so each sample uses its own width
+  const xPos = [T_LABEL];
+  for (let i = 0; i < n; i++) xPos.push(xPos[i] + (slice[i].w || 1) * T_SAMPLE);
 
   const totalH = rows.length * T_ROW_H + T_PAD_V * 2;
 
@@ -415,6 +427,22 @@ function renderCardTiming(svgId, rows) {
   const fgBrd = cs.getPropertyValue('--border').trim()  || '#ccc';
 
   let html = `<rect width="${drawW}" height="${totalH}" fill="${bg}"/>`;
+
+  // Edge marker lines — drawn first so they appear behind all waveforms
+  if (edgeType && n > 1) {
+    const yTop = T_PAD_V + 3;                                          // yHigh of CLK row
+    const yBot = T_PAD_V + (rows.length - 1) * T_ROW_H + T_ROW_H - 3; // yLow of Q row
+    for (let i = 1; i < n; i++) {
+      const prevClk = slice[i - 1].clk;
+      const currClk = slice[i].clk;
+      const rising  = prevClk === 0 && currClk === 1;
+      const falling = prevClk === 1 && currClk === 0;
+      if (rising || (edgeType === 'both' && falling)) {
+        const x = xPos[i];
+        html += `<line x1="${x}" y1="${yTop}" x2="${x}" y2="${yBot}" stroke="rgba(128,128,128,0.4)" stroke-width="1" stroke-dasharray="3,3"/>`;
+      }
+    }
+  }
 
   rows.forEach((row, ri) => {
     const y0    = T_PAD_V + ri * T_ROW_H;
@@ -432,8 +460,8 @@ function renderCardTiming(svgId, rows) {
 
     let d = '';
     for (let i = 0; i < n; i++) {
-      const x  = T_LABEL + i * T_SAMPLE;
-      const xN = T_LABEL + (i + 1) * T_SAMPLE;
+      const x  = xPos[i];
+      const xN = xPos[i + 1];
       const val = slice[i][row.key];
       const y   = val ? yHigh : yLow;
 
@@ -451,6 +479,27 @@ function renderCardTiming(svgId, rows) {
     html += `<path d="${d}" stroke="${row.color}" stroke-width="1.5" fill="none" stroke-linecap="square"/>`;
   });
 
+  // Hover-highlight regions — drawn last so pointer events land on top of waveforms
+  if (edgeType && n > 0) {
+    const bounds = [];
+    let rStart = xPos[0];
+    for (let i = 1; i < n; i++) {
+      const prevClk = slice[i - 1].clk;
+      const currClk = slice[i].clk;
+      const isEdge  = edgeType === 'both'
+        ? prevClk !== currClk
+        : (prevClk === 0 && currClk === 1);
+      if (isEdge) {
+        bounds.push([rStart, xPos[i]]);
+        rStart = xPos[i];
+      }
+    }
+    bounds.push([rStart, xPos[n]]);  // final region to end of last sample
+    bounds.forEach(([x0, x1]) => {
+      if (x1 > x0) html += `<rect class="timing-region" x="${x0}" y="0" width="${x1 - x0}" height="${totalH}"/>`;
+    });
+  }
+
   svg.innerHTML = html;
 }
 
@@ -459,23 +508,35 @@ function renderTiming() {
     { key: 'clk', label: 'C', color: 'var(--vw-orange)' },
     { key: 'd_l', label: 'D', color: 'var(--vw-blue)'   },
     { key: 'q_l', label: 'Q', color: 'var(--vw-purple)' }
-  ]);
+  ], 'both');
   renderCardTiming('timing-dff', [
     { key: 'clk', label: 'C', color: 'var(--vw-orange)' },
     { key: 'd_d', label: 'D', color: 'var(--vw-blue)'   },
     { key: 'q_d', label: 'Q', color: 'var(--vw-purple)' }
-  ]);
+  ], 'rising');
   renderCardTiming('timing-tff', [
     { key: 'clk', label: 'C', color: 'var(--vw-orange)' },
     { key: 'd_t', label: 'T', color: 'var(--vw-blue)'   },
     { key: 'q_t', label: 'Q', color: 'var(--vw-purple)' }
-  ]);
+  ], 'rising');
   renderCardTiming('timing-jkff', [
     { key: 'clk',  label: 'C', color: 'var(--vw-orange)'  },
     { key: 'j',    label: 'J', color: 'var(--vw-green)'   },
     { key: 'k',    label: 'K', color: 'var(--vw-fuchsia)' },
     { key: 'q_jk', label: 'Q', color: 'var(--vw-purple)'  }
-  ]);
+  ], 'rising');
+}
+
+// ── Info bubble ────────────────────────────────────────────────────────
+const INFO_TEXT = {
+  'card-latch': 'When in TRANSPARENT mode, Q output is exactly the same as D input.\n\nWhen in MEMORY mode, Q holds on to its current value.',
+  'card-dff':   'On the rising edge of the clock, Q will take on the last stable value of D.\n\nR and S will immediately set the value of Q to 0 or 1, respectively.',
+  'card-tff':   "On the rising edge of the clock, if T is a stable 1, then the value of Q will toggle (Q becomes Q').",
+  'card-jkff':  "When J&K are both 0, Q holds its current value.\n\nWhen J&K are both 1, Q will toggle (Q becomes Q').\n\nWhen J&K are different from each other (0&1 or 1&0), Q will always equal J."
+};
+
+function escHtml(s) {
+  return s.replace(/&/g, '&amp;');
 }
 
 // ── Initialization ─────────────────────────────────────────────────────
@@ -484,6 +545,10 @@ let isInitialized = false;
 function init() {
   if (isInitialized) return;
   isInitialized = true;
+
+  // Info bubble shared state
+  const infoBubble = document.getElementById('info-bubble');
+  let infoBubbleTimer = null;
 
   // Theme
   const savedTheme = getCookie(THEME_COOKIE) || 'light';
@@ -644,6 +709,33 @@ function init() {
       document.body.classList.toggle('analyze-on', window.appState.analyzeMode);
       analyzeBtn.classList.toggle('active', window.appState.analyzeMode);
       analyzeBtn.textContent = window.appState.analyzeMode ? 'Hide Circuits' : 'Analyze Circuits';
+      clearTimeout(infoBubbleTimer);
+      if (infoBubble) infoBubble.classList.add('hidden');
+    });
+  }
+
+  // Symbol SVG info bubbles (shown after 1.5 s hover)
+  if (infoBubble) {
+    document.querySelectorAll('.symbol-svg').forEach(svg => {
+      const card = svg.closest('.circuit-card');
+      if (!card) return;
+      const text = INFO_TEXT[card.id];
+      if (!text) return;
+
+      svg.addEventListener('mouseenter', () => {
+        infoBubbleTimer = setTimeout(() => {
+          infoBubble.innerHTML = escHtml(text).split('\n').join('<br>');
+          infoBubble.classList.remove('hidden');
+          const r = svg.getBoundingClientRect();
+          infoBubble.style.left = (r.left + r.width / 2) + 'px';
+          infoBubble.style.top  = (r.bottom + 8) + 'px';
+        }, 1500);
+      });
+
+      svg.addEventListener('mouseleave', () => {
+        clearTimeout(infoBubbleTimer);
+        infoBubble.classList.add('hidden');
+      });
     });
   }
 

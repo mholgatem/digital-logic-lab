@@ -456,6 +456,34 @@ body.analyze-on .symbol-svg   { display: none; }
   font-variant-numeric: tabular-nums;
 }
 
+/* ── Info bubble ──────────────────────────────────────────────────────── */
+.info-bubble {
+  position: fixed;
+  z-index: 200;
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 0.65rem 0.875rem;
+  max-width: 280px;
+  font-size: 0.78rem;
+  line-height: 1.55;
+  color: var(--text);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+/* ── Timing diagram hover regions ─────────────────────────────────────── */
+.timing-region {
+  fill: rgba(255, 94, 0, 0);
+  pointer-events: all;
+  cursor: default;
+  transition: fill 0.1s;
+}
+.timing-region:hover {
+  fill: rgba(255, 94, 0, 0.15);
+}
+
 /* ── Per-card timing trace ─────────────────────────────────────────────── */
 .card-timing {
   width: 100%;
