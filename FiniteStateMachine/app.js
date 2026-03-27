@@ -136,7 +136,7 @@ let transitionColumnDragState = null;
 let showKmapCircles = true;
 let showKmapCirclesBeforeResize = false;
 const allowedStateCounts = [1, 2, 4, 8, 16, 32];
-const kmapCirclePalette = ['#2563eb', '#d946ef', '#22c55e', '#f97316', '#14b8a6', '#f59e0b'];
+const kmapCirclePalette = ['#00FFFF', '#FF00FF', '#39FF14', '#FF5E00', '#8A2BE2', '#FF2D55'];
 const kmapCircleFadeDuration = 1500;
 
 function coerceAllowedStateCount(value) {
