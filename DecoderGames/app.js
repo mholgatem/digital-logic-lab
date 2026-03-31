@@ -194,6 +194,7 @@ function renderChallengeMode() {
   leftPanel.innerHTML = `
     <div class="challenge-container">
       <div class="target-function-display">
+	    <h3 style="margin: 0;text-align: center;">Solve:</h3>
         f(A, B, C) = Σm(${challengeState.targetMinterms.join(', ')})
       </div>
       
