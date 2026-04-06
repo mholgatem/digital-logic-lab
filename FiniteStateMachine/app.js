@@ -34,6 +34,7 @@ const state = {
 };
 
 const in_development = true;
+const isHelperMode = new URLSearchParams(window.location.search).get('mode') === 'helper';
 
 let currentArrow = null;
 let selectedArrowId = null;
@@ -114,12 +115,17 @@ const diagramControlsBtn = document.getElementById('diagramControlsBtn');
 const diagramControlsPopup = document.getElementById('diagramControlsPopup');
 const diagramControlsClose = document.getElementById('diagramControlsClose');
 const coachmarkLayer = document.getElementById('coachmarkLayer');
+const stateColorDialog = document.getElementById('stateColorDialog');
+const stateDefHelpBtn = document.getElementById('stateDefHelpBtn');
+const diagramHelpBtn = document.getElementById('diagramHelpBtn');
+const stateColorPickerInput = document.getElementById('stateColorPickerInput');
 
 if (kmapTypeInput) {
   kmapTypeInput.disabled = true;
   kmapTypeInput.title = 'Only SOP mode is available right now';
 }
 
+let colorPickerTargetId = null;
 let kmapWindowState = { width: 840, height: 540, left: null, top: null };
 let stateDefinitionWindowState = { width: null, height: null, left: null, top: null };
 let kmapFormMemory = {
@@ -138,6 +144,21 @@ let showKmapCirclesBeforeResize = false;
 const allowedStateCounts = [1, 2, 4, 8, 16, 32];
 const kmapCirclePalette = ['#00FFFF', '#FF00FF', '#39FF14', '#FF5E00', '#8A2BE2', '#FF2D55'];
 const kmapCircleFadeDuration = 1500;
+
+const STATE_COLOR_PALETTE = [
+  '#00FFFF',
+  '#FF00FF',
+  '#39FF14',
+  '#FF5E00',
+  '#8A2BE2',
+  '#FF2D55',
+  '#FFD700',
+  '#00BFFF',
+];
+
+function stateColorFill(hex) {
+  return hex + '2E';
+}
 
 function coerceAllowedStateCount(value) {
   const num = parseInt(value, 10);
@@ -166,6 +187,11 @@ function closeDialog(id) {
     return;
   }
   document.getElementById(id).classList.add('hidden');
+  if (id === 'arrowDialog' && colorHintPendingArrowClose) {
+    colorHintPendingArrowClose = false;
+    const placedState = state.states.find((s) => s.placed);
+    if (placedState) requestAnimationFrame(() => showColorStateHint(placedState.id));
+  }
 }
 
 function openDialog(id) {
@@ -202,6 +228,7 @@ const onboardingKeys = {
   diagramRepositionArrow: 'fsm_onboarding_diagram_reposition_arrow_v1',
   diagramLabelArrow: 'fsm_onboarding_diagram_label_arrow_v1',
   diagramPanZoom: 'fsm_onboarding_diagram_pan_zoom_v1',
+  diagramColorState: 'fsm_onboarding_diagram_color_state_v1',
   transitionTable: 'fsm_onboarding_transition_table_v1',
   transitionTableInput: 'fsm_onboarding_transition_table_input_v1',
   kmapDialogFunction: 'fsm_onboarding_kmap_dialog_function_v1',
@@ -210,6 +237,68 @@ const onboardingKeys = {
   kmapFirst: 'fsm_onboarding_kmap_first_v1',
   kmapCircles: 'fsm_onboarding_kmap_circles_v1',
 };
+
+const onboardingKeyToSection = {
+  [onboardingKeys.stateDefinition]: 'stateDefinition',
+  [onboardingKeys.stateIoHint]: 'stateDefinition',
+  [onboardingKeys.diagramUnused]: 'diagram',
+  [onboardingKeys.diagramMoveState]: 'diagram',
+  [onboardingKeys.diagramResizeState]: 'diagram',
+  [onboardingKeys.diagramPlaceSecond]: 'diagram',
+  [onboardingKeys.diagramCreateArrow]: 'diagram',
+  [onboardingKeys.diagramRepositionArrow]: 'diagram',
+  [onboardingKeys.diagramLabelArrow]: 'diagram',
+  [onboardingKeys.diagramPanZoom]: 'diagram',
+  [onboardingKeys.diagramColorState]: 'diagram',
+  [onboardingKeys.transitionTable]: 'transitionTable',
+  [onboardingKeys.transitionTableInput]: 'transitionTable',
+  [onboardingKeys.kmapDialogFunction]: 'kmaps',
+  [onboardingKeys.kmapDialogVariables]: 'kmaps',
+  [onboardingKeys.kmapDialogDirection]: 'kmaps',
+  [onboardingKeys.kmapFirst]: 'kmaps',
+  [onboardingKeys.kmapCircles]: 'kmaps',
+};
+
+const hintSectionDisabledKeys = {
+  stateDefinition: 'fsm_hints_skip_stateDefinition',
+  diagram: 'fsm_hints_skip_diagram',
+  transitionTable: 'fsm_hints_skip_transitionTable',
+  kmaps: 'fsm_hints_skip_kmaps',
+};
+
+function isSectionHintsDisabled(section) {
+  try {
+    return localStorage.getItem(hintSectionDisabledKeys[section]) === '1';
+  } catch (err) {
+    return false;
+  }
+}
+
+function skipSectionHints(section) {
+  const disabledKey = hintSectionDisabledKeys[section];
+  if (!disabledKey) return;
+  try {
+    localStorage.setItem(disabledKey, '1');
+  } catch (err) {}
+  Object.entries(onboardingKeyToSection).forEach(([storageKey, sec]) => {
+    if (sec === section) setCoachmarkSeen(storageKey);
+  });
+}
+
+function enableSectionHints(section) {
+  const disabledKey = hintSectionDisabledKeys[section];
+  if (!disabledKey) return;
+  try {
+    localStorage.removeItem(disabledKey);
+  } catch (err) {}
+  Object.entries(onboardingKeyToSection).forEach(([storageKey, sec]) => {
+    if (sec === section) {
+      try {
+        localStorage.removeItem(storageKey);
+      } catch (err) {}
+    }
+  });
+}
 
 const coachmarkQueue = [];
 let coachmarkSequenceActive = false;
@@ -228,8 +317,10 @@ let placeSecondStateHint = null;
 let createArrowHint = null;
 let repositionArrowHint = null;
 let labelArrowHint = null;
+let colorHintPendingArrowClose = false;
 let panZoomHinted = false;
 let panHintClose = null;
+let colorStateHint = null;
 let zoomHintClose = null;
 let kmapDialogFunctionHint = null;
 let kmapDialogVariableHint = null;
@@ -290,7 +381,7 @@ function positionCoachmark(popup, target, placement = 'right') {
   popup.dataset.placement = placement;
 }
 
-function buildCoachmarkElement({ title, text, actionLabel }) {
+function buildCoachmarkElement({ title, text, actionLabel, section }) {
   const popup = document.createElement('div');
   popup.className = 'coachmark';
 
@@ -317,11 +408,20 @@ function buildCoachmarkElement({ title, text, actionLabel }) {
 
   const actions = document.createElement('div');
   actions.className = 'coachmark-actions';
+  actions.classList.toggle('has-skip', !!section);
   const actionBtn = document.createElement('button');
   actionBtn.type = 'button';
   actionBtn.className = 'primary coachmark-action';
   actionBtn.textContent = actionLabel || 'Got it';
   actions.appendChild(actionBtn);
+  if (section) {
+    const skipBtn = document.createElement('button');
+    skipBtn.type = 'button';
+    skipBtn.className = 'ghost coachmark-skip';
+    skipBtn.textContent = 'Skip hints';
+    skipBtn.dataset.section = section;
+    actions.insertBefore(skipBtn, actionBtn);
+  }
   popup.appendChild(actions);
 
   return popup;
@@ -337,15 +437,25 @@ function closeActiveCoachmark(reason) {
   }
 }
 
-function showManualCoachmark(step, { key, onClose } = {}) {
+function dismissSectionCoachmarks(section) {
+  for (let i = coachmarkQueue.length - 1; i >= 0; i--) {
+    if (coachmarkQueue[i].section === section) coachmarkQueue.splice(i, 1);
+  }
+  if (activeCoachmark?.section === section) closeActiveCoachmark('section-close');
+}
+
+function showManualCoachmark(step, { key, section, onClose } = {}) {
   if (!coachmarkLayer) return null;
   if (key && hasSeenCoachmark(key)) return null;
+  const resolvedSection = section || (key ? onboardingKeyToSection[key] : null);
+  if (resolvedSection && isSectionHintsDisabled(resolvedSection)) return null;
   closeActiveCoachmark('replace');
   const actionLabel = step.actionLabel || 'Got it';
   const popup = buildCoachmarkElement({
     title: step.title,
     text: step.text,
     actionLabel,
+    section: resolvedSection,
   });
   coachmarkLayer.appendChild(popup);
   const target = resolveCoachmarkTarget(step.target);
@@ -368,12 +478,19 @@ function showManualCoachmark(step, { key, onClose } = {}) {
   };
   const isNext = isNextAction(actionLabel);
   popup.querySelector('.coachmark-action').addEventListener('click', () => close('action'));
+  const skipBtn = popup.querySelector('.coachmark-skip');
+  if (skipBtn) {
+    skipBtn.addEventListener('click', () => {
+      skipSectionHints(skipBtn.dataset.section);
+      close('skip');
+    });
+  }
   popup.querySelector('.coachmark-close').addEventListener('click', () => close(isNext ? 'action' : 'close'));
-  activeCoachmark = { popup, close };
+  activeCoachmark = { popup, close, section: resolvedSection };
   return close;
 }
 
-function runCoachmarkSequence(steps, onComplete) {
+function runCoachmarkSequence(steps, onComplete, section) {
   if (!coachmarkLayer) {
     if (onComplete) onComplete();
     return;
@@ -409,18 +526,27 @@ function runCoachmarkSequence(steps, onComplete) {
         title: step.title,
         text: step.text,
         actionLabel,
+        section,
       });
       coachmarkLayer.appendChild(popup);
       positionCoachmark(popup, target, step.placement || 'right');
       reposition = () => positionCoachmark(popup, target, step.placement || 'right');
       window.addEventListener('resize', reposition);
       currentPopup = popup;
+      activeCoachmark = { popup: currentPopup, close: closeSequence, section };
       const advanceStep = () => {
         index += 1;
         showStep();
       };
       const isNext = isNextAction(actionLabel);
       popup.querySelector('.coachmark-action').addEventListener('click', advanceStep);
+      const skipBtn = popup.querySelector('.coachmark-skip');
+      if (skipBtn) {
+        skipBtn.addEventListener('click', () => {
+          skipSectionHints(skipBtn.dataset.section);
+          closeSequence();
+        });
+      }
       popup.querySelector('.coachmark-close').addEventListener('click', () => {
         if (isNext) {
           advanceStep();
@@ -436,12 +562,12 @@ function runCoachmarkSequence(steps, onComplete) {
   showStep();
 }
 
-function enqueueCoachmarkSequence(steps, { onComplete } = {}) {
+function enqueueCoachmarkSequence(steps, { onComplete, section } = {}) {
   if (!coachmarkLayer || !steps || !steps.length) {
     if (onComplete) onComplete();
     return;
   }
-  coachmarkQueue.push({ steps, onComplete });
+  coachmarkQueue.push({ steps, onComplete, section });
   if (!coachmarkSequenceActive) {
     const runNext = () => {
       if (!coachmarkQueue.length) {
@@ -453,7 +579,7 @@ function enqueueCoachmarkSequence(steps, { onComplete } = {}) {
       runCoachmarkSequence(next.steps, () => {
         if (next.onComplete) next.onComplete();
         runNext();
-      });
+      }, next.section);
     };
     runNext();
   }
@@ -461,8 +587,11 @@ function enqueueCoachmarkSequence(steps, { onComplete } = {}) {
 
 function showCoachmarkOnce(key, steps) {
   if (hasSeenCoachmark(key)) return;
+  const section = onboardingKeyToSection[key];
+  if (section && isSectionHintsDisabled(section)) return;
   enqueueCoachmarkSequence(steps, {
     onComplete: () => setCoachmarkSeen(key),
+    section,
   });
 }
 
@@ -471,11 +600,14 @@ function showCoachmarkSequenceOnce(key, steps, onComplete) {
     if (onComplete) onComplete();
     return;
   }
+  const section = onboardingKeyToSection[key];
+  if (section && isSectionHintsDisabled(section)) return;
   enqueueCoachmarkSequence(steps, {
     onComplete: () => {
       setCoachmarkSeen(key);
       if (onComplete) onComplete();
     },
+    section,
   });
 }
 
@@ -715,7 +847,7 @@ function showRepositionArrowHint(transitionId) {
   repositionArrowHint = showManualCoachmark(
     {
       title: 'Reposition arrows',
-      text: 'Grab the blue dot to reposition or curve an arrow.',
+      text: 'Grab the handle to reposition or curve an arrow.',
       target: () => diagram.querySelector(`.arc-handle[data-id="${transitionId}"]`),
       placement: 'right',
     },
@@ -723,6 +855,7 @@ function showRepositionArrowHint(transitionId) {
       key: onboardingKeys.diagramRepositionArrow,
       onClose: () => {
         repositionArrowHint = null;
+        showArrowLabelHint(transitionId);
       },
     },
   );
@@ -730,10 +863,13 @@ function showRepositionArrowHint(transitionId) {
 
 function showArrowLabelHint(transitionId) {
   if (labelArrowHint || hasSeenCoachmark(onboardingKeys.diagramLabelArrow)) return;
+  const text = state.type === 'mealy'
+    ? 'Right click the label to edit the input/output values.'
+    : 'Right click the label to edit input values.';
   labelArrowHint = showManualCoachmark(
     {
       title: 'Set arrow values',
-      text: 'Alt + Click (or Right-click) the arrow label to set inputs (and outputs for Mealy).',
+      text,
       target: () => diagram.querySelector(`.label-handle[data-id="${transitionId}"]`),
       placement: 'right',
     },
@@ -741,6 +877,10 @@ function showArrowLabelHint(transitionId) {
       key: onboardingKeys.diagramLabelArrow,
       onClose: () => {
         labelArrowHint = null;
+        if (!colorHintPendingArrowClose) {
+          const placedState = state.states.find((s) => s.placed);
+          if (placedState) showColorStateHint(placedState.id);
+        }
         showDiagramPanZoomHints();
       },
     },
@@ -781,9 +921,28 @@ function showDiagramPanZoomHints(onComplete) {
       actionLabel: 'Next',
     },
     {
+      section: 'diagram',
       onClose: () => {
         panHintClose = null;
         showZoomHint();
+      },
+    },
+  );
+}
+
+function showColorStateHint(stateId) {
+  if (colorStateHint || hasSeenCoachmark(onboardingKeys.diagramColorState)) return;
+  colorStateHint = showManualCoachmark(
+    {
+      title: 'Change state color',
+      text: 'Double-click a state to change its color.',
+      target: () => diagram.querySelector(`g.state-group[data-id="${stateId}"] circle.state-node`),
+      placement: 'right',
+    },
+    {
+      key: onboardingKeys.diagramColorState,
+      onClose: () => {
+        colorStateHint = null;
       },
     },
   );
@@ -803,21 +962,6 @@ function showTransitionTableTour() {
       key: onboardingKeys.transitionTable,
       onClose: () => {
         transitionTrayHint = null;
-        if (!transitionVerifyHint && !transitionVerifyPending) {
-          transitionVerifyHint = showManualCoachmark(
-            {
-              title: 'Verify Transition Table',
-              text: 'This only checks your table against the diagram—it does not validate correctness.',
-              target: () => document.getElementById('verifyTransitionTable'),
-              placement: 'left',
-            },
-            {
-              onClose: () => {
-                transitionVerifyHint = null;
-              },
-            },
-          );
-        }
       },
     },
   );
@@ -954,11 +1098,14 @@ function setDefinitionDialogOpen(open) {
         startStateDefinitionTour();
       }
     });
-  } else if (pendingUnusedStatesHint) {
-    pendingUnusedStatesHint = false;
-    requestAnimationFrame(() => {
-      showDiagramUnusedStatesCoachmark();
-    });
+  } else {
+    dismissSectionCoachmarks('stateDefinition');
+    if (pendingUnusedStatesHint) {
+      pendingUnusedStatesHint = false;
+      requestAnimationFrame(() => {
+        showDiagramUnusedStatesCoachmark();
+      });
+    }
   }
 }
 
@@ -1263,6 +1410,7 @@ function initStates() {
     x: 120 + i * 25,
     y: 120 + i * 20,
     radius: 38,
+    color: STATE_COLOR_PALETTE[i % STATE_COLOR_PALETTE.length],
   }));
   state.transitions = [];
   state.transitionTable = { cells: {} };
@@ -1308,7 +1456,11 @@ function renderPalette() {
     const node = template.content.firstElementChild.cloneNode(true);
     node.dataset.id = st.id;
     const decimalValue = stateBinaryDecimal(st);
-    node.querySelector('.state-circle').textContent = decimalValue ?? st.id;
+    const circleEl = node.querySelector('.state-circle');
+    circleEl.textContent = decimalValue ?? st.id;
+    const stColor = st.color || STATE_COLOR_PALETTE[0];
+    circleEl.style.background = stateColorFill(stColor);
+    circleEl.style.borderColor = stColor;
     node.querySelector('.state-label').textContent = st.label;
     node.querySelector('.state-extra').innerHTML =
       state.type === 'moore'
@@ -1632,6 +1784,9 @@ function drawState(st) {
   const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
   group.classList.add('state-group');
   group.dataset.id = st.id;
+  const stateColor = st.color || STATE_COLOR_PALETTE[0];
+  group.style.setProperty('--state-color', stateColor);
+  group.style.setProperty('--state-color-fill', stateColorFill(stateColor));
 
   const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
   circle.setAttribute('cx', st.x);
@@ -1641,11 +1796,13 @@ function drawState(st) {
   if (selectedStateId === st.id) {
     circle.classList.add('selected');
   }
-  const coverage = evaluateCoverage(st.id);
-  if (coverage.overfull) {
-    circle.classList.add('overfull');
-  } else if (coverage.missing) {
-    circle.classList.add('missing');
+  if (isHelperMode) {
+    const coverage = evaluateCoverage(st.id);
+    if (coverage.overfull) {
+      circle.classList.add('overfull');
+    } else if (coverage.missing) {
+      circle.classList.add('missing');
+    }
   }
 
   const decimalValue = stateBinaryDecimal(st);
@@ -2167,12 +2324,16 @@ function drawTransition(tr) {
   if (!from || !to) return;
   const isSelfLoop = from.id === to.id;
   const pathInfo = isSelfLoop ? selfLoopPath(from, tr) : quadraticPath(from, to, tr.arcOffset || 0);
+  const fromColor = from.color || STATE_COLOR_PALETTE[0];
+
   const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
   path.setAttribute('d', pathInfo.d);
   path.classList.add('arrow-path');
   if (isSelfLoop) path.classList.add('self-loop');
   if (selectedArrowId === tr.id) path.classList.add('selected');
   path.dataset.id = tr.id;
+  path.style.setProperty('--arrow-stroke', fromColor);
+  path.style.color = fromColor;
 
   viewport.appendChild(path);
 
@@ -2184,6 +2345,7 @@ function drawTransition(tr) {
   handle.setAttribute('cx', midPoint.x);
   handle.setAttribute('cy', midPoint.y);
   handle.dataset.id = tr.id;
+  handle.style.fill = fromColor;
 
   const clampedT = Math.min(0.95, Math.max(0.05, tr.labelT || 0.5));
   tr.labelT = clampedT;
@@ -2201,6 +2363,7 @@ function drawTransition(tr) {
   labelRect.setAttribute('y', -16);
   labelRect.setAttribute('width', labelWidth);
   labelRect.setAttribute('height', 24);
+  labelRect.style.stroke = fromColor;
 
   const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
   label.setAttribute('text-anchor', 'middle');
@@ -2232,6 +2395,9 @@ function drawPreview() {
     previewPath.classList.add('arrow-path');
     previewPath.setAttribute('stroke-dasharray', '6 4');
   }
+  const previewColor = from.color || STATE_COLOR_PALETTE[0];
+  previewPath.style.setProperty('--arrow-stroke', previewColor);
+  previewPath.style.color = previewColor;
   previewPath.classList.toggle('self-loop', isSelfPreview);
   previewPath.setAttribute('d', pathInfo.d);
   viewport.appendChild(previewPath);
@@ -2459,9 +2625,10 @@ function loadState(data) {
     transitionTable: decompressedTransitionTable,
   });
   if (Array.isArray(state.states)) {
-    state.states = state.states.map((st) => ({
+    state.states = state.states.map((st, i) => ({
       ...st,
       hasBeenPlaced: st.hasBeenPlaced ?? !!st.placed,
+      color: st.color || STATE_COLOR_PALETTE[i % STATE_COLOR_PALETTE.length],
     }));
   }
   state.numStates = targetNumStates;
@@ -3816,7 +3983,7 @@ function renderKmaps() {
     verifyBtn.textContent = 'Verify';
     verifyBtn.type = 'button';
     verifyBtn.dataset.verifyKmap = kmap.id;
-    verifyBtn.hidden = true;
+    verifyBtn.hidden = !isHelperMode;
     controls.appendChild(verifyBtn);
 
     const removeBtn = document.createElement('button');
@@ -3859,6 +4026,7 @@ function showKmapWorkspace() {
 
 function closeKmapWindow() {
   if (kmapWindow) kmapWindow.classList.add('hidden');
+  dismissSectionCoachmarks('kmaps');
 }
 
 function renderKmapDialogToken(token, index = null) {
@@ -4377,6 +4545,7 @@ function closeTransitionDrawer() {
   document.body.classList.remove('drawer-open');
   palettePane?.classList.remove('collapsed');
   workspace?.classList.remove('palette-collapsed');
+  dismissSectionCoachmarks('transitionTable');
 }
 
 function updateDrawerWidth(width) {
@@ -4734,7 +4903,51 @@ function undoLastDelete() {
       renderDiagram();
       markDirty();
     }
+    return;
   }
+  if (action.type === 'colorChange') {
+    const st = state.states.find((s) => s.id === action.stateId);
+    if (st) {
+      st.color = action.prevColor;
+      renderPalette();
+      renderDiagram();
+      markDirty();
+    }
+  }
+}
+
+function renderColorSwatches(currentColor) {
+  const container = document.getElementById('colorSwatches');
+  if (!container) return;
+  container.innerHTML = '';
+  STATE_COLOR_PALETTE.forEach((color) => {
+    const btn = document.createElement('button');
+    btn.className = 'color-swatch';
+    btn.style.background = color;
+    btn.setAttribute('aria-label', `Select color ${color}`);
+    if (color.toLowerCase() === currentColor.toLowerCase()) {
+      btn.classList.add('selected');
+    }
+    btn.addEventListener('click', () => {
+      stateColorPickerInput.value = color;
+      renderColorSwatches(color);
+    });
+    container.appendChild(btn);
+  });
+}
+
+function openStateColorDialog(stateId) {
+  const st = state.states.find((s) => s.id === stateId);
+  if (!st) return;
+  if (colorStateHint) {
+    colorStateHint('opened');
+    colorStateHint = null;
+  }
+  setCoachmarkSeen(onboardingKeys.diagramColorState);
+  colorPickerTargetId = stateId;
+  stateColorPickerInput.value = st.color || STATE_COLOR_PALETTE[0];
+  renderColorSwatches(stateColorPickerInput.value);
+  openDialog('stateColorDialog');
 }
 
 function attachEvents() {
@@ -5204,6 +5417,70 @@ function attachEvents() {
     markDirty();
   });
 
+  stateTableBody.addEventListener('keydown', (e) => {
+    const target = e.target;
+    if (target.tagName !== 'INPUT') return;
+    const { key } = e;
+    const isTab = key === 'Tab';
+    const isUp = key === 'ArrowUp';
+    const isDown = key === 'ArrowDown';
+    if (!isTab && !isUp && !isDown) return;
+
+    const rows = Array.from(stateTableBody.querySelectorAll('tr'));
+    const currentRow = target.closest('tr');
+    const rowIdx = rows.indexOf(currentRow);
+    if (rowIdx === -1) return;
+
+    const field = target.dataset.field;
+    const visibleInputs = (row) => Array.from(row.querySelectorAll('input')).filter(
+      (inp) => !inp.closest('td')?.classList.contains('hidden')
+    );
+
+    if (isUp || isDown) {
+      const nextRowIdx = isUp ? rowIdx - 1 : rowIdx + 1;
+      if (nextRowIdx < 0 || nextRowIdx >= rows.length) return;
+      const nextInput = rows[nextRowIdx].querySelector(`input[data-field="${field}"]`);
+      if (nextInput) {
+        nextInput.focus();
+        nextInput.select();
+        e.preventDefault();
+      }
+      return;
+    }
+
+    if (isTab) {
+      const inputs = visibleInputs(currentRow);
+      const colIdx = inputs.indexOf(target);
+      if (e.shiftKey) {
+        if (colIdx > 0) {
+          inputs[colIdx - 1].focus();
+          inputs[colIdx - 1].select();
+          e.preventDefault();
+        } else if (rowIdx > 0) {
+          const prevInputs = visibleInputs(rows[rowIdx - 1]);
+          if (prevInputs.length) {
+            prevInputs[prevInputs.length - 1].focus();
+            prevInputs[prevInputs.length - 1].select();
+            e.preventDefault();
+          }
+        }
+      } else {
+        if (colIdx < inputs.length - 1) {
+          inputs[colIdx + 1].focus();
+          inputs[colIdx + 1].select();
+          e.preventDefault();
+        } else if (rowIdx < rows.length - 1) {
+          const nextInputs = visibleInputs(rows[rowIdx + 1]);
+          if (nextInputs.length) {
+            nextInputs[0].focus();
+            nextInputs[0].select();
+            e.preventDefault();
+          }
+        }
+      }
+    }
+  });
+
   stateTableBody.addEventListener('dragstart', (e) => {
     const handle = e.target.closest('.row-drag-handle');
     if (!handle) {
@@ -5366,24 +5643,7 @@ function attachEvents() {
     }
   });
 
-  const showTransitionVerifyCoachmark = () => {
-    if (transitionVerifyPending && !transitionVerifyHint) {
-      transitionVerifyPending = false;
-      transitionVerifyHint = showManualCoachmark(
-        {
-          title: 'Verify Transition Table',
-          text: 'This only checks your table against the diagram—it does not validate correctness.',
-          target: () => document.getElementById('verifyTransitionTable'),
-          placement: 'left',
-        },
-        {
-          onClose: () => {
-            transitionVerifyHint = null;
-          },
-        },
-      );
-    }
-  };
+  const showTransitionVerifyCoachmark = () => {};
 
   transitionDrawer.addEventListener('drop', (e) => {
     const tray = e.target.closest('#transitionColumnDropzone');
@@ -5775,6 +6035,7 @@ function attachEvents() {
       renderDiagram();
       if (e.button === 0 && e.altKey) {
         if (labelArrowHint) {
+          colorHintPendingArrowClose = true;
           labelArrowHint('altclick');
           labelArrowHint = null;
           showDiagramPanZoomHints();
@@ -5850,6 +6111,10 @@ function attachEvents() {
       const id = parseInt(targetState.parentNode.dataset.id, 10);
       const st = state.states.find((s) => s.id === id);
       if (!st) return;
+      if (e.detail >= 2) {
+        openStateColorDialog(id);
+        return;
+      }
       selectedStateId = id;
       selectedArrowId = null;
       renderDiagram();
@@ -5965,6 +6230,7 @@ function attachEvents() {
     if (target) {
       const labelHandle = e.target.closest('.label-handle');
       if (labelHandle && labelArrowHint) {
+        colorHintPendingArrowClose = true;
         labelArrowHint('contextmenu');
         labelArrowHint = null;
         showDiagramPanZoomHints();
@@ -5972,6 +6238,22 @@ function attachEvents() {
       const id = parseInt(target.dataset.id || target.getAttribute('data-id'), 10);
       openArrowDialog(id);
     }
+  });
+
+  document.getElementById('saveStateColor').addEventListener('click', () => {
+    const st = state.states.find((s) => s.id === colorPickerTargetId);
+    if (st) {
+      undoStack.push({ type: 'colorChange', stateId: st.id, prevColor: st.color });
+      st.color = stateColorPickerInput.value;
+      renderPalette();
+      renderDiagram();
+      markDirty();
+    }
+    closeDialog('stateColorDialog');
+  });
+
+  stateColorPickerInput.addEventListener('input', () => {
+    renderColorSwatches(stateColorPickerInput.value);
   });
 
   document.getElementById('saveArrow').addEventListener('click', () => {
@@ -6097,6 +6379,34 @@ function attachEvents() {
       renderDiagram();
     }
   });
+
+  stateDefHelpBtn?.addEventListener('click', () => openDialog('stateDefHelpDialog'));
+  diagramHelpBtn?.addEventListener('click', () => openDialog('diagramHelpDialog'));
+
+  document.getElementById('enableHintsStateDef')?.addEventListener('click', () => {
+    enableSectionHints('stateDefinition');
+    closeDialog('stateDefHelpDialog');
+    requestAnimationFrame(() => {
+      const showedIo = showStateIoHintIfNeeded();
+      if (!showedIo) startStateDefinitionTour();
+    });
+  });
+  document.getElementById('enableHintsDiagram')?.addEventListener('click', () => {
+    enableSectionHints('diagram');
+    panZoomHinted = false;
+    closeDialog('diagramHelpDialog');
+    requestAnimationFrame(() => showDiagramUnusedStatesCoachmark());
+  });
+  document.getElementById('enableHintsTransitionTable')?.addEventListener('click', () => {
+    enableSectionHints('transitionTable');
+    closeDialog('transitionTableHelpDialog');
+    requestAnimationFrame(() => showTransitionTableTour());
+  });
+  document.getElementById('enableHintsKmaps')?.addEventListener('click', () => {
+    enableSectionHints('kmaps');
+    closeDialog('kmapQuickRefDialog');
+    requestAnimationFrame(() => showKmapFirstUseHint());
+  });
 }
 
 function getSVGPoint(clientX, clientY) {
@@ -6113,6 +6423,11 @@ document.addEventListener('DOMContentLoaded', () => {
   if (!getCookie(THEME_COOKIE)) setCookie(THEME_COOKIE, 'dark', 365);
   document.body.classList.toggle('dark', savedTheme === 'dark');
   document.body.classList.toggle('light', savedTheme !== 'dark');
+  document.body.classList.toggle('helper', isHelperMode);
+  if (!isHelperMode) {
+    const verifyTTBtn = document.getElementById('verifyTransitionTable');
+    if (verifyTTBtn) verifyTTBtn.hidden = true;
+  }
 
   populateStateCountSelectors();
   attachEvents();
