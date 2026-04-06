@@ -398,6 +398,22 @@ button#quickRef {
   margin-top: 0;
 }
 
+.palette-header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.25rem;
+}
+
+.palette-header h4 {
+  margin: 0;
+}
+
+.palette-help-btn {
+  font-size: 0.8rem;
+  padding: 0.1rem 0.4rem;
+}
+
 .playmat {
   position: relative;
   background: radial-gradient(circle at 20% 20%, var(--bg-muted), transparent 20%),
@@ -608,6 +624,20 @@ button#quickRef {
   gap: 0.5rem;
 }
 
+.coachmark-actions.has-skip {
+  justify-content: space-between;
+}
+
+.coachmark-skip {
+  font-size: 0.75rem;
+  opacity: 0.75;
+  padding: 0.25rem 0.5rem;
+}
+
+.coachmark-skip:hover {
+  opacity: 1;
+}
+
 .coachmark-actions .ghost,
 .coachmark-actions .primary {
   padding: 0.25rem 0.65rem;
@@ -786,9 +816,9 @@ button:active {
 
 .dialog-actions {
   display: flex;
-  gap: 0.5rem;
-  margin-top: 0;
   flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 10px;
 }
 
 #landing .dialog-actions {
@@ -808,7 +838,7 @@ button:active {
 }
 
 .palette-item {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 0.6rem;
   padding: 0.4rem;
@@ -848,8 +878,8 @@ svg text {
 }
 
 .state-node {
-  fill: var(--surface);
-  stroke: var(--primary);
+  fill: var(--state-color-fill, var(--surface));
+  stroke: var(--state-color, var(--primary));
   stroke-width: 2px;
   cursor: grab;
   filter: drop-shadow(0 4px 6px rgba(0,0,0,0.12));
@@ -860,12 +890,11 @@ body.dark .state-node {
 }
 
 .state-node.selected {
-  stroke: var(--vw-orange);
-  stroke-width: 3px;
+  stroke-width: 6px;
 }
 
 body.dark .state-node.selected {
-  filter: drop-shadow(0 0 14px rgba(255, 94, 0, 0.55));
+  filter: drop-shadow(0 0 14px rgba(255, 255, 255, 0.25));
 }
 
 .state-node.missing {
@@ -888,7 +917,8 @@ body.dark .state-node.selected {
 
 .arrow-path {
   fill: none;
-  stroke: var(--text);
+  stroke: var(--arrow-stroke, var(--text));
+  stroke-opacity: 0.95;
   stroke-width: 2px;
   marker-end: url(#arrowhead);
   cursor: pointer;
@@ -900,13 +930,13 @@ body.dark .state-node.selected {
 }
 
 .arrow-path.selected {
-  stroke: var(--vw-orange);
-  stroke-width: 3.5px;
-  
+  marker-end: url(#arrowhead-selected);
+  stroke-opacity: 1;
+  stroke-width: 6px;
 }
 
 body.dark .arrow-path.selected {
-  filter: drop-shadow(0 0 8px rgba(0, 255, 255, 0.55));
+  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.25));
 }
 
 .arc-handle {
@@ -1550,4 +1580,35 @@ body.dark .arrow-path.selected {
   border-right: 2px solid var(--primary);
   border-bottom: 2px solid var(--primary);
   border-radius: 2px;
+}
+
+.color-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  margin-top: 0.25rem;
+}
+
+.color-swatch {
+  border-radius: 50%;
+  border: 2.5px solid transparent;
+  cursor: pointer;
+  height: 36px;
+  outline-offset: 2px;
+  transition: border-color 0.1s ease, transform 0.1s ease;
+  width: 36px;
+}
+
+.color-swatch.selected {
+  border-color: var(--text);
+  transform: scale(1.18);
+}
+
+.color-swatch:hover {
+  transform: scale(1.1);
+}
+
+.state-color-dialog {
+  min-width: 280px;
 }

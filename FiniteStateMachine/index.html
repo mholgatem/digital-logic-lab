@@ -136,12 +136,15 @@
   </header>
 
   <main class="workspace">
-    <aside class="state-palette">
-      <h4>Unplaced States</h4>
+    <aside class="state-palette" id="statePalette">
+      <div class="palette-header">
+        <h4>Unplaced States</h4>
+        <button class="ghost palette-help-btn" id="diagramHelpBtn" aria-label="Diagram section help">?</button>
+      </div>
       <div id="paletteList"></div>
     </aside>
     <section class="playmat">
-      <div class="version-label">v1.8.0</div>
+      <div class="version-label">v2.0.1</div>
       <div class="diagram-controls">
         <button id="diagramControlsBtn" class="ghost diagram-controls-btn" type="button" aria-label="Show diagram controls">
           ?
@@ -166,6 +169,9 @@
         <defs>
           <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto" markerUnits="strokeWidth">
             <polygon points="0 0, 10 3.5, 0 7" fill="currentColor"></polygon>
+          </marker>
+          <marker id="arrowhead-selected" markerWidth="6.667" markerHeight="4.667" refX="6.667" refY="2.333" orient="auto" markerUnits="strokeWidth">
+            <polygon points="0 0, 6.667 2.333, 0 4.667" fill="currentColor"></polygon>
           </marker>
         </defs>
         <g id="viewport"></g>
@@ -233,7 +239,10 @@
     <div class="dialog state-definition-dialog">
       <div class="dialog-header state-definition-header" id="stateDefinitionHeader">
         <h2>State Definition Table</h2>
-        <button class="ghost" data-close="stateDefinitionDialog" aria-label="Close state definition table">✕</button>
+        <div class="dialog-header-actions">
+          <button class="ghost" id="stateDefHelpBtn" aria-label="State definition table help">?</button>
+          <button class="ghost" data-close="stateDefinitionDialog" aria-label="Close state definition table">✕</button>
+        </div>
       </div>
       <div id="stateDefinitionContent" class="state-definition-body">
         <div class="table-controls">
@@ -293,6 +302,7 @@
         <li class="spaced-bullet"><b>Verify Transition Table Button</b> checks the table against the Transition Diagram only—it does not validate the correctness of your logic.</li>
       </ul>
       <div class="dialog-actions">
+        <button id="enableHintsTransitionTable" class="ghost">Enable hints</button>
         <button data-close="transitionTableHelpDialog">Close</button>
       </div>
     </div>
@@ -367,6 +377,7 @@
           <li><b>Resize</b> the window from the corner handle; circles will refresh afterward.</li>
         </ul>
         <div class="dialog-actions">
+          <button id="enableHintsKmaps" class="ghost">Enable hints</button>
           <button data-close="kmapQuickRefDialog">Close</button>
         </div>
       </div>
@@ -375,7 +386,56 @@
 
   <div id="kmapZipStatus" class="kmap-zip-status hidden">Zipping kmap images...</div>
 
+  <div id="stateDefHelpDialog" class="dialog-backdrop hidden">
+    <div class="dialog">
+      <h2>State Definition Table</h2>
+      <ul>
+        <li>Set the <b>binary code</b>, <b>label</b>, and <b>description</b> for each state.</li>
+        <li>For <b>Moore machines</b>, assign output values per state (comma-separated 0/1/X).</li>
+        <li>Use <b>Tab</b> / <b>Shift+Tab</b> and <b>Arrow keys</b> to navigate between cells.</li>
+        <li>Drag the <b>row handle</b> to reorder states.</li>
+      </ul>
+      <div class="dialog-actions">
+        <button id="enableHintsStateDef" class="ghost">Enable hints</button>
+        <button data-close="stateDefHelpDialog">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="diagramHelpDialog" class="dialog-backdrop hidden">
+    <div class="dialog">
+      <h2>State Transition Diagram</h2>
+      <ul>
+        <li><b>Drag</b> states from the palette onto the canvas to place them.</li>
+        <li><b>Alt + Drag</b> (or <b>Right-click Drag</b>) from a state to draw a transition arrow.</li>
+        <li><b>Drag</b> the dot on an arrow to curve or reposition it.</li>
+        <li><b>Alt + Click</b> (or <b>Right-click</b>) an arrow label to set input/output values.</li>
+        <li><b>Ctrl + Drag</b> a state to resize it. <b>Double-click</b> to change its color.</li>
+        <li><b>Shift + Drag</b> or <b>Middle-click Drag</b> to pan. <b>Scroll</b> to zoom.</li>
+      </ul>
+      <div class="dialog-actions">
+        <button id="enableHintsDiagram" class="ghost">Enable hints</button>
+        <button data-close="diagramHelpDialog">Close</button>
+      </div>
+    </div>
+  </div>
+
   <div id="coachmarkLayer" class="coachmark-layer" aria-live="polite"></div>
+
+  <div id="stateColorDialog" class="dialog-backdrop hidden">
+    <div class="dialog state-color-dialog" role="dialog" aria-modal="true" aria-labelledby="stateColorDialogTitle">
+      <h2 id="stateColorDialogTitle">State Color</h2>
+      <div id="colorSwatches" class="color-swatches"></div>
+      <div class="form-row">
+        <label for="stateColorPickerInput">Custom color</label>
+        <input type="color" id="stateColorPickerInput">
+      </div>
+      <div class="dialog-actions">
+        <button id="saveStateColor" class="primary">Apply</button>
+        <button data-close="stateColorDialog">Cancel</button>
+      </div>
+    </div>
+  </div>
 
   <template id="paletteItemTemplate">
     <div class="palette-item" draggable="true">
