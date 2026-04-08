@@ -430,6 +430,18 @@
         <label for="stateColorPickerInput">Custom color</label>
         <input type="color" id="stateColorPickerInput">
       </div>
+      <div class="form-row">
+        <label for="stateFontSizeInput">Label font size</label>
+        <select id="stateFontSizeInput">
+          <option value="10">10</option>
+          <option value="12">12</option>
+          <option value="14">14</option>
+          <option value="16" selected>16</option>
+          <option value="18">18</option>
+          <option value="20">20</option>
+          <option value="24">24</option>
+        </select>
+      </div>
       <div class="dialog-actions">
         <button id="saveStateColor" class="primary">Apply</button>
         <button data-close="stateColorDialog">Cancel</button>
@@ -446,6 +458,45 @@
       </div>
     </div>
   </template>
+
+  <div id="customConfirmDialog" class="dialog-backdrop hidden">
+    <div class="dialog">
+      <p id="customConfirmMessage"></p>
+      <div class="dialog-actions">
+        <button id="customConfirmYes" class="primary">Yes</button>
+        <button id="customConfirmNo">No</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="downloadOverlay" class="download-overlay hidden">
+    <div class="download-overlay-inner">
+      <svg class="download-anim" viewBox="-5 -5 110 90" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <path id="dl-tri-path" d="M 50,15 L 80,68 L 20,68 Z" />
+        </defs>
+        <polygon points="50,15 80,68 20,68" fill="none" stroke="currentColor" stroke-width="2.5" />
+        <circle cx="50" cy="15" r="6" fill="currentColor">
+          <animate attributeName="r" dur="2s" repeatCount="indefinite" calcMode="linear"
+            keyTimes="0; 0.1; 1" values="10; 6; 6" />
+        </circle>
+        <circle cx="80" cy="68" r="6" fill="currentColor">
+          <animate attributeName="r" dur="2s" repeatCount="indefinite" calcMode="linear"
+            keyTimes="0; 0.332; 0.333; 0.433; 1" values="6; 6; 10; 6; 6" />
+        </circle>
+        <circle cx="20" cy="68" r="6" fill="currentColor">
+          <animate attributeName="r" dur="2s" repeatCount="indefinite" calcMode="linear"
+            keyTimes="0; 0.666; 0.667; 0.767; 1" values="6; 6; 10; 6; 6" />
+        </circle>
+        <circle r="6" fill="currentColor">
+          <animateMotion dur="2s" repeatCount="indefinite">
+            <mpath href="#dl-tri-path" />
+          </animateMotion>
+        </circle>
+      </svg>
+      <div class="download-overlay-label">Rendering image…</div>
+    </div>
+  </div>
 
   <script src="app.js"></script>
 </body>

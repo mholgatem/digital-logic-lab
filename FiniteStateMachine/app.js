@@ -119,6 +119,7 @@ const stateColorDialog = document.getElementById('stateColorDialog');
 const stateDefHelpBtn = document.getElementById('stateDefHelpBtn');
 const diagramHelpBtn = document.getElementById('diagramHelpBtn');
 const stateColorPickerInput = document.getElementById('stateColorPickerInput');
+const stateFontSizeInput = document.getElementById('stateFontSizeInput');
 
 if (kmapTypeInput) {
   kmapTypeInput.disabled = true;
@@ -198,11 +199,18 @@ function openDialog(id) {
   document.getElementById(id).classList.remove('hidden');
 }
 
+function setKmapWindowZIndex(z) {
+  if (kmapWindow) kmapWindow.style.zIndex = z;
+}
+
 function closeAllDropdowns(options = {}) {
   const { keepFile = false } = options;
   saveImageMenu.classList.add('hidden');
   settingsMenu.classList.add('hidden');
   if (!keepFile) fileMenu.classList.add('hidden');
+  if (fileMenu.classList.contains('hidden') && settingsMenu.classList.contains('hidden')) {
+    setKmapWindowZIndex('');
+  }
 }
 
 function columnBaseKey(col) {
@@ -1163,6 +1171,7 @@ function updateVerifyButtonState() {
 function markDirty() {
   unsavedChanges = true;
   setVerificationStatus(null);
+  clearMismatchHighlights();
   updateVerifyButtonState();
 }
 
@@ -1179,12 +1188,36 @@ function promptToSaveIfDirty(next) {
   if (proceed) next();
 }
 
+function showCustomConfirm(message) {
+  return new Promise((resolve) => {
+    const backdrop = document.getElementById('customConfirmDialog');
+    const msg = document.getElementById('customConfirmMessage');
+    const yesBtn = document.getElementById('customConfirmYes');
+    const noBtn = document.getElementById('customConfirmNo');
+    msg.textContent = message;
+    backdrop.classList.remove('hidden');
+    const cleanup = (result) => {
+      backdrop.classList.add('hidden');
+      yesBtn.removeEventListener('click', onYes);
+      noBtn.removeEventListener('click', onNo);
+      backdrop.removeEventListener('mousedown', onBackdrop);
+      resolve(result);
+    };
+    const onYes = () => cleanup(true);
+    const onNo = () => cleanup(false);
+    const onBackdrop = (e) => { if (e.target === backdrop) cleanup(false); };
+    yesBtn.addEventListener('click', onYes);
+    noBtn.addEventListener('click', onNo);
+    backdrop.addEventListener('mousedown', onBackdrop);
+  });
+}
+
 async function promptToSaveBeforeLoad(next) {
   if (!unsavedChanges) {
     await next();
     return;
   }
-  const shouldSave = window.confirm('You have unsaved changes. Save before loading a file?');
+  const shouldSave = await showCustomConfirm('You have unsaved changes. Save before loading a file?');
   if (shouldSave) {
     const saved = await saveStateAs();
     if (!saved) return;
@@ -1777,6 +1810,7 @@ function renderDiagram() {
     drawState(st);
   });
   drawPreview();
+  viewport.querySelectorAll('.label-handle').forEach((el) => viewport.appendChild(el));
   updateVerifyButtonState();
 }
 
@@ -1815,10 +1849,13 @@ function drawState(st) {
   decimalText.classList.add('state-decimal-text');
   decimalText.textContent = decimalValue ?? '';
 
+  const fontSize = st.fontSize || 16;
+
   const textLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
   textLabel.setAttribute('x', st.x);
   textLabel.setAttribute('y', st.y - 6);
   textLabel.setAttribute('text-anchor', 'middle');
+  textLabel.setAttribute('font-size', fontSize);
   textLabel.classList.add('state-label-text');
   textLabel.textContent = st.label || `S${st.id}`;
 
@@ -1826,6 +1863,7 @@ function drawState(st) {
   textId.setAttribute('x', st.x);
   textId.setAttribute('y', st.y + 22);
   textId.setAttribute('text-anchor', 'middle');
+  textId.setAttribute('font-size', fontSize);
   if (state.type === 'moore') {
     textId.innerHTML = buildIOText(state.outputs, st.outputs, state.showBinary ? 'binary' : 'vars');
   }
@@ -2149,8 +2187,59 @@ function missingColumnGroups() {
   return missing;
 }
 
+function clearMismatchHighlights() {
+  document.querySelectorAll('#transitionTable td.cell-mismatch').forEach((td) => {
+    td.classList.remove('cell-mismatch');
+  });
+}
+
+function highlightMismatchedCells(diagramDict, currentStateCols, inputCols, nextStateCols, outputCols) {
+  clearMismatchHighlights();
+  if (!diagramDict) return;
+
+  const rows = state.transitionTable.rows || [];
+  const bitCount = nextStateCols.length;
+
+  rows.forEach((row, rowIdx) => {
+    const actualRaw = readTransitionTableRowValues(row, currentStateCols, inputCols, nextStateCols, outputCols);
+    const stateBits = actualRaw.currentStateBits.map((b) => normalizeBinaryValue(b) || '-').join('');
+    const inputCombos = expandInputCombosForDictionary(actualRaw.inputBits);
+    const tableValue = [...actualRaw.nextStateBits, ...actualRaw.outputs].map((b) => bitToInt(normalizeBinaryValue(b)));
+
+    const mismatchedIndices = new Set();
+    inputCombos.forEach((combo) => {
+      const key = `${stateBits}|${combo || 'none'}`;
+      const expected = diagramDict.get(key);
+      if (!expected || expected.length !== tableValue.length) return;
+      expected.forEach((val, i) => {
+        if ((val === 0 || val === 1) && val !== tableValue[i]) {
+          mismatchedIndices.add(i);
+        }
+      });
+    });
+
+    if (!mismatchedIndices.size) return;
+
+    const tr = transitionTableBody.querySelector(`tr[data-row-index="${rowIdx}"]`);
+    if (!tr) return;
+
+    tr.querySelectorAll('input[data-col-key]').forEach((input) => {
+      const colKey = input.dataset.colKey;
+      const nextIdx = nextStateCols.findIndex((col) => col.key === colKey);
+      const outIdx = outputCols.findIndex((col) => col.key === colKey);
+      if (nextIdx >= 0 && mismatchedIndices.has(nextIdx)) {
+        input.closest('td')?.classList.add('cell-mismatch');
+      }
+      if (outIdx >= 0 && mismatchedIndices.has(bitCount + outIdx)) {
+        input.closest('td')?.classList.add('cell-mismatch');
+      }
+    });
+  });
+}
+
 function verifyTransitionTableAgainstDiagram(options = {}) {
-  const { silent = false, recordStatus = true } = options;
+  const { silent = false, recordStatus = true, highlight = false } = options;
+  if (highlight) clearMismatchHighlights();
   ensureTransitionTableStructure();
   const missingGroups = missingColumnGroups();
   if (missingGroups.length) {
@@ -2211,6 +2300,9 @@ function verifyTransitionTableAgainstDiagram(options = {}) {
       ? 'Transition table is missing transitions that exist in the diagram'
       : undefined;
     setVerificationStatus(false, reason, matchPercent);
+    if (highlight) {
+      highlightMismatchedCells(diagramDict, currentStateCols, inputCols, nextStateCols, outputCols);
+    }
     if (recordStatus) unsavedChanges = true;
   }
 }
@@ -2295,11 +2387,11 @@ function limitArrowPointOnTarget(fromState, targetState, cursorPoint) {
 
 function selfLoopPath(node, tr) {
   const angle = tr.loopAngle !== undefined ? tr.loopAngle : -Math.PI / 2;
-  const sweep = Math.PI / 1.8;
+  const sweep = Math.PI / 4;
   const startAngle = angle - sweep / 2;
   const endAngle = angle + sweep / 2;
-  const loopDepth = Math.min(120, Math.max(30, (tr.arcOffset || 0) + 40));
-  const ctrlRadius = loopDepth + 24;
+  const loopDepth = Math.min(240, Math.max(0, tr.arcOffset || 0));
+  const ctrlRadius = node.radius * 0.7 + loopDepth;
 
   const start = {
     x: node.x + Math.cos(startAngle) * node.radius,
@@ -2560,6 +2652,7 @@ function saveState() {
   ensureTransitionTableStructure();
   const payloadState = JSON.parse(JSON.stringify(state));
   payloadState.transitionTable = compressTransitionTable(state.transitionTable);
+  payloadState.viewState = { ...viewState };
   const payload = stringifyStateWithInlineArrays(payloadState);
   const blob = new Blob([payload], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -2572,6 +2665,7 @@ async function saveStateAs() {
   ensureTransitionTableStructure();
   const payloadState = JSON.parse(JSON.stringify(state));
   payloadState.transitionTable = compressTransitionTable(state.transitionTable);
+  payloadState.viewState = { ...viewState };
   const payload = stringifyStateWithInlineArrays(payloadState);
   const blob = new Blob([payload], { type: 'application/json' });
   const suggestedName = `${sanitizeFilename(state.name || 'fsm')}-save.json`;
@@ -2663,7 +2757,10 @@ function loadState(data) {
   undoStack = [];
   selectedArrowId = null;
   selectedStateId = null;
-  viewState = { scale: 1, panX: 0, panY: 0 };
+  const savedViewState = data.viewState;
+  viewState = savedViewState
+    ? { scale: savedViewState.scale ?? 1, panX: savedViewState.panX ?? 0, panY: savedViewState.panY ?? 0 }
+    : { scale: 1, panX: 0, panY: 0 };
   applyViewTransform();
   updateControls();
   setDefinitionDialogOpen(false);
@@ -2671,7 +2768,7 @@ function loadState(data) {
   renderPalette();
   renderTransitionTable();
   renderDiagram();
-  focusDiagramOnContent({ margin: 100 });
+  if (!savedViewState) focusDiagramOnContent({ margin: 100 });
   renderKmaps();
   enableKmapToggle();
   verifyTransitionTableAgainstDiagram({ silent: true, recordStatus: false });
@@ -3275,6 +3372,135 @@ function buildKmapTruthTable(kmap) {
   }
 
   return { table, variables };
+}
+
+function checkKmapLayout(kmap, btn) {
+  btn.classList.remove('verified', 'failed');
+
+  const ftKey = kmap?.functionToken?.key || '';
+  const isNextState = ftKey.startsWith('next_q_');
+  const isOutput = ftKey.startsWith('out_');
+
+  if (!kmap || (!isNextState && !isOutput)) {
+    btn.classList.add('failed');
+    alert('Check Layout only applies to next-state (Q+) or output K-maps.');
+    return;
+  }
+
+  const bitCount = stateBitCount();
+  const vars = kmap.variables || [];
+
+  // For Moore output K-maps, including any input in the variables list means all inputs are required.
+  // For next-state and Mealy output K-maps, all inputs are always required.
+  const isMooreOutput = isOutput && state.type === 'moore';
+  const hasAnyInput = state.inputs.some((name) => vars.includes(name));
+  const useInputsInLookup = !isMooreOutput || hasAnyInput;
+
+  // Verify all required Q and (conditionally) input variables are present
+  const requiredQVars = [];
+  for (let i = bitCount - 1; i >= 0; i -= 1) {
+    requiredQVars.push(`Q_${i}`);
+  }
+  const requiredInputVars = useInputsInLookup ? state.inputs : [];
+  const missing = [...requiredQVars, ...requiredInputVars].filter((v) => !vars.includes(v));
+  if (missing.length) {
+    btn.classList.add('failed');
+    alert(`K-map is missing required variables: ${missing.join(', ')}`);
+    return;
+  }
+
+  // Build lookup: qBits|inputBits → expected cell value from the transition table.
+  // For Moore output K-maps with no inputs in the kmap, inputBits is omitted from the key.
+  const ttColumns = state.transitionTable.columns || [];
+  const colByBase = new Map();
+  ttColumns.forEach((col) => {
+    if (!colByBase.has(col.baseKey)) colByBase.set(col.baseKey, col);
+  });
+  const cells = state.transitionTable.cells || {};
+  const rows = state.transitionTable.rows || [];
+
+  const readTTVal = (rowKey, baseKey) => {
+    const col = colByBase.get(baseKey);
+    if (!col) return '';
+    return normalizeBinaryValue(cells[`${rowKey}::${col.key}`] || '');
+  };
+
+  const ttLookup = new Map();
+  rows.forEach((row) => {
+    const qBits = [];
+    for (let i = bitCount - 1; i >= 0; i -= 1) {
+      qBits.push(readTTVal(row.key, `q_${i}`));
+    }
+    if (!qBits.every((b) => b === '0' || b === '1')) return;
+
+    let lookupKey;
+    if (useInputsInLookup) {
+      const inputBits = state.inputs.map((_, idx) => readTTVal(row.key, `in_${idx}`));
+      if (state.inputs.length && !inputBits.every((b) => b === '0' || b === '1')) return;
+      lookupKey = `${qBits.join('')}|${inputBits.join('')}`;
+    } else {
+      lookupKey = `${qBits.join('')}|`;
+    }
+
+    if (!ttLookup.has(lookupKey)) {
+      ttLookup.set(lookupKey, readTTVal(row.key, ftKey));
+    }
+  });
+
+  // Build kmap layout and process each cell
+  const layout = buildKmapLayout(kmap);
+  const allVarsInOrder = kmapVariablesForLayout(layout);
+  const cellInputs = document.querySelectorAll(`.kmap-cell-input[data-kmap-id="${kmap.id}"]`);
+
+  cellInputs.forEach((input) => input.closest('td')?.classList.remove('cell-mismatch'));
+
+  let hasMismatch = false;
+
+  cellInputs.forEach((input) => {
+    const rowIndex = parseInt(input.dataset.rowIndex, 10);
+    const colIndex = parseInt(input.dataset.colIndex, 10);
+
+    const sub = layout.submaps.find(
+      (s) =>
+        rowIndex >= s.rowOffset &&
+        rowIndex < s.rowOffset + layout.baseRows &&
+        colIndex >= s.colOffset &&
+        colIndex < s.colOffset + layout.baseCols,
+    );
+    const mapBits = sub ? sub.mapCode : ''.padEnd(layout.mapVars.length, '0');
+    const colCode = layout.colCodes[colIndex - (sub ? sub.colOffset : 0)] || '';
+    const rowCode = layout.rowCodes[rowIndex - (sub ? sub.rowOffset : 0)] || '';
+    const bits = `${mapBits}${colCode}${rowCode}`;
+
+    const assignment = {};
+    allVarsInOrder.forEach((varLabel, idx) => {
+      assignment[varLabel] = bits[idx] || '0';
+    });
+
+    const qBits = [];
+    for (let i = bitCount - 1; i >= 0; i -= 1) {
+      qBits.push(assignment[`Q_${i}`] || '0');
+    }
+
+    let lookupKey;
+    if (useInputsInLookup) {
+      const inputBits = state.inputs.map((name) => assignment[name] || '0');
+      lookupKey = `${qBits.join('')}|${inputBits.join('')}`;
+    } else {
+      lookupKey = `${qBits.join('')}|`;
+    }
+
+    const expectedVal = ttLookup.get(lookupKey) || '';
+    input.placeholder = expectedVal;
+
+    if (input.value && expectedVal && expectedVal !== 'X' && normalizeBinaryValue(input.value) !== expectedVal) {
+      input.closest('td')?.classList.add('cell-mismatch');
+      hasMismatch = true;
+    }
+  });
+
+  btn.classList.toggle('verified', !hasMismatch);
+  btn.classList.toggle('failed', hasMismatch);
 }
 
 function verifyKmapExpression(kmap) {
@@ -3986,6 +4212,13 @@ function renderKmaps() {
     verifyBtn.hidden = !isHelperMode;
     controls.appendChild(verifyBtn);
 
+    const checkLayoutBtn = document.createElement('button');
+    checkLayoutBtn.textContent = 'Check Layout';
+    checkLayoutBtn.type = 'button';
+    checkLayoutBtn.dataset.checkKmapLayout = kmap.id;
+    checkLayoutBtn.hidden = !isHelperMode;
+    controls.appendChild(checkLayoutBtn);
+
     const removeBtn = document.createElement('button');
     removeBtn.textContent = 'Remove K-map';
     removeBtn.dataset.removeKmap = kmap.id;
@@ -4384,6 +4617,14 @@ function createKmapFromDialog() {
   markDirty();
 }
 
+function showDownloadOverlay() {
+  document.getElementById('downloadOverlay')?.classList.remove('hidden');
+}
+
+function hideDownloadOverlay() {
+  document.getElementById('downloadOverlay')?.classList.add('hidden');
+}
+
 function captureImage(element, filename) {
   if (!element) return;
 
@@ -4484,10 +4725,12 @@ function captureDefinitionTableImage() {
   const wasHidden = stateDefinitionDialog.classList.contains('hidden');
   if (wasHidden) stateDefinitionDialog.classList.remove('hidden');
   applyStateDefinitionWindowLayout();
+  showDownloadOverlay();
 
   requestAnimationFrame(() => {
     captureImage(target, `${state.name}-state-definition-table.png`).finally(() => {
       if (wasHidden) stateDefinitionDialog.classList.add('hidden');
+      hideDownloadOverlay();
     });
   });
 }
@@ -4495,6 +4738,8 @@ function captureDefinitionTableImage() {
 async function captureDiagramImage() {
   const playmat = document.querySelector('.playmat');
   if (!playmat) return;
+
+  showDownloadOverlay();
 
   const previousSelectedStateId = selectedStateId;
   const previousSelectedArrowId = selectedArrowId;
@@ -4521,6 +4766,7 @@ async function captureDiagramImage() {
     selectedStateId = previousSelectedStateId;
     selectedArrowId = previousSelectedArrowId;
     renderDiagram();
+    hideDownloadOverlay();
   }
 }
 
@@ -4531,6 +4777,12 @@ function openTransitionDrawer() {
   document.documentElement.style.setProperty('--drawer-width', `${drawerWidth}px`);
   palettePane?.classList.add('collapsed');
   workspace?.classList.add('palette-collapsed');
+  if (toggleTransitionBuilderBtn && transitionColumnBuilder) {
+    const builderCollapsed = localStorage.getItem('fsm_column_builder_collapsed') === '1';
+    transitionColumnBuilder.classList.toggle('collapsed', builderCollapsed);
+    toggleTransitionBuilderBtn.textContent = builderCollapsed ? 'Show builder' : 'Hide builder';
+    toggleTransitionBuilderBtn.setAttribute('aria-expanded', (!builderCollapsed).toString());
+  }
   if (!transitionDrawerOpenedOnce) {
     transitionDrawerOpenedOnce = true;
     enableKmapToggle();
@@ -4567,6 +4819,7 @@ async function captureTransitionDrawerImage() {
   const table = document.getElementById('transitionTable');
   if (!table) return;
 
+  showDownloadOverlay();
   const wasOpen = transitionDrawer.classList.contains('open');
   if (!wasOpen) openTransitionDrawer();
 
@@ -4581,24 +4834,27 @@ async function captureTransitionDrawerImage() {
   wrapper.appendChild(clone);
   document.body.appendChild(wrapper);
 
-  await new Promise(requestAnimationFrame);
+  try {
+    await new Promise(requestAnimationFrame);
 
-  const width = clone.scrollWidth;
-  const height = clone.scrollHeight;
+    const width = clone.scrollWidth;
+    const height = clone.scrollHeight;
 
-  const canvas = await html2canvas(clone, {
-    width,
-    height,
-    scale: window.devicePixelRatio || 1,
-    useCORS: true,
-    backgroundColor: '#fff',
-  });
+    const canvas = await html2canvas(clone, {
+      width,
+      height,
+      scale: window.devicePixelRatio || 1,
+      useCORS: true,
+      backgroundColor: '#fff',
+    });
 
-  const url = canvas.toDataURL('image/png');
-  download(`${state.name}-transition-table.png`, url);
-
-  document.body.removeChild(wrapper);
-  if (!wasOpen) closeTransitionDrawer();
+    const url = canvas.toDataURL('image/png');
+    download(`${state.name}-transition-table.png`, url);
+  } finally {
+    document.body.removeChild(wrapper);
+    if (!wasOpen) closeTransitionDrawer();
+    hideDownloadOverlay();
+  }
 }
 
 function buildKmapExportClone(card, kmap) {
@@ -4683,6 +4939,7 @@ async function captureKmapImagesZip() {
     return;
   }
 
+  showDownloadOverlay();
   const shouldRenderCircles = showKmapCircles;
   const wasWindowHidden = kmapWindow?.classList.contains('hidden');
   const previousVisibility = kmapWindow?.style.visibility;
@@ -4741,6 +4998,7 @@ async function captureKmapImagesZip() {
     download(`${sanitizeFilename(state.name || 'fsm')}-kmaps.zip`, zipUrl);
     setTimeout(() => URL.revokeObjectURL(zipUrl), 1000);
   } finally {
+    hideDownloadOverlay();
     if (kmapZipStatus) {
       kmapZipStatus.classList.add('hidden');
     }
@@ -4947,6 +5205,7 @@ function openStateColorDialog(stateId) {
   colorPickerTargetId = stateId;
   stateColorPickerInput.value = st.color || STATE_COLOR_PALETTE[0];
   renderColorSwatches(stateColorPickerInput.value);
+  if (stateFontSizeInput) stateFontSizeInput.value = String(st.fontSize || 16);
   openDialog('stateColorDialog');
 }
 
@@ -4977,14 +5236,20 @@ function attachEvents() {
     e.stopPropagation();
     const willOpen = fileMenu.classList.contains('hidden');
     closeAllDropdowns();
-    if (willOpen) fileMenu.classList.remove('hidden');
+    if (willOpen) {
+      fileMenu.classList.remove('hidden');
+      setKmapWindowZIndex('9');
+    }
   });
 
   settingsMenuButton.addEventListener('click', (e) => {
     e.stopPropagation();
     const willOpen = settingsMenu.classList.contains('hidden');
     closeAllDropdowns();
-    if (willOpen) settingsMenu.classList.remove('hidden');
+    if (willOpen) {
+      settingsMenu.classList.remove('hidden');
+      setKmapWindowZIndex('9');
+    }
   });
 
   document.getElementById('newMachineBtn').addEventListener('click', () =>
@@ -5075,6 +5340,7 @@ function attachEvents() {
       const collapsed = transitionColumnBuilder.classList.toggle('collapsed');
       toggleTransitionBuilderBtn.textContent = collapsed ? 'Show builder' : 'Hide builder';
       toggleTransitionBuilderBtn.setAttribute('aria-expanded', (!collapsed).toString());
+      localStorage.setItem('fsm_column_builder_collapsed', collapsed ? '1' : '0');
     });
   }
   if (kmapToggleBtn) {
@@ -5216,7 +5482,7 @@ function attachEvents() {
   document.getElementById('toggleTransitionDrawer').addEventListener('click', toggleTransitionDrawer);
   document
     .getElementById('verifyTransitionTable')
-    .addEventListener('click', verifyTransitionTableAgainstDiagram);
+    .addEventListener('click', () => verifyTransitionTableAgainstDiagram({ highlight: true }));
   document.getElementById('closeTransitionDrawer').addEventListener('click', closeTransitionDrawer);
 
   transitionDrawerHandle.addEventListener('mousedown', (e) => {
@@ -5904,6 +6170,13 @@ function attachEvents() {
       return;
     }
 
+    const checkLayoutBtn = e.target.closest('[data-check-kmap-layout]');
+    if (checkLayoutBtn) {
+      const kmap = state.kmaps.find((m) => m.id.toString() === checkLayoutBtn.dataset.checkKmapLayout);
+      checkKmapLayout(kmap, checkLayoutBtn);
+      return;
+    }
+
     const exprToken = e.target.closest('.kmap-expr-token');
     if (exprToken) {
       const tray = exprToken.closest('.kmap-expression-tray');
@@ -6245,6 +6518,7 @@ function attachEvents() {
     if (st) {
       undoStack.push({ type: 'colorChange', stateId: st.id, prevColor: st.color });
       st.color = stateColorPickerInput.value;
+      st.fontSize = stateFontSizeInput ? parseInt(stateFontSizeInput.value, 10) : 16;
       renderPalette();
       renderDiagram();
       markDirty();

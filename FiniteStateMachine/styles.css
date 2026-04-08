@@ -683,6 +683,35 @@ button#quickRef {
   border-collapse: collapse;
 }
 
+#stateTable {
+  table-layout: fixed;
+}
+
+#stateTable th:nth-child(1),
+#stateTable td:nth-child(1) {
+  width: 4.5rem;
+}
+
+#stateTable th:nth-child(2),
+#stateTable td:nth-child(2) {
+  width: 7rem;
+}
+
+#stateTable th:nth-child(3),
+#stateTable td:nth-child(3) {
+  width: 9rem;
+}
+
+#stateTable th:nth-child(5),
+#stateTable td:nth-child(5) {
+  width: 7rem;
+}
+
+#stateTable td input {
+  box-sizing: border-box;
+  width: 100%;
+}
+
 td.row-drag-handle {
   cursor: grab;
   user-select: none;
@@ -958,8 +987,8 @@ body.dark .arrow-path.selected {
 }
 
 .label-handle text {
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 400;
   pointer-events: none;
 }
 
@@ -1611,4 +1640,55 @@ body.dark .arrow-path.selected {
 
 .state-color-dialog {
   min-width: 280px;
+}
+
+#transitionTable td.cell-mismatch,
+.kmap-table td.cell-mismatch {
+  background-color: rgba(255, 45, 85, 0.18);
+  outline: 1.5px solid var(--vw-red);
+  outline-offset: -1px;
+}
+
+.download-overlay {
+  align-items: center;
+  background: rgba(0, 0, 0, 0.45);
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  left: 0;
+  position: fixed;
+  right: 0;
+  top: 0;
+  z-index: 200;
+}
+
+.download-overlay.hidden {
+  display: none;
+}
+
+.download-overlay-inner {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 2rem 2.5rem;
+}
+
+.download-anim {
+  color: #1f2630;
+  height: 80px;
+  width: 80px;
+}
+
+body.dark .download-anim {
+  color: #ffffff;
+}
+
+.download-overlay-label {
+  color: var(--text);
+  font-size: 0.9rem;
 }
