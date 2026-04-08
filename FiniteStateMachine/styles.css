@@ -1594,6 +1594,11 @@ body.dark .arrow-path.selected {
   color: #000;
 }
 
+.kmap-expression button.verified.not-minimal {
+  outline: 2px dashed var(--vw-orange);
+  outline-offset: 2px;
+}
+
 .kmap-expression button.failed {
   background: var(--vw-red);
   color: #fff;

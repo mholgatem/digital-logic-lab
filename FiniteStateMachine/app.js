@@ -121,10 +121,6 @@ const diagramHelpBtn = document.getElementById('diagramHelpBtn');
 const stateColorPickerInput = document.getElementById('stateColorPickerInput');
 const stateFontSizeInput = document.getElementById('stateFontSizeInput');
 
-if (kmapTypeInput) {
-  kmapTypeInput.disabled = true;
-  kmapTypeInput.title = 'Only SOP mode is available right now';
-}
 
 let colorPickerTargetId = null;
 let kmapWindowState = { width: 840, height: 540, left: null, top: null };
@@ -2994,10 +2990,25 @@ function clearDropMarker(tray) {
   if (marker) marker.remove();
 }
 
+function insertImplicitMultiply(tokens) {
+  const result = [];
+  for (let i = 0; i < tokens.length; i += 1) {
+    result.push(tokens[i]);
+    if (
+      tokens[i].type === 'paren' && tokens[i].value === ')' &&
+      tokens[i + 1]?.type === 'paren' && tokens[i + 1]?.value === '('
+    ) {
+      result.push({ type: 'op', value: '*' });
+    }
+  }
+  return result;
+}
+
 function updateKmapExpressionTokens(kmap, tokens, tray) {
+  tokens = insertImplicitMultiply(tokens);
   const previousTokens = kmap.expressionTokens || expressionStringToTokens(kmap.expression || '');
-  const previousSignatures = kmap.circleSectionSignatures || getKmapSectionSignatures(previousTokens);
-  const nextSignatures = getKmapSectionSignatures(tokens);
+  const previousSignatures = kmap.circleSectionSignatures || getKmapSectionSignatures(previousTokens, kmap.type);
+  const nextSignatures = getKmapSectionSignatures(tokens, kmap.type);
   const changedSections = diffKmapSectionSignatures(previousSignatures, nextSignatures);
   const hadPreviousSections = previousSignatures.length > 0;
   kmap.expressionTokens = tokens;
@@ -3345,12 +3356,13 @@ function buildExpressionTruthTable(expression, variables) {
   return table;
 }
 
-function buildKmapTruthTable(kmap) {
+function buildKmapTruthTable(kmap, strictType = null) {
   const layout = buildKmapLayout(kmap);
   const variables = [...layout.mapVars, ...layout.colVars, ...layout.rowVars];
   const table = new Map();
   const baseRows = layout.baseRows || 1;
   const baseCols = layout.baseCols || 1;
+  const blankValue = strictType === null ? 'X' : (strictType === 'pos' ? '1' : '0');
 
   for (let r = 0; r < layout.totalRows; r += 1) {
     for (let c = 0; c < layout.totalCols; c += 1) {
@@ -3367,7 +3379,7 @@ function buildKmapTruthTable(kmap) {
       });
       const key = variables.map((v) => (assignment[v] ? '1' : '0')).join('');
       const cellVal = (kmap.cells && kmap.cells[kmapCellKey(r, c)]) || '';
-      table.set(key, cellVal || 'X');
+      table.set(key, cellVal || blankValue);
     }
   }
 
@@ -3503,6 +3515,64 @@ function checkKmapLayout(kmap, btn) {
   btn.classList.toggle('failed', hasMismatch);
 }
 
+function dropLiteralFromSection(tokens, varIdx) {
+  const result = [...tokens];
+  result.splice(varIdx, 1);
+  const rightIdx = varIdx;
+  const leftIdx = varIdx - 1;
+  if (rightIdx < result.length && result[rightIdx].type === 'op') {
+    result.splice(rightIdx, 1);
+  } else if (leftIdx >= 0 && result[leftIdx].type === 'op') {
+    result.splice(leftIdx, 1);
+  }
+  return result;
+}
+
+function checkKmapMinimality(sections, kmapTable, variables, type) {
+  const targetValue = type === 'pos' ? '0' : '1';
+  const badValue = type === 'pos' ? '1' : '0';
+
+  const sectionTables = sections.map((sectionTokens) => {
+    const canonical = tokensToCanonical(sectionTokens);
+    return buildExpressionTruthTable(canonical, variables);
+  });
+
+  for (let i = 0; i < sections.length; i += 1) {
+    const others = sectionTables.filter((_, j) => j !== i);
+    let redundant = true;
+    for (const [key, val] of kmapTable.entries()) {
+      if (val !== targetValue) continue;
+      if (!others.some((t) => t?.get(key) === targetValue)) {
+        redundant = false;
+        break;
+      }
+    }
+    if (redundant) return 'Expression contains a redundant term';
+  }
+
+  for (const sectionTokens of sections) {
+    const varIndices = sectionTokens
+      .map((tk, idx) => (tk.type === 'var' ? idx : -1))
+      .filter((idx) => idx >= 0);
+    for (const varIdx of varIndices) {
+      const reduced = dropLiteralFromSection(sectionTokens, varIdx);
+      if (!reduced.some((tk) => tk.type === 'var')) continue;
+      const reducedTable = buildExpressionTruthTable(tokensToCanonical(reduced), variables);
+      if (!reducedTable) continue;
+      let expandable = true;
+      for (const [key, val] of kmapTable.entries()) {
+        if (val === badValue && reducedTable.get(key) === targetValue) {
+          expandable = false;
+          break;
+        }
+      }
+      if (expandable) return 'Expression is not fully simplified (a term can be expanded)';
+    }
+  }
+
+  return null;
+}
+
 function verifyKmapExpression(kmap) {
   if (!kmap) return { passed: false, reason: 'No k-map selected' };
   const kmapTable = buildKmapTruthTable(kmap);
@@ -3521,7 +3591,11 @@ function verifyKmapExpression(kmap) {
       return { passed: false, reason: 'Expression output does not match K-map' };
     }
   }
-  return { passed: true };
+  const sections = splitExpressionSections(tokens, kmap.type);
+  const strictTable = buildKmapTruthTable(kmap, kmap.type || 'sop').table;
+  const notMinimalReason = checkKmapMinimality(sections, strictTable, kmapTable.variables, kmap.type || 'sop');
+  if (notMinimalReason) return { passed: true, minimal: false, minimalReason: notMinimalReason };
+  return { passed: true, minimal: true };
 }
 
 function buildKmapLayout(kmap) {
@@ -3763,7 +3837,8 @@ function clusterCellsWithWrap(cells, layout, threshold = 28) {
   return out;
 }
 
-function splitExpressionSections(tokens = []) {
+function splitExpressionSections(tokens = [], type = 'sop') {
+  const splitOp = type === 'pos' ? '*' : '+';
   const sections = [];
   let depth = 0;
   let current = [];
@@ -3776,7 +3851,7 @@ function splitExpressionSections(tokens = []) {
   };
 
   tokens.forEach((tk) => {
-    if (tk.type === 'op' && tk.value === '+' && depth === 0) {
+    if (tk.type === 'op' && tk.value === splitOp && depth === 0) {
       pushCurrent();
       return;
     }
@@ -3791,8 +3866,8 @@ function splitExpressionSections(tokens = []) {
   return sections;
 }
 
-function getKmapSectionSignatures(tokens = []) {
-  return splitExpressionSections(tokens).map((sectionTokens) => tokensToCanonical(sectionTokens));
+function getKmapSectionSignatures(tokens = [], type = 'sop') {
+  return splitExpressionSections(tokens, type).map((sectionTokens) => tokensToCanonical(sectionTokens));
 }
 
 function buildKmapCircleGroup({
@@ -3803,15 +3878,17 @@ function buildKmapCircleGroup({
   cells,
   overlayRect,
   paletteOffset,
+  type = 'sop',
 }) {
   const canonical = tokensToCanonical(sectionTokens);
   const sectionTable = buildExpressionTruthTable(canonical, variables);
   if (!sectionTable) return null;
+  const targetValue = type === 'pos' ? '0' : '1';
   const computePadding = 5;
   const drawPadding = -4;
   const activeCells = cells
     .map((cell) => {
-      if (sectionTable.get(cell.key) !== '1') return null;
+      if (sectionTable.get(cell.key) !== targetValue) return null;
       const target = cell.element.closest('td') || cell.element.parentElement;
       const rect = target.getBoundingClientRect();
       return {
@@ -3910,7 +3987,7 @@ function renderKmapCircles(root = null) {
     const layout = buildKmapLayout(kmap);
     const variables = kmapVariablesForLayout(layout);
     const tokens = kmap.expressionTokens || expressionStringToTokens(kmap.expression || '');
-    const sections = splitExpressionSections(tokens);
+    const sections = splitExpressionSections(tokens, kmap.type);
     if (!sections.length) return;
     clearKmapCircleAnimations(kmap);
     const cells = collectKmapCells(kmap, card, layout);
@@ -3933,12 +4010,13 @@ function renderKmapCircles(root = null) {
         cells,
         overlayRect,
         paletteOffset,
+        type: kmap.type,
       });
       if (!group) return;
       svg.appendChild(group);
     });
 
-    kmap.circleSectionSignatures = getKmapSectionSignatures(tokens);
+    kmap.circleSectionSignatures = getKmapSectionSignatures(tokens, kmap.type);
   });
 }
 
@@ -3970,7 +4048,7 @@ function renderKmapCircleSectionUpdate(kmap, sectionIndices, tokens) {
   const overlayRect = overlay.getBoundingClientRect();
   const paletteOffset = state.kmaps.findIndex((m) => m.id === kmap.id) % kmapCirclePalette.length;
   const sectionAnimations = kmap.circleSectionAnimations || {};
-  const nextSignatures = getKmapSectionSignatures(tokens);
+  const nextSignatures = getKmapSectionSignatures(tokens, kmap.type);
   kmap.circleSectionAnimations = sectionAnimations;
 
   sectionIndices.forEach((sectionIdx) => {
@@ -3991,7 +4069,7 @@ function renderKmapCircleSectionUpdate(kmap, sectionIndices, tokens) {
         staleGroup.parentNode.removeChild(staleGroup);
       }
       const currentTokens = kmap.expressionTokens || expressionStringToTokens(kmap.expression || '');
-      const sectionTokens = splitExpressionSections(currentTokens)[sectionIdx];
+      const sectionTokens = splitExpressionSections(currentTokens, kmap.type)[sectionIdx];
       if (!sectionTokens) return;
       const group = buildKmapCircleGroup({
         sectionTokens,
@@ -4001,6 +4079,7 @@ function renderKmapCircleSectionUpdate(kmap, sectionIndices, tokens) {
         cells,
         overlayRect,
         paletteOffset,
+        type: kmap.type,
       });
       if (!group) return;
       group.classList.add('kmap-circle-fade-in');
@@ -6079,7 +6158,11 @@ function attachEvents() {
 
     const token = { type: payload.type, value: payload.value };
     if (token.type === 'var') token.negated = false;
-    tokens.splice(Math.max(0, Math.min(tokens.length, index)), 0, token);
+    const insertAt = Math.max(0, Math.min(tokens.length, index));
+    tokens.splice(insertAt, 0, token);
+    if (token.type === 'paren' && token.value === '(') {
+      tokens.splice(insertAt + 1, 0, { type: 'paren', value: ')' });
+    }
     updateKmapExpressionTokens(kmap, tokens, tray);
     if (payload.type === 'var' && kmapFirstHint) {
       kmapFirstHint('completed');
@@ -6164,8 +6247,9 @@ function attachEvents() {
       const result = verifyKmapExpression(kmap);
       verifyBtn.classList.toggle('verified', !!result.passed);
       verifyBtn.classList.toggle('failed', !result.passed);
+      verifyBtn.classList.toggle('not-minimal', !!result.passed && result.minimal === false);
       verifyBtn.title = result.passed
-        ? 'Expression matches K-map'
+        ? (result.minimal === false ? `Correct, but not minimal: ${result.minimalReason}` : 'Expression matches K-map')
         : result.reason || 'Expression verification failed';
       return;
     }
