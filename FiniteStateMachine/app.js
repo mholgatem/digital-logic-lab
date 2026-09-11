@@ -3622,21 +3622,23 @@ function verifyPrimaryKmapExpression(kmap) {
 
 function verifyKmapFExpression(kmap) {
   const variables = kmap.variables || [];
+  const outputName = kmap.label || 'F';
+  const primeName = `${outputName}'`;
   const fTokens = kmap.fExpressionTokens || expressionStringToTokens(kmap.fExpression || '');
   const fPrimeTokens = kmap.expressionTokens || expressionStringToTokens(kmap.expression || '');
   kmap.fExpressionTokens = fTokens;
   kmap.fExpression = tokensToCanonical(fTokens) || '';
 
   const fTable = buildExpressionTruthTable(kmap.fExpression, variables);
-  if (!fTable) return { passed: false, reason: 'F expression is invalid or empty' };
+  if (!fTable) return { passed: false, reason: `${outputName} expression is invalid or empty` };
   const fPrimeCanonical = tokensToCanonical(fPrimeTokens);
   const fPrimeTable = buildExpressionTruthTable(fPrimeCanonical, variables);
-  if (!fPrimeTable) return { passed: false, reason: "F' expression is invalid or empty" };
+  if (!fPrimeTable) return { passed: false, reason: `${primeName} expression is invalid or empty` };
 
   for (const [key, fPrimeVal] of fPrimeTable.entries()) {
     const expected = fPrimeVal === '0' ? '1' : '0';
     if (fTable.get(key) !== expected) {
-      return { passed: false, reason: "F does not equal the DeMorgan complement of F'" };
+      return { passed: false, reason: `${outputName} does not equal the DeMorgan complement of ${primeName}` };
     }
   }
   return { passed: true };
@@ -3647,7 +3649,7 @@ function verifyKmapExpression(kmap) {
   const primaryResult = verifyPrimaryKmapExpression(kmap);
   if (kmap.type !== 'pos') return primaryResult;
 
-  const primeName = applyOverline(kmap.label || 'F');
+  const primeName = `${kmap.label || 'F'}'`;
   if (!primaryResult.passed) {
     return { ...primaryResult, reason: `${primeName} does not match the K-map: ${primaryResult.reason}` };
   }
@@ -4336,7 +4338,7 @@ function renderKmaps() {
     if (isPos) {
       const primaryHint = document.createElement('span');
       primaryHint.className = 'kmap-tray-hint';
-      primaryHint.textContent = `Hint: Build an SOP expression for ${applyOverline(kmap.label || 'F')}.`;
+      primaryHint.innerHTML = `Hint: Build an SOP expression for <span class="kmap-overline-text">${formatScriptedText(kmap.label || 'F')}</span>.`;
       labelRow.appendChild(primaryHint);
     }
     expressionRow.appendChild(labelRow);
