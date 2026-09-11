@@ -2744,6 +2744,7 @@ function loadState(data) {
       variables,
       cells: k.cells || {},
       expression: k.expression || '',
+      fExpression: k.fExpression || '',
       functionToken,
       variableTokens,
       label,
@@ -3004,11 +3005,31 @@ function insertImplicitMultiply(tokens) {
   return result;
 }
 
+function isFTray(tray) {
+  return tray?.dataset.trayRole === 'f';
+}
+
+function getTrayTokens(kmap, tray) {
+  if (!kmap) return [];
+  if (isFTray(tray)) {
+    return kmap.fExpressionTokens || expressionStringToTokens(kmap.fExpression || '');
+  }
+  return kmap.expressionTokens || expressionStringToTokens(kmap.expression || '');
+}
+
 function updateKmapExpressionTokens(kmap, tokens, tray) {
   tokens = insertImplicitMultiply(tokens);
+
+  if (isFTray(tray)) {
+    kmap.fExpressionTokens = tokens;
+    kmap.fExpression = tokensToCanonical(tokens) || '';
+    if (tray) renderExpressionTray(tray, tokens, kmap.id);
+    return;
+  }
+
   const previousTokens = kmap.expressionTokens || expressionStringToTokens(kmap.expression || '');
-  const previousSignatures = kmap.circleSectionSignatures || getKmapSectionSignatures(previousTokens, kmap.type);
-  const nextSignatures = getKmapSectionSignatures(tokens, kmap.type);
+  const previousSignatures = kmap.circleSectionSignatures || getKmapSectionSignatures(previousTokens);
+  const nextSignatures = getKmapSectionSignatures(tokens);
   const changedSections = diffKmapSectionSignatures(previousSignatures, nextSignatures);
   const hadPreviousSections = previousSignatures.length > 0;
   kmap.expressionTokens = tokens;
@@ -3573,8 +3594,7 @@ function checkKmapMinimality(sections, kmapTable, variables, type) {
   return null;
 }
 
-function verifyKmapExpression(kmap) {
-  if (!kmap) return { passed: false, reason: 'No k-map selected' };
+function verifyPrimaryKmapExpression(kmap) {
   const kmapTable = buildKmapTruthTable(kmap);
   const tokens = kmap.expressionTokens || expressionStringToTokens(kmap.expression || '');
   const canonical = tokensToCanonical(tokens);
@@ -3584,18 +3604,61 @@ function verifyKmapExpression(kmap) {
   if (!exprTable) return { passed: false, reason: 'Expression is invalid or empty' };
   for (const [key, value] of kmapTable.table.entries()) {
     if (value === 'X') continue;
-    const expected = value === '1';
+    // POS k-maps build the SOP of the complement (F') in this tray, so a '1'
+    // in this tray's expression should land on the K-map's '0' cells.
+    const expected = kmap.type === 'pos' ? value === '0' : value === '1';
     const exprVal = exprTable.get(key);
     if (exprVal === undefined) return { passed: false, reason: 'Expression incomplete' };
     if ((exprVal === '1') !== expected) {
       return { passed: false, reason: 'Expression output does not match K-map' };
     }
   }
-  const sections = splitExpressionSections(tokens, kmap.type);
+  const sections = splitExpressionSections(tokens);
   const strictTable = buildKmapTruthTable(kmap, kmap.type || 'sop').table;
   const notMinimalReason = checkKmapMinimality(sections, strictTable, kmapTable.variables, kmap.type || 'sop');
-  if (notMinimalReason) return { passed: true, minimal: false, minimalReason: notMinimalReason };
+  if (notMinimalReason) return { passed: false, minimal: false, reason: notMinimalReason };
   return { passed: true, minimal: true };
+}
+
+function verifyKmapFExpression(kmap) {
+  const variables = kmap.variables || [];
+  const outputName = kmap.label || 'F';
+  const primeName = `${outputName}'`;
+  const fTokens = kmap.fExpressionTokens || expressionStringToTokens(kmap.fExpression || '');
+  const fPrimeTokens = kmap.expressionTokens || expressionStringToTokens(kmap.expression || '');
+  kmap.fExpressionTokens = fTokens;
+  kmap.fExpression = tokensToCanonical(fTokens) || '';
+
+  const fTable = buildExpressionTruthTable(kmap.fExpression, variables);
+  if (!fTable) return { passed: false, reason: `${outputName} expression is invalid or empty` };
+  const fPrimeCanonical = tokensToCanonical(fPrimeTokens);
+  const fPrimeTable = buildExpressionTruthTable(fPrimeCanonical, variables);
+  if (!fPrimeTable) return { passed: false, reason: `${primeName} expression is invalid or empty` };
+
+  for (const [key, fPrimeVal] of fPrimeTable.entries()) {
+    const expected = fPrimeVal === '0' ? '1' : '0';
+    if (fTable.get(key) !== expected) {
+      return { passed: false, reason: `${outputName} does not equal the DeMorgan complement of ${primeName}` };
+    }
+  }
+  return { passed: true };
+}
+
+function verifyKmapExpression(kmap) {
+  if (!kmap) return { passed: false, reason: 'No k-map selected' };
+  const primaryResult = verifyPrimaryKmapExpression(kmap);
+  if (kmap.type !== 'pos') return primaryResult;
+
+  const primeName = `${kmap.label || 'F'}'`;
+  if (!primaryResult.passed) {
+    return { ...primaryResult, reason: `${primeName} does not match the K-map: ${primaryResult.reason}` };
+  }
+
+  const fResult = verifyKmapFExpression(kmap);
+  if (!fResult.passed) {
+    return { passed: false, reason: fResult.reason };
+  }
+  return { passed: true, minimal: primaryResult.minimal };
 }
 
 function buildKmapLayout(kmap) {
@@ -3878,12 +3941,11 @@ function buildKmapCircleGroup({
   cells,
   overlayRect,
   paletteOffset,
-  type = 'sop',
 }) {
   const canonical = tokensToCanonical(sectionTokens);
   const sectionTable = buildExpressionTruthTable(canonical, variables);
   if (!sectionTable) return null;
-  const targetValue = type === 'pos' ? '0' : '1';
+  const targetValue = '1';
   const computePadding = 5;
   const drawPadding = -4;
   const activeCells = cells
@@ -3987,7 +4049,7 @@ function renderKmapCircles(root = null) {
     const layout = buildKmapLayout(kmap);
     const variables = kmapVariablesForLayout(layout);
     const tokens = kmap.expressionTokens || expressionStringToTokens(kmap.expression || '');
-    const sections = splitExpressionSections(tokens, kmap.type);
+    const sections = splitExpressionSections(tokens);
     if (!sections.length) return;
     clearKmapCircleAnimations(kmap);
     const cells = collectKmapCells(kmap, card, layout);
@@ -4010,13 +4072,12 @@ function renderKmapCircles(root = null) {
         cells,
         overlayRect,
         paletteOffset,
-        type: kmap.type,
       });
       if (!group) return;
       svg.appendChild(group);
     });
 
-    kmap.circleSectionSignatures = getKmapSectionSignatures(tokens, kmap.type);
+    kmap.circleSectionSignatures = getKmapSectionSignatures(tokens);
   });
 }
 
@@ -4048,7 +4109,7 @@ function renderKmapCircleSectionUpdate(kmap, sectionIndices, tokens) {
   const overlayRect = overlay.getBoundingClientRect();
   const paletteOffset = state.kmaps.findIndex((m) => m.id === kmap.id) % kmapCirclePalette.length;
   const sectionAnimations = kmap.circleSectionAnimations || {};
-  const nextSignatures = getKmapSectionSignatures(tokens, kmap.type);
+  const nextSignatures = getKmapSectionSignatures(tokens);
   kmap.circleSectionAnimations = sectionAnimations;
 
   sectionIndices.forEach((sectionIdx) => {
@@ -4069,7 +4130,7 @@ function renderKmapCircleSectionUpdate(kmap, sectionIndices, tokens) {
         staleGroup.parentNode.removeChild(staleGroup);
       }
       const currentTokens = kmap.expressionTokens || expressionStringToTokens(kmap.expression || '');
-      const sectionTokens = splitExpressionSections(currentTokens, kmap.type)[sectionIdx];
+      const sectionTokens = splitExpressionSections(currentTokens)[sectionIdx];
       if (!sectionTokens) return;
       const group = buildKmapCircleGroup({
         sectionTokens,
@@ -4079,7 +4140,6 @@ function renderKmapCircleSectionUpdate(kmap, sectionIndices, tokens) {
         cells,
         overlayRect,
         paletteOffset,
-        type: kmap.type,
       });
       if (!group) return;
       group.classList.add('kmap-circle-fade-in');
@@ -4246,7 +4306,7 @@ function renderKmaps() {
 
     const expressionRow = document.createElement('div');
     expressionRow.className = 'kmap-expression';
-    const symbol = kmap.type === 'pos' ? 'Π' : 'Σ';
+    const isPos = kmap.type === 'pos';
 
     const variableTray = document.createElement('div');
     variableTray.className = 'kmap-variable-tray';
@@ -4266,10 +4326,22 @@ function renderKmaps() {
     variableTray.appendChild(trayItems);
     expressionRow.appendChild(variableTray);
 
+    const labelRow = document.createElement('div');
+    labelRow.className = 'kmap-f-label-row';
     const label = document.createElement('span');
     label.className = 'kmap-expression-label';
-    label.innerHTML = `${formatScriptedText(kmap.label || 'K-map')} ${symbol} =`;
-    expressionRow.appendChild(label);
+    const primaryName = isPos
+      ? `<span class="kmap-overline-text">${formatScriptedText(kmap.label || 'F')}</span>`
+      : formatScriptedText(kmap.label || 'K-map');
+    label.innerHTML = `${primaryName} Σ =`;
+    labelRow.appendChild(label);
+    if (isPos) {
+      const primaryHint = document.createElement('span');
+      primaryHint.className = 'kmap-tray-hint';
+      primaryHint.innerHTML = `Hint: Build an SOP expression for <span class="kmap-overline-text">${formatScriptedText(kmap.label || 'F')}</span>.`;
+      labelRow.appendChild(primaryHint);
+    }
+    expressionRow.appendChild(labelRow);
 
     const exprTrayWrapper = document.createElement('div');
     exprTrayWrapper.className = 'kmap-expression-tray-wrapper';
@@ -4277,10 +4349,39 @@ function renderKmaps() {
     exprTray.className = 'kmap-expression-tray';
     exprTray.tabIndex = 0;
     exprTray.dataset.kmapId = kmap.id;
+    exprTray.dataset.trayRole = 'primary';
     const parsedTokens = kmap.expressionTokens || expressionStringToTokens(kmap.expression || '');
     kmap.expressionTokens = parsedTokens;
     renderExpressionTray(exprTray, parsedTokens, kmap.id);
     exprTrayWrapper.appendChild(exprTray);
+
+    if (isPos) {
+      const fBlock = document.createElement('div');
+      fBlock.className = 'kmap-f-tray-block';
+
+      const fLabelRow = document.createElement('div');
+      fLabelRow.className = 'kmap-f-label-row';
+      const fLabel = document.createElement('span');
+      fLabel.className = 'kmap-expression-label';
+      fLabel.innerHTML = `${formatScriptedText(kmap.label || 'F')} =`;
+      const fHint = document.createElement('span');
+      fHint.className = 'kmap-tray-hint';
+      fHint.textContent = "Hint: apply DeMorgan's Law to the expression above.";
+      fLabelRow.append(fLabel, fHint);
+      fBlock.appendChild(fLabelRow);
+
+      const fExprTray = document.createElement('div');
+      fExprTray.className = 'kmap-expression-tray';
+      fExprTray.tabIndex = 0;
+      fExprTray.dataset.kmapId = kmap.id;
+      fExprTray.dataset.trayRole = 'f';
+      const fParsedTokens = kmap.fExpressionTokens || expressionStringToTokens(kmap.fExpression || '');
+      kmap.fExpressionTokens = fParsedTokens;
+      renderExpressionTray(fExprTray, fParsedTokens, kmap.id);
+      fBlock.appendChild(fExprTray);
+
+      exprTrayWrapper.appendChild(fBlock);
+    }
 
     const controls = document.createElement('div');
     controls.className = 'kmap-expression-actions';
@@ -6092,11 +6193,13 @@ function attachEvents() {
     const cardKmapId =
       tokenEl.closest('.kmap-card')?.querySelector('.kmap-expression-tray')?.dataset.kmapId;
     const kmapId = tokenEl.dataset.kmapId || cardKmapId;
+    const fromTrayRole = tokenEl.closest('.kmap-expression-tray')?.dataset.trayRole || 'primary';
     kmapExpressionDragState = {
       source: tokenEl.classList.contains('kmap-expr-token') ? 'expression' : 'tray',
       type,
       value,
       fromIndex,
+      fromTrayRole,
       kmapId,
     };
     e.dataTransfer.setData('text/plain', `${type}:${value}`);
@@ -6106,7 +6209,7 @@ function attachEvents() {
     const tray = e.target.closest('.kmap-expression-tray');
     if (!tray) return;
     e.preventDefault();
-    const tokens = [...(getKmapById(tray.dataset.kmapId)?.expressionTokens || [])];
+    const tokens = getTrayTokens(getKmapById(tray.dataset.kmapId), tray);
     const targetToken = e.target.closest('.kmap-expr-token');
     const marker = ensureDropMarker(tray);
     if (targetToken && targetToken.parentNode === tray) {
@@ -6136,7 +6239,7 @@ function attachEvents() {
     const marker = tray.querySelector('.kmap-drop-marker');
     const kmap = getKmapById(tray.dataset.kmapId);
     if (!kmap) return;
-    const tokens = [...(kmap.expressionTokens || [])];
+    const tokens = [...getTrayTokens(kmap, tray)];
     const payload = kmapExpressionDragState;
     kmapExpressionDragState = null;
     if (!payload || !payload.type) return;
@@ -6149,7 +6252,12 @@ function attachEvents() {
     }
     clearDropMarker(tray);
 
-    if (payload.source === 'expression' && payload.kmapId === kmap.id.toString()) {
+    const destTrayRole = tray.dataset.trayRole || 'primary';
+    if (
+      payload.source === 'expression' &&
+      payload.kmapId === kmap.id.toString() &&
+      payload.fromTrayRole === destTrayRole
+    ) {
       if (!Number.isNaN(payload.fromIndex)) {
         tokens.splice(payload.fromIndex, 1);
         if (index > payload.fromIndex) index -= 1;
@@ -6191,7 +6299,7 @@ function attachEvents() {
     if (exprTray) {
       const kmap = getKmapById(exprTray.dataset.kmapId);
       if (!kmap) return;
-      const tokens = [...(kmap.expressionTokens || [])];
+      const tokens = [...getTrayTokens(kmap, exprTray)];
       const selected = exprTray.querySelector('.kmap-expr-token.selected');
       if ((e.key === 'Backspace' || e.key === 'Delete') && selected) {
         const idx = parseInt(selected.dataset.index, 10);
@@ -6247,10 +6355,8 @@ function attachEvents() {
       const result = verifyKmapExpression(kmap);
       verifyBtn.classList.toggle('verified', !!result.passed);
       verifyBtn.classList.toggle('failed', !result.passed);
-      verifyBtn.classList.toggle('not-minimal', !!result.passed && result.minimal === false);
-      verifyBtn.title = result.passed
-        ? (result.minimal === false ? `Correct, but not minimal: ${result.minimalReason}` : 'Expression matches K-map')
-        : result.reason || 'Expression verification failed';
+      verifyBtn.classList.toggle('not-minimal', result.minimal === false);
+      verifyBtn.title = result.passed ? 'Expression matches K-map' : result.reason || 'Expression verification failed';
       return;
     }
 
@@ -6269,7 +6375,7 @@ function attachEvents() {
       tray.focus();
       const idx = parseInt(exprToken.dataset.index, 10);
       if (Number.isNaN(idx)) return;
-      const tokens = [...(kmap.expressionTokens || [])];
+      const tokens = [...getTrayTokens(kmap, tray)];
       const token = tokens[idx];
       if (!token) return;
       tray.querySelectorAll('.kmap-expr-token.selected').forEach((el) =>
