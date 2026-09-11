@@ -1236,6 +1236,40 @@ body.dark .arrow-path.selected {
   outline: 2px solid var(--accent);
 }
 
+.kmap-f-tray-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding-top: 0.35rem;
+  border-top: 1px dashed var(--border);
+}
+
+.kmap-f-label-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.kmap-tray-hint {
+  color: var(--muted, #6b7280);
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+.kmap-overline-text {
+  position: relative;
+}
+
+.kmap-overline-text::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -4px;
+  border-top: 2px solid currentColor;
+}
+
 .kmap-dialog-dropzone {
   min-height: 52px;
 }
@@ -1594,7 +1628,7 @@ body.dark .arrow-path.selected {
   color: #000;
 }
 
-.kmap-expression button.verified.not-minimal {
+.kmap-expression button.not-minimal {
   outline: 2px dashed var(--vw-orange);
   outline-offset: 2px;
 }
