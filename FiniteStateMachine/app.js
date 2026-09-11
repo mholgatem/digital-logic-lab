@@ -3939,12 +3939,11 @@ function buildKmapCircleGroup({
   cells,
   overlayRect,
   paletteOffset,
-  type = 'sop',
 }) {
   const canonical = tokensToCanonical(sectionTokens);
   const sectionTable = buildExpressionTruthTable(canonical, variables);
   if (!sectionTable) return null;
-  const targetValue = type === 'pos' ? '0' : '1';
+  const targetValue = '1';
   const computePadding = 5;
   const drawPadding = -4;
   const activeCells = cells
@@ -4071,7 +4070,6 @@ function renderKmapCircles(root = null) {
         cells,
         overlayRect,
         paletteOffset,
-        type: kmap.type,
       });
       if (!group) return;
       svg.appendChild(group);
@@ -4140,7 +4138,6 @@ function renderKmapCircleSectionUpdate(kmap, sectionIndices, tokens) {
         cells,
         overlayRect,
         paletteOffset,
-        type: kmap.type,
       });
       if (!group) return;
       group.classList.add('kmap-circle-fade-in');
@@ -4327,13 +4324,22 @@ function renderKmaps() {
     variableTray.appendChild(trayItems);
     expressionRow.appendChild(variableTray);
 
+    const labelRow = document.createElement('div');
+    labelRow.className = 'kmap-f-label-row';
     const label = document.createElement('span');
     label.className = 'kmap-expression-label';
     const primaryName = isPos
       ? `<span class="kmap-overline-text">${formatScriptedText(kmap.label || 'F')}</span>`
       : formatScriptedText(kmap.label || 'K-map');
     label.innerHTML = `${primaryName} Σ =`;
-    expressionRow.appendChild(label);
+    labelRow.appendChild(label);
+    if (isPos) {
+      const primaryHint = document.createElement('span');
+      primaryHint.className = 'kmap-tray-hint';
+      primaryHint.textContent = `Hint: Build an SOP expression for ${applyOverline(kmap.label || 'F')}.`;
+      labelRow.appendChild(primaryHint);
+    }
+    expressionRow.appendChild(labelRow);
 
     const exprTrayWrapper = document.createElement('div');
     exprTrayWrapper.className = 'kmap-expression-tray-wrapper';
