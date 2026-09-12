@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>K-map Visualizer - Digital Logic Lab</title>
+  <link rel="icon" href="../favicon.ico">
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="light">
+  <header class="main-header">
+    <div class="container">
+      <div class="header-left">
+        <a href="../" class="back-link">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+          Back
+        </a>
+        <h1>K-map Visualizer</h1>
+      </div>
+      <div class="header-actions">
+        <button id="tutorialBtn" class="icon-btn" title="Tutorial">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+        </button>
+        <button id="settingsBtn" class="icon-btn" title="Settings">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container" style="margin-top:-3rem;">
+    <div class="mode-selector">
+      <button class="mode-btn active" data-mode="learn" type="button">Learn</button>
+      <button class="mode-btn" data-mode="practice" type="button">Practice</button>
+    </div>
+
+    <div id="learnView">
+      <div class="toolbar">
+        <div class="varcount-selector">
+          <label>Variables:</label>
+          <button class="varcount-btn active" data-varcount="2">2</button>
+          <button class="varcount-btn" data-varcount="3">3</button>
+          <button class="varcount-btn" data-varcount="4">4</button>
+        </div>
+        <div class="type-selector">
+          <label>Type:</label>
+          <button class="type-btn active" data-type="sop">SOP</button>
+          <button class="type-btn" data-type="pos">POS</button>
+        </div>
+        <div class="toolbar-options">
+          <label class="gray-order-toggle">
+            <input type="checkbox" id="grayOrderToggle">
+            Sort truth table by Gray-code
+          </label>
+          <label class="gray-order-toggle">
+            <input type="checkbox" id="adjacencyToggle" checked>
+            Highlight adjacency
+          </label>
+          <button id="directionBtn" class="secondary-btn" title="Swap which variables form rows vs. columns">Swap Rows/Cols</button>
+        </div>
+      </div>
+
+      <div class="instructional-container">
+        <div class="speech-bubble">
+          <p id="instructionText">Click a cell in either the truth table or the K-map to toggle it between 0 and 1 — watch how the same value lights up in both places.</p>
+        </div>
+      </div>
+
+      <div class="workspace">
+        <div class="panel" id="truthTablePanel">
+          <h3>Truth Table</h3>
+          <p class="adjacency-note" id="adjacencyNote">Orange rows are adjacent — only 1 bit differs</p>
+          <table class="truth-table" id="truthTable">
+            <thead id="truthTableHead"></thead>
+            <tbody id="truthTableBody"></tbody>
+          </table>
+        </div>
+
+        <div class="panel" id="kmapPanel">
+          <div class="kmap-panel-header">
+            <h3>K-map</h3>
+            <button id="groupHelperBtn" class="secondary-btn" type="button">Group Helper: Off</button>
+          </div>
+          <p class="group-helper-note" id="groupHelperNote" hidden>Click a highlighted group to add it to the expression</p>
+          <div class="kmap-grid-wrapper" id="kmapGridWrapper">
+            <div class="kmap-grid-collection" id="kmapGridCollection"></div>
+            <div class="kmap-circle-overlay" id="kmapCircleOverlay"></div>
+          </div>
+          <div class="kmap-expression" id="kmapExpressionSection"></div>
+          <div class="verify-result" id="verifyResultText"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="practiceView" hidden>
+      <div class="toolbar">
+        <div class="game-selector">
+          <label>Game:</label>
+          <button class="game-btn active" data-game="spot" type="button">Spot the Invalid Grouping</button>
+          <button class="game-btn" data-game="sprint" type="button">Minimal Expression Sprint</button>
+          <button class="game-btn" data-game="largest" type="button">Circle the Largest Group</button>
+        </div>
+        <div class="game-stats">
+          <span id="gameScore">Score: 0</span>
+          <span id="gameStreak">Streak: 0</span>
+        </div>
+      </div>
+
+      <div class="instructional-container">
+        <div class="speech-bubble">
+          <p id="gameInstructionText"></p>
+        </div>
+      </div>
+
+      <div class="workspace">
+        <div class="panel" id="gamePanel"></div>
+      </div>
+    </div>
+  </main>
+
+  <div id="tutorialDialog" class="dialog-backdrop hidden">
+    <div class="dialog">
+      <h2>K-map Visualizer Tutorial</h2>
+      <p>See how a truth table and a Karnaugh map are two views of the same function.</p>
+      <div class="tutorial-step">
+        <p>1. Every row of the truth table and every cell of the K-map represent one input combination. Hover over either one to see its match light up in the other.</p>
+        <p>2. Click a value to flip it between 0 and 1 — the change shows up in both places at once.</p>
+        <p>3. Notice the K-map's row/column headers aren't in plain binary order (00, 01, 10, 11) — they're in <strong>Gray code</strong> order (00, 01, 11, 10), so every adjacent cell differs by exactly one bit. Toggle "Sort truth table by Gray-code" to see the truth table reordered the same way, or turn on "Highlight adjacency" to see every neighbor of a cell light up as you hover it — notice diagonal cells never light up, since they differ by more than one bit.</p>
+        <p>4. Use the variable-count buttons to grow the function from 2 up to 4 variables and see how the table and map both double in size.</p>
+        <p>5. Drag variables and operators from the tray into the expression box below the K-map to build a sum-of-products expression, then click <strong>Verify</strong> to check it against the K-map — it checks both correctness and that it's fully simplified.</p>
+        <p>6. Switch Type to <strong>POS</strong> to practice the product-of-sums form: build the SOP of F' in the first tray, then apply DeMorgan's Law to get F in the second tray. Verify checks both.</p>
+      </div>
+      <div class="dialog-actions">
+        <button id="closeTutorial" class="primary">Got it!</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="settingsDialog" class="dialog-backdrop hidden">
+    <div class="dialog">
+      <h2>Module Settings</h2>
+      <div class="form-row">
+        <span>Dark Mode</span>
+        <label class="switch">
+          <input type="checkbox" id="darkModeToggle">
+          <span class="slider round"></span>
+        </label>
+      </div>
+      <div class="dialog-actions">
+        <button id="closeSettings" class="primary">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <!-- Cloudflare Web Analytics -->
+	<script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "992da5035a144d2a89175fac742894d7"}'></script>
+  <!-- End Cloudflare Web Analytics -->
+</body>
+</html>

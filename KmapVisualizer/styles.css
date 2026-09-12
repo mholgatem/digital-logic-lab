@@ -1,0 +1,934 @@
+:root {
+  --bg: #f6f7fb;
+  --bg-muted: #e9ebf3;
+  --text: #1f2630;
+  --primary: #4a6cf7;
+  --border: #cfd5e4;
+  --accent: #f0f4ff;
+  --surface: #ffffff;
+  --muted: #6b7280;
+
+  /* Vaporwave Palette */
+  --vw-orange: #FF5E00;
+  --vw-fuchsia: #FF00FF;
+  --vw-blue: #00FFFF;
+  --vw-purple: #8A2BE2;
+  --vw-green: #39FF14;
+  --vw-red: #FF2D55;
+}
+
+body.dark {
+  --bg: #111827;
+  --bg-muted: #1f2937;
+  --text: #ffffff;
+  --primary: #8b9cf9;
+  --border: #374151;
+  --accent: #1f2937;
+  --surface: #0b1221;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.back-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition: color 0.2s;
+}
+
+.back-link:hover {
+  color: var(--primary);
+}
+
+.header-actions {
+  display: flex;
+  flex-direction: row;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.mode-selector {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem 0;
+}
+
+.mode-btn {
+  background-color: var(--bg);
+  border: 1px solid var(--border);
+  padding: 0.5rem 1.25rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--text);
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.mode-btn:hover {
+  border-color: var(--primary);
+}
+
+.mode-btn.active {
+  background-color: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.game-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.game-selector label {
+  font-weight: 600;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.game-btn {
+  background-color: var(--bg);
+  border: 1px solid var(--border);
+  padding: 0.4rem 0.875rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--text);
+  font-size: 0.85rem;
+  transition: all 0.2s;
+}
+
+.game-btn:hover {
+  border-color: var(--vw-purple);
+}
+
+.game-btn.active {
+  background-color: var(--vw-purple);
+  color: white;
+  border-color: var(--vw-purple);
+}
+
+.game-stats {
+  display: flex;
+  gap: 1rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--vw-orange);
+}
+
+.toolbar {
+  background-color: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0.75rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.varcount-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.varcount-selector label {
+  font-weight: 600;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.varcount-btn,
+.secondary-btn {
+  background-color: var(--bg);
+  border: 1px solid var(--border);
+  padding: 0.4rem 0.875rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--text);
+  font-size: 0.875rem;
+  transition: all 0.2s;
+}
+
+.varcount-btn:hover,
+.secondary-btn:hover {
+  border-color: var(--primary);
+}
+
+.varcount-btn.active {
+  background-color: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.secondary-btn.active {
+  background-color: var(--vw-purple);
+  color: white;
+  border-color: var(--vw-purple);
+}
+
+.secondary-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.secondary-btn:disabled:hover {
+  border-color: var(--border);
+}
+
+.type-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.type-selector label {
+  font-weight: 600;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.type-btn {
+  background-color: var(--bg);
+  border: 1px solid var(--border);
+  padding: 0.4rem 0.875rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--text);
+  font-size: 0.875rem;
+  transition: all 0.2s;
+}
+
+.type-btn:hover {
+  border-color: var(--primary);
+}
+
+.type-btn.active {
+  background-color: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.toolbar-options {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.gray-order-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.gray-order-toggle input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
+.instructional-container {
+  padding: 1rem 0 0;
+}
+
+.speech-bubble {
+  background-color: var(--accent);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 0.85rem 1.1rem;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+.speech-bubble p {
+  margin: 0;
+}
+
+.workspace {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  padding: 1rem 0 2rem;
+  gap: 1rem;
+  align-items: stretch;
+  background-color: var(--bg);
+  min-height: 400px;
+}
+
+.panel {
+  flex: 1;
+  min-width: 280px;
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  overflow: auto;
+}
+
+.panel h3 {
+  margin: 0 0 0.75rem;
+}
+
+.kmap-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.kmap-panel-header h3 {
+  margin: 0;
+}
+
+.group-helper-note {
+  color: var(--vw-purple);
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin: -0.25rem 0 0.75rem;
+}
+
+.tutorial-step {
+  margin-top: 1.5rem;
+  background-color: var(--bg);
+  padding: 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+/* Truth table */
+.truth-table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.truth-table th,
+.truth-table td {
+  border: 1px solid var(--border);
+  text-align: center;
+  padding: 0.45rem 0.6rem;
+}
+
+.truth-table th {
+  background-color: var(--bg-muted);
+  border: 2px solid var(--border);
+  font-weight: 700;
+}
+
+.truth-table td.value-cell {
+  cursor: pointer;
+  font-weight: 700;
+  user-select: none;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.truth-table td.value-cell:hover {
+  background-color: var(--accent);
+}
+
+.truth-table tr.is-active {
+  background-color: rgba(74, 108, 247, 0.12);
+}
+
+.truth-table tr.is-active td.value-cell {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+
+.adjacency-note {
+  color: var(--vw-orange);
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin: -0.25rem 0 0.75rem;
+}
+
+.truth-table tr.circle-highlight {
+  background-color: var(--circle-bg, transparent);
+  outline: 2px solid var(--circle-color, var(--primary));
+  outline-offset: -2px;
+}
+
+.truth-table tr.row-adjacent {
+  background-color: var(--adjacency-bg, rgba(255, 94, 0, 0.14));
+  outline: 2px dashed var(--adjacency-color, var(--vw-orange));
+  outline-offset: -2px;
+}
+
+.truth-table td.bit-diff {
+  color: var(--bit-diff-color, var(--vw-orange));
+  font-weight: 800;
+}
+
+.truth-table tr.just-changed {
+  animation: kmap-row-flash 0.5s ease;
+}
+
+@keyframes kmap-row-flash {
+  from { background-color: rgba(255, 94, 0, 0.35); }
+  to { background-color: transparent; }
+}
+
+/* K-map grid (ported layout, from FiniteStateMachine) */
+.kmap-grid-collection {
+  display: grid;
+  gap: 1rem;
+}
+
+.kmap-grid-wrapper {
+  position: relative;
+}
+
+.kmap-submap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.5rem;
+}
+
+.kmap-submap-label {
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 0.25rem;
+}
+
+.kmap-table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.kmap-table th,
+.kmap-table td {
+  border: 1px solid var(--border);
+  text-align: center;
+  padding: 0.3rem;
+  transition: background-color 0.3s ease;
+}
+
+.kmap-table th {
+  background-color: var(--bg-muted);
+  border: 2px solid var(--border);
+}
+
+.kmap-table input {
+  width: 40px;
+  text-align: center;
+  padding: 0.3rem;
+  cursor: pointer;
+  font-weight: 700;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  caret-color: transparent;
+}
+
+/* Group Helper repurposes clicks to commit a group instead of toggling the
+   cell's value, so the normal focus ring (implying "click to edit") is
+   suppressed while it's active. */
+body.group-helper-active .kmap-table input:focus {
+  outline: none;
+}
+
+.kmap-table td.is-active {
+  background-color: rgba(74, 108, 247, 0.18);
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+
+.kmap-table td.adjacency-highlight {
+  background-color: var(--adjacency-cell-bg, rgba(255, 94, 0, 0.18));
+  outline: 2px dashed var(--adjacency-cell-color, var(--vw-orange));
+  outline-offset: -2px;
+}
+
+.kmap-table td.group-preview {
+  background-color: rgba(138, 43, 226, 0.2);
+  outline: 2px dashed var(--vw-purple);
+  outline-offset: -2px;
+}
+
+.kmap-table td.just-changed {
+  animation: kmap-row-flash 0.5s ease;
+}
+
+.kmap-corner-label {
+  position: relative;
+  min-width: 56px;
+  min-height: 40px;
+  display: grid;
+  place-items: center;
+  color: var(--text);
+  font-weight: 700;
+}
+
+.kmap-corner-label .kmap-diagonal {
+  position: absolute;
+  inset: 0.35rem;
+  background: none;
+}
+
+.kmap-corner-label .kmap-diagonal::before {
+  content: "";
+  position: absolute;
+  top: -20px;
+  left: 51%;
+  bottom: -20px;
+  border-left: 1px solid var(--border);
+  transform: rotate(-45deg);
+  transform-origin: center;
+}
+
+.kmap-corner-label .kmap-variable-block {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: 0.2rem;
+  font-size: 0.85rem;
+}
+
+.kmap-corner-label .kmap-vars-row {
+  align-self: flex-start;
+  transform: translateY(20px) translateX(-10px);
+}
+
+.kmap-corner-label .kmap-vars-col {
+  align-self: flex-end;
+  transform: translateY(-15px) translateX(20px);
+}
+
+.kmap-var-top {
+  transform: translateY(-3px);
+}
+
+.kmap-var-bottom {
+  transform: translateY(10px);
+}
+
+.kmap-gray-code {
+  display: inline-block;
+  font-weight: 700;
+}
+
+.kmap-gray-row {
+  transform: translateX(-10px);
+}
+
+.kmap-gray-col {
+  transform: translateY(-5px);
+}
+
+/* Circle-grouping SVG overlay (ported from FiniteStateMachine) */
+.kmap-circle-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.kmap-circle-overlay.hidden {
+  display: none;
+}
+
+.kmap-circle-overlay svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.kmap-circle-section {
+  opacity: 1;
+  transition: opacity 1.5s ease;
+}
+
+.kmap-circle-section.kmap-circle-fade-out,
+.kmap-circle-section.kmap-circle-fade-in {
+  opacity: 0;
+}
+
+.kmap-circle-rect {
+  stroke-linejoin: round;
+}
+
+.kmap-circle-link {
+  stroke-linecap: round;
+}
+
+/* Variable tray + expression tray (ported from FiniteStateMachine) */
+.kmap-variable-tray {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+}
+
+.kmap-tray-label {
+  font-weight: 600;
+}
+
+.kmap-variable-items {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.kmap-token {
+  border: 1px solid var(--border);
+  background: var(--primary);
+  color: #fff;
+  border-radius: 8px;
+  padding: 0.2rem 0.5rem;
+  cursor: grab;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.kmap-token-operator {
+  background: var(--primary);
+  color: #fff;
+}
+
+.kmap-expression-tray-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+.kmap-expression-tray {
+  width: 100%;
+  min-width: 280px;
+  min-height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.4rem 0.6rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  cursor: text;
+  background: var(--surface);
+}
+
+.kmap-expression-tray:focus {
+  outline: 2px solid var(--accent);
+}
+
+.kmap-f-tray-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding-top: 0.35rem;
+  border-top: 1px dashed var(--border);
+}
+
+.kmap-f-label-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.kmap-tray-hint {
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+.kmap-overline-text {
+  position: relative;
+}
+
+.kmap-overline-text::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -4px;
+  border-top: 2px solid currentColor;
+}
+
+.kmap-expr-placeholder {
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.kmap-expr-token {
+  border: none;
+  border-radius: 8px;
+  padding: 0;
+  background: var(--surface);
+  cursor: grab;
+  box-shadow: none;
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  justify-content: center;
+}
+
+.kmap-expr-token.selected {
+  border: 2px solid var(--vw-orange);
+}
+
+.kmap-expr-token.operator {
+  background: transparent;
+  color: var(--text);
+}
+
+.kmap-expr-token-inner {
+  position: relative;
+  line-height: 1.05;
+}
+
+.kmap-expr-token-inner.negated::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -4px;
+  border-top: 2px solid currentColor;
+}
+
+.kmap-expression-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  width: 100%;
+}
+
+.kmap-expression-actions button {
+  background-color: var(--primary);
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1.25rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: filter 0.15s, background-color 0.15s;
+}
+
+.kmap-expression-actions button:hover {
+  filter: brightness(1.1);
+}
+
+.kmap-drop-marker {
+  width: 2px;
+  height: 24px;
+  background: var(--text);
+  opacity: 0.75;
+  box-shadow: 0 0 0 1px var(--border);
+  align-self: stretch;
+}
+
+.kmap-expression {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+}
+
+.expression-directions {
+  color: var(--muted);
+  font-size: 0.8rem;
+  margin: 0;
+}
+
+.kmap-expression-label {
+  font-weight: 700;
+  display: inline-block;
+}
+
+.kmap-expression button.verified {
+  background: var(--vw-green);
+  color: #000;
+}
+
+.kmap-expression button.not-minimal {
+  outline: 2px dashed var(--vw-orange);
+  outline-offset: 2px;
+}
+
+.kmap-expression button.failed {
+  background: var(--vw-red);
+  color: #fff;
+}
+
+.verify-result {
+  font-size: 0.875rem;
+  min-height: 1.2rem;
+}
+
+.verify-result.passed {
+  color: #16a34a;
+}
+
+.verify-result.failed {
+  color: var(--vw-red);
+}
+
+/* Practice mode / games */
+.game-feedback {
+  font-weight: 700;
+  font-size: 0.95rem;
+  min-height: 1.4rem;
+  margin: 0.5rem 0;
+}
+
+.game-feedback.correct {
+  color: #16a34a;
+}
+
+.game-feedback.incorrect {
+  color: var(--vw-red);
+}
+
+.game-answer-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.game-answer-actions button {
+  background-color: var(--primary);
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1.25rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter 0.15s;
+}
+
+.game-answer-actions button:hover {
+  filter: brightness(1.1);
+}
+
+.game-answer-actions button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.kmap-table td.game-claimed {
+  background-color: rgba(255, 0, 255, 0.18);
+  outline: 2px solid var(--vw-fuchsia);
+  outline-offset: -2px;
+}
+
+.kmap-table td.game-selected {
+  background-color: rgba(0, 255, 255, 0.2);
+  outline: 2px solid var(--vw-blue);
+  outline-offset: -2px;
+}
+
+.game-round-meta {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-bottom: 0.5rem;
+}
+
+/* 1-cells (SOP) / 0-cells (POS) tinted to show which value the primary tray is circling */
+.kmap-table td.target-value {
+  background-color: rgba(74, 108, 247, 0.08);
+}
+
+.subscript-text {
+  vertical-align: sub;
+  font-size: 0.82em;
+}
+
+.superscript-text {
+  vertical-align: super;
+  font-size: 0.82em;
+}
+
+/* Dialogs */
+.dialog-backdrop.hidden {
+  display: none;
+}
+
+.form-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+/* Switch UI */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 24px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--bg-muted);
+  transition: .4s;
+  border: 1px solid var(--border);
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 4px;
+  bottom: 3px;
+  background-color: white;
+  transition: .4s;
+}
+
+input:checked + .slider {
+  background-color: var(--primary);
+}
+
+input:checked + .slider:before {
+  transform: translateX(26px);
+}
+
+.slider.round {
+  border-radius: 24px;
+}
+
+.slider.round:before {
+  border-radius: 50%;
+}
