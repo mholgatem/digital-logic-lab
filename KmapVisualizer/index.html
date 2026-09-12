@@ -51,17 +51,6 @@
           <button class="type-btn active" data-type="sop">SOP</button>
           <button class="type-btn" data-type="pos">POS</button>
         </div>
-        <div class="toolbar-options">
-          <label class="gray-order-toggle">
-            <input type="checkbox" id="grayOrderToggle">
-            Sort truth table by Gray-code
-          </label>
-          <label class="gray-order-toggle">
-            <input type="checkbox" id="adjacencyToggle" checked>
-            Highlight adjacency
-          </label>
-          <button id="directionBtn" class="secondary-btn" title="Swap which variables form rows vs. columns">Swap Rows/Cols</button>
-        </div>
       </div>
 
       <div class="instructional-container">
@@ -72,7 +61,13 @@
 
       <div class="workspace">
         <div class="panel" id="truthTablePanel">
-          <h3>Truth Table</h3>
+          <div class="truth-table-header">
+            <h3>Truth Table</h3>
+            <label class="gray-order-toggle">
+              <input type="checkbox" id="grayOrderToggle">
+              Sort truth table by Gray-code
+            </label>
+          </div>
           <p class="adjacency-note" id="adjacencyNote">Orange rows are adjacent — only 1 bit differs</p>
           <table class="truth-table" id="truthTable">
             <thead id="truthTableHead"></thead>
@@ -89,6 +84,13 @@
           <div class="kmap-grid-wrapper" id="kmapGridWrapper">
             <div class="kmap-grid-collection" id="kmapGridCollection"></div>
             <div class="kmap-circle-overlay" id="kmapCircleOverlay"></div>
+          </div>
+          <div class="kmap-below-grid-controls">
+            <label class="gray-order-toggle">
+              <input type="checkbox" id="adjacencyToggle">
+              Highlight adjacency
+            </label>
+            <button id="directionBtn" class="secondary-btn" title="Swap which variables form rows vs. columns">Swap Rows/Cols</button>
           </div>
           <div class="kmap-expression" id="kmapExpressionSection"></div>
           <div class="verify-result" id="verifyResultText"></div>

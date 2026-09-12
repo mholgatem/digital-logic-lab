@@ -3,6 +3,7 @@
 // module — see CLAUDE.md: utilities are intentionally duplicated per module).
 // ---------------------------------------------------------------------------
 const THEME_COOKIE = 'dll_theme';
+const ADJACENCY_COOKIE = 'dll_kmap_adjacency';
 
 function setCookie(name, value, days) {
   let expires = '';
@@ -2787,9 +2788,12 @@ function initEventListeners() {
   const syncAdjacencyNote = () => {
     if (adjacencyNote) adjacencyNote.hidden = !adjacencyToggle.checked;
   };
+  // Off by default; once a student turns it on, remember that across visits.
+  adjacencyToggle.checked = getCookie(ADJACENCY_COOKIE) === 'true';
   syncAdjacencyNote();
   adjacencyToggle.addEventListener('change', () => {
     syncAdjacencyNote();
+    setCookie(ADJACENCY_COOKIE, adjacencyToggle.checked ? 'true' : 'false', 365);
     if (!adjacencyToggle.checked) {
       clearAdjacencyHighlight();
       clearRowAdjacencyHighlight();

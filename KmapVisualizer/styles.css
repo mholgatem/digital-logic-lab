@@ -312,6 +312,27 @@ body.dark {
   margin: -0.25rem 0 0.75rem;
 }
 
+.kmap-below-grid-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin: 0.75rem 0;
+}
+
+.truth-table-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+}
+
+.truth-table-header h3 {
+  margin: 0;
+}
+
 .tutorial-step {
   margin-top: 1.5rem;
   background-color: var(--bg);
