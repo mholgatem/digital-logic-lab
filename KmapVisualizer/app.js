@@ -1720,19 +1720,21 @@ function getCellValueFor(kmap, row, col) {
   return (kmap.cells && kmap.cells[kmapCellKey(row, col)]) || '0';
 }
 
-function findLargestGroupContaining(layout, targetValue, row, col, getValue = getValueForPos) {
+// Every legal Gray-code rectangle containing (row, col) whose cells are all
+// `targetValue` -- not just the largest. Used both to find the true maximum
+// (findLargestGroupContaining) and, for the "Spot the Invalid Grouping"
+// game, to find smaller-than-maximum valid groups to present as mistakes.
+function findAllValidGroupsContaining(layout, targetValue, row, col, getValue = getValueForPos) {
   const sub = getSubmapForPos(layout, row, col);
-  if (!sub) return null;
+  if (!sub) return [];
   const localRow = row - sub.rowOffset;
   const localCol = col - sub.colOffset;
   const rowBlocks = circularBlocksContaining(layout.baseRows, localRow);
   const colBlocks = circularBlocksContaining(layout.baseCols, localCol);
-  let best = null;
+  const results = [];
 
   rowBlocks.forEach((rb) => {
     colBlocks.forEach((cb) => {
-      const area = rb.len * cb.len;
-      if (best && area <= best.area) return;
       const cells = [];
       let allMatch = true;
       for (let dr = 0; dr < rb.len && allMatch; dr += 1) {
@@ -1746,11 +1748,17 @@ function findLargestGroupContaining(layout, targetValue, row, col, getValue = ge
           cells.push({ row: r, col: c });
         }
       }
-      if (allMatch) best = { area, cells };
+      if (allMatch) results.push({ area: rb.len * cb.len, cells });
     });
   });
 
-  return best;
+  return results;
+}
+
+function findLargestGroupContaining(layout, targetValue, row, col, getValue = getValueForPos) {
+  const groups = findAllValidGroupsContaining(layout, targetValue, row, col, getValue);
+  if (!groups.length) return null;
+  return groups.reduce((best, cur) => (cur.area > best.area ? cur : best));
 }
 
 // Reduces a set of cells to a boolean product term: a variable is included
@@ -2346,6 +2354,23 @@ function evaluateGroupValidity(kmap, layout, cells, targetValue) {
   return { valid: true };
 }
 
+// Same as evaluateGroupValidity, but also rejects a legally-shaped,
+// all-target-value group if it isn't the largest one available -- circling
+// a real K-map group that could still be expanded is a genuine mistake, even
+// though "Circle the Largest Group" (a different game) scores that case as
+// "valid but not maximal" rather than flatly invalid.
+function evaluateSpotGroupValidity(kmap, layout, cells, targetValue) {
+  const base = evaluateGroupValidity(kmap, layout, cells, targetValue);
+  if (!base.valid) return base;
+  const seed = cells[0];
+  const groups = findAllValidGroupsContaining(layout, targetValue, seed.row, seed.col, (r, c) => getCellValueFor(kmap, r, c));
+  const maxArea = groups.length ? Math.max(...groups.map((g) => g.area)) : cells.length;
+  if (cells.length < maxArea) {
+    return { valid: false, reason: `Not the largest possible group — it could be expanded to ${maxArea} cells` };
+  }
+  return { valid: true };
+}
+
 function pickRandomTargetCell(kmap, layout, targetValue) {
   const candidates = [];
   for (let r = 0; r < layout.totalRows; r += 1) {
@@ -2363,13 +2388,33 @@ function startSpotGame() {
   const { kmap, layout } = generateGameKmap(varCount);
   const targetValue = '1';
   const seed = pickRandomTargetCell(kmap, layout, targetValue);
+  const getValue = (r, c) => getCellValueFor(kmap, r, c);
 
   const makeValidClaim = () => {
     if (!seed) return null;
-    const group = findLargestGroupContaining(
-      layout, targetValue, seed.row, seed.col, (r, c) => getCellValueFor(kmap, r, c),
-    );
+    const group = findLargestGroupContaining(layout, targetValue, seed.row, seed.col, getValue);
     return group ? group.cells : null;
+  };
+
+  // A claim that's a genuinely legal, all-1s rectangle -- just not the
+  // largest one available from that spot. The classic "forgot to expand the
+  // group as far as it will go" mistake, distinct from a wrong-shape/value one.
+  const makeNonMaximalClaim = () => {
+    const targetCells = [];
+    for (let r = 0; r < layout.totalRows; r += 1) {
+      for (let c = 0; c < layout.totalCols; c += 1) {
+        if (getValue(r, c) === targetValue) targetCells.push({ row: r, col: c });
+      }
+    }
+    for (let attempt = 0; attempt < targetCells.length; attempt += 1) {
+      const candidate = targetCells[Math.floor(Math.random() * targetCells.length)];
+      const groups = findAllValidGroupsContaining(layout, targetValue, candidate.row, candidate.col, getValue);
+      if (groups.length < 2) continue;
+      const maxArea = Math.max(...groups.map((g) => g.area));
+      const smaller = groups.filter((g) => g.area < maxArea);
+      if (smaller.length) return smaller[Math.floor(Math.random() * smaller.length)].cells;
+    }
+    return null;
   };
 
   const makeBrokenClaim = () => {
@@ -2397,12 +2442,15 @@ function startSpotGame() {
   };
 
   let claimedCells;
-  if (Math.random() < 0.5) {
+  const roll = Math.random();
+  if (roll < 0.5) {
     claimedCells = makeValidClaim() || makeBrokenClaim();
+  } else if (roll < 0.75) {
+    claimedCells = makeNonMaximalClaim() || makeBrokenClaim();
   } else {
     claimedCells = makeBrokenClaim();
   }
-  const isActuallyValid = evaluateGroupValidity(kmap, layout, claimedCells, targetValue).valid;
+  const isActuallyValid = evaluateSpotGroupValidity(kmap, layout, claimedCells, targetValue).valid;
 
   gameState.spot = { kmap, layout, targetValue, claimedCells, isActuallyValid, answered: false };
   renderSpotGame();
@@ -2458,7 +2506,7 @@ function renderSpotGame() {
     validBtn.disabled = true;
     invalidBtn.disabled = true;
     const correct = guessValid === round.isActuallyValid;
-    const explanation = evaluateGroupValidity(round.kmap, round.layout, round.claimedCells, round.targetValue);
+    const explanation = evaluateSpotGroupValidity(round.kmap, round.layout, round.claimedCells, round.targetValue);
     recordGameOutcome(correct);
     feedback.className = correct ? 'game-feedback correct' : 'game-feedback incorrect';
     const verdict = correct ? 'Correct!' : 'Not quite —';
