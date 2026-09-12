@@ -1828,6 +1828,16 @@ function hasAnyTargetCell() {
   return Object.values(state.kmap.cells).some((v) => v === target);
 }
 
+// A kmap that's the target value in every single cell (all 1s for SOP, all
+// 0s for POS) has exactly one "group" -- the whole grid -- and every
+// variable varies across it, so Group Helper can't reduce it to a term at
+// all (see groupToTerm). Needs at least one non-target cell to do anything.
+function hasVarietyForGrouping() {
+  const target = getGroupHelperTargetValue();
+  const values = Object.values(state.kmap.cells);
+  return values.some((v) => v === target) && values.some((v) => v !== target);
+}
+
 // Single source of truth for Group Helper's button/label/hint state: it can
 // only be turned on once there's something to group, and its hint always
 // names the value it's actually grouping (1s for SOP, 0s for POS).
@@ -1836,7 +1846,8 @@ function updateGroupHelperAvailability() {
   const groupHelperNote = document.getElementById('groupHelperNote');
   if (!groupHelperBtn || !groupHelperNote) return;
   const target = getGroupHelperTargetValue();
-  const available = hasAnyTargetCell();
+  const hasTarget = hasAnyTargetCell();
+  const available = hasVarietyForGrouping();
 
   if (!available && groupHelperEnabled) {
     groupHelperEnabled = false;
@@ -1848,9 +1859,14 @@ function updateGroupHelperAvailability() {
   groupHelperBtn.textContent = groupHelperEnabled ? 'Group Helper: On' : 'Group Helper: Off';
   document.body.classList.toggle('group-helper-active', groupHelperEnabled);
 
-  if (!available) {
+  if (!hasTarget) {
     groupHelperNote.hidden = false;
     groupHelperNote.textContent = `Add ${target}'s before activating Group Helper`;
+  } else if (!available) {
+    const outputName = state.kmap.label || 'F';
+    const label = state.kmap.type === 'pos' ? `${outputName}'` : outputName;
+    groupHelperNote.hidden = false;
+    groupHelperNote.textContent = `With this kmap ${label}=${target}, add some variety!`;
   } else if (groupHelperEnabled) {
     groupHelperNote.hidden = false;
     groupHelperNote.textContent = `Click a highlighted group of ${target}'s to add it to the expression`;
@@ -2753,7 +2769,7 @@ function initEventListeners() {
     // attribute, so this stays correct even if cells changed through some
     // path that didn't refresh the button (defensive, not currently reachable
     // in normal use since handleValueToggle/setVarCount/setKmapType all do).
-    if (!hasAnyTargetCell()) {
+    if (!hasVarietyForGrouping()) {
       updateGroupHelperAvailability();
       return;
     }
