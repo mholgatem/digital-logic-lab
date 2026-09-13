@@ -55,7 +55,13 @@
 
       <div class="instructional-container">
         <div class="speech-bubble">
-          <p id="instructionText">Click a cell in either the truth table or the K-map to toggle it between 0 and 1 — watch how the same value lights up in both places.</p>
+          <button id="tutorialCloseBtn" class="speech-bubble-close" type="button" aria-label="Close tutorial" hidden>&times;</button>
+          <div class="bubble-grid" id="bubbleGrid">
+            <div class="bubble-grid-inner">
+              <p id="instructionText">Click a cell in either the truth table or the K-map to toggle it between 0 and 1 — watch how the same value lights up in both places.</p>
+              <button id="tutorialContinueBtn" class="primary" type="button" hidden>Continue</button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -137,6 +143,7 @@
         <p>6. Switch Type to <strong>POS</strong> to practice the product-of-sums form: build the SOP of F' in the first tray, then apply DeMorgan's Law to get F in the second tray. Verify checks both.</p>
       </div>
       <div class="dialog-actions">
+        <button id="startInteractiveTutorialBtn" class="secondary-btn" type="button">Start Interactive Tutorial</button>
         <button id="closeTutorial" class="primary">Got it!</button>
       </div>
     </div>

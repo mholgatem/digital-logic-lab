@@ -259,10 +259,60 @@ body.dark {
   padding: 0.85rem 1.1rem;
   font-size: 0.9rem;
   color: var(--text);
+  position: relative;
+}
+
+.bubble-grid {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 0.25s ease;
+}
+
+.bubble-grid.collapsed {
+  grid-template-rows: 0fr;
+}
+
+.bubble-grid-inner {
+  overflow: hidden;
+  min-height: 90px;
 }
 
 .speech-bubble p {
   margin: 0;
+  padding-right: 1.5rem;
+}
+
+.speech-bubble-close {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.6rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text);
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.speech-bubble-close:hover {
+  background-color: var(--border);
+}
+
+#tutorialContinueBtn {
+  margin-top: 0.75rem;
+}
+
+.tutorial-expr-orange {
+  color: var(--vw-orange);
+  font-weight: 600;
+}
+
+.tutorial-expr-cyan {
+  color: var(--vw-blue);
+  font-weight: 600;
 }
 
 .workspace {
@@ -686,9 +736,9 @@ body.group-helper-active .kmap-table input:focus {
 .kmap-overline-text::before {
   content: '';
   position: absolute;
-  left: 0;
-  right: 0;
-  top: -4px;
+  left: 1px;
+  right: 1px;
+  top: -1px;
   border-top: 2px solid currentColor;
 }
 

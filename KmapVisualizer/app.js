@@ -4,6 +4,7 @@
 // ---------------------------------------------------------------------------
 const THEME_COOKIE = 'dll_theme';
 const ADJACENCY_COOKIE = 'dll_kmap_adjacency';
+const TUTORIAL_SEEN_COOKIE = 'dll_kmap_tutorial_seen';
 
 function setCookie(name, value, days) {
   let expires = '';
@@ -1420,6 +1421,12 @@ const truthTableBody = document.getElementById('truthTableBody');
 const grayOrderToggle = document.getElementById('grayOrderToggle');
 const adjacencyToggle = document.getElementById('adjacencyToggle');
 const directionBtn = document.getElementById('directionBtn');
+const instructionTextEl = document.getElementById('instructionText');
+const tutorialContinueBtn = document.getElementById('tutorialContinueBtn');
+const tutorialCloseBtn = document.getElementById('tutorialCloseBtn');
+const learnSpeechBubbleEl = document.querySelector('#learnView .speech-bubble');
+const bubbleGridEl = document.getElementById('bubbleGrid');
+const DEFAULT_INSTRUCTION_HTML = instructionTextEl ? instructionTextEl.innerHTML : '';
 
 function renderKmapGrid() {
   const layout = state.layout;
@@ -1518,6 +1525,7 @@ function handleValueToggle(declaredKey) {
   setValueForPos(pos.row, pos.col, next);
   updateCellDisplays(declaredKey, next);
   updateGroupHelperAvailability();
+  if (tutorial.active && tutorial.awaiting === 'toggle') advanceTutorial();
 }
 
 function updateCellDisplays(declaredKey, value) {
@@ -1830,6 +1838,7 @@ function commitPreviewedGroup(input) {
   if (!group) return;
   const tokens = groupToTerm(state.layout, group.cells);
   addTermToPrimaryTray(tokens);
+  if (tutorial.active && tutorial.awaiting === 'group') handleTutorialGroupCommitted(group.cells, tokens);
 }
 
 function hasAnyTargetCell() {
@@ -1880,6 +1889,13 @@ function updateGroupHelperAvailability() {
     groupHelperNote.hidden = false;
     groupHelperNote.textContent = `Click a highlighted group of ${target}'s to add it to the expression`;
   } else {
+    groupHelperNote.hidden = true;
+  }
+
+  // The interactive tutorial narrates Group Helper itself in the speech
+  // bubble -- while it's active and Group Helper isn't on yet, this note
+  // would just be a second, redundant (and differently-worded) voice.
+  if (tutorial.active && !groupHelperEnabled) {
     groupHelperNote.hidden = true;
   }
 }
@@ -1999,6 +2015,7 @@ function runVerify() {
     : result.reason || 'Expression verification failed';
   resultText.classList.toggle('passed', !!result.passed);
   resultText.classList.toggle('failed', !result.passed);
+  if (tutorial.active && tutorial.awaiting === 'verify-pos' && result.passed) advanceTutorial();
 }
 
 let kmapExpressionDragState = null;
@@ -2726,6 +2743,376 @@ function setAppMode(mode) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Interactive tutorial: a scripted sequence of speech-bubble lessons that
+// advances as the student performs the taught action (hover, toggle, enable
+// adjacency, group cells, verify). Two tracks: 'sop' (the full walkthrough,
+// started from the tutorial dialog) and 'pos' (a DeMorgan continuation,
+// auto-started once the SOP track's closing line invites it and the student
+// switches the type toggle to POS).
+// ---------------------------------------------------------------------------
+
+// A hand-picked 4-variable function with a unique minimal SOP where every
+// essential group is a plain pair that drops exactly one variable, so the
+// "this group spans X=0 and X=1, so X drops out" narrative is literally true
+// for every group the student captures: F = A'B'C' + A'BD + AB'C.
+const TUTORIAL_MINTERMS = ['0000', '0001', '0101', '0111', '1010', '1011'];
+
+let tutorial = {
+  active: false,
+  track: null,
+  step: 0,
+  awaiting: null,
+  targetKeys: [],
+  coveredKeys: new Set(),
+  committedTerms: [],
+  committedTokens: [],
+  lastGroup: null,
+  sopComplete: false,
+};
+
+// The CSS grid wrapper trick: #bubbleGrid is a single-row grid whose
+// grid-template-rows animates between 1fr (natural content height) and 0fr
+// (fully collapsed, enabled by the inner wrapper's `overflow: hidden`
+// resetting its minimum size to 0). Unlike animating `height` directly,
+// this doesn't need either endpoint measured in pixels -- the browser
+// tweens the fr value itself -- so it works identically whether the new
+// content is taller or shorter than the old, with no JS height math that
+// can get the "new" measurement wrong. We collapse, swap the content while
+// invisible, then expand back open to whatever height the new content
+// naturally wants.
+function animateInstructionBubbleChange(updateFn) {
+  if (!bubbleGridEl) {
+    updateFn();
+    return;
+  }
+  let finished = false;
+  const finishCollapse = () => {
+    if (finished) return;
+    finished = true;
+    bubbleGridEl.removeEventListener('transitionend', onCollapsed);
+    updateFn();
+    void bubbleGridEl.offsetHeight; // force reflow so the collapsed state is committed before expanding
+    bubbleGridEl.classList.remove('collapsed');
+  };
+  const onCollapsed = (e) => {
+    if (e.target !== bubbleGridEl || e.propertyName !== 'grid-template-rows') return;
+    finishCollapse();
+  };
+  bubbleGridEl.addEventListener('transitionend', onCollapsed);
+  bubbleGridEl.classList.add('collapsed');
+  // Safety net: if the transition never fires (element hidden, reduced
+  // motion, etc.) the content swap must still happen.
+  setTimeout(finishCollapse, 300);
+}
+
+function setKmapCellsByDeclaredKey(valuesByKey) {
+  Object.keys(state.keyMaps.declaredKeyToPos).forEach((key) => {
+    const pos = state.keyMaps.declaredKeyToPos[key];
+    setValueForPos(pos.row, pos.col, valuesByKey[key] || '0');
+  });
+}
+
+function stringifyTerm(tokens) {
+  return tokens
+    .map((tk) => (tk.negated ? `<span class="kmap-overline-text">${escapeHtml(tk.value)}</span>` : escapeHtml(tk.value)))
+    .join('');
+}
+
+function stringifyExpression(termHtmlList) {
+  return termHtmlList.length ? termHtmlList.join(' + ') : '&hellip;';
+}
+
+function fullMintermTermHtml(declaredKey) {
+  return state.variables
+    .map((v, idx) => (declaredKey[idx] === '0' ? `<span class="kmap-overline-text">${v}</span>` : v))
+    .join('');
+}
+
+function buildCanonicalSopHtml() {
+  const terms = Object.keys(state.keyMaps.declaredKeyToPos)
+    .sort()
+    .filter((key) => {
+      const pos = state.keyMaps.declaredKeyToPos[key];
+      return getValueForPos(pos.row, pos.col) === '1';
+    })
+    .map((key) => fullMintermTermHtml(key));
+  return `<span class="tutorial-expr-orange">F=${terms.join(' + ')}</span>`;
+}
+
+// DeMorgan's Law applied to a sum-of-products F' expression: each product
+// term (a list of literal tokens) becomes a parenthesized sum of its
+// literals with negation flipped, and the sums are ANDed (juxtaposed)
+// together -- e.g. A'B + C becomes (A+B')(C').
+function buildDeMorganPosHtml(termTokensList) {
+  return termTokensList
+    .map((tokens) => {
+      const sum = tokens
+        .map((tk) => (tk.negated ? escapeHtml(tk.value) : `<span class="kmap-overline-text">${escapeHtml(tk.value)}</span>`))
+        .join(' + ');
+      return `(${sum})`;
+    })
+    .join('');
+}
+
+function resetTutorialGroupingProgress(targetValue) {
+  groupHelperEnabled = true;
+  updateGroupHelperAvailability();
+  tutorial.targetKeys = Object.keys(state.keyMaps.declaredKeyToPos).filter((key) => {
+    const pos = state.keyMaps.declaredKeyToPos[key];
+    return getValueForPos(pos.row, pos.col) === targetValue;
+  });
+  tutorial.coveredKeys = new Set();
+  tutorial.committedTerms = [];
+  tutorial.committedTokens = [];
+  tutorial.lastGroup = null;
+}
+
+const TUTORIAL_SOP_STEPS = [
+  {
+    awaiting: 'continue',
+    showContinue: true,
+    onEnter() {
+      document.querySelector('.mode-btn[data-mode="learn"]')?.click();
+      document.querySelector('.varcount-btn[data-varcount="2"]')?.click();
+      document.querySelector('.type-btn[data-type="sop"]')?.click();
+      groupHelperEnabled = false;
+      if (adjacencyToggle.checked) {
+        adjacencyToggle.checked = false;
+        adjacencyToggle.dispatchEvent(new Event('change'));
+      }
+      initKmapState();
+      renderKmapGrid();
+      renderTruthTable();
+      renderExpressionSection();
+      renderTargetValueTint();
+      scheduleKmapCircleRender();
+      clearVerifyResult();
+      updateGroupHelperAvailability();
+    },
+    text: () => 'Welcome to the K-map Visualizer! This module shows you how a truth table and a Karnaugh map are two views of the exact same function, and how the K-map gives you a shortcut to simplifying it.'
+      + '<br><br>Take a look at the K-map — notice how each cell’s coordinate is really just one row of the truth table. <br>Hover over a few cells or rows to see how they line up!',
+  },
+  {
+    awaiting: 'toggle',
+    text: () => 'Click a value in a cell — or in the truth table’s F column — to toggle it between 0 and 1. <br>Notice the value changes in both the table and the K-map at once.',
+  },
+  {
+    awaiting: 'continue',
+    showContinue: true,
+    text: () => 'Now turn on <strong>Highlight adjacency</strong> to see which cells are adjacent to whichever one you’re hovering. <br><br>Notice that cells on the edge of the map wrap around to the opposite edge — switch to a 4-variable map later to see that more clearly.',
+  },
+  {
+    awaiting: 'continue',
+    showContinue: true,
+    onEnter() {
+      document.querySelector('.varcount-btn[data-varcount="4"]')?.click();
+      setKmapCellsByDeclaredKey(Object.fromEntries(TUTORIAL_MINTERMS.map((k) => [k, '1'])));
+      groupHelperEnabled = false;
+      resetKmapExpressions();
+      renderKmapGrid();
+      renderTruthTable();
+      renderExpressionSection();
+      renderTargetValueTint();
+      scheduleKmapCircleRender();
+      clearVerifyResult();
+      updateGroupHelperAvailability();
+    },
+    text: () => `Currently, your truth table could be solved with a Sum Of Products (SOP) by finding where F=1 → AND those column values → OR each of those terms, which results in the following function:`
+      + `<br><br>${buildCanonicalSopHtml()}`
+      + '<br><br>This is known as <strong>Canonical</strong> Sum Of Products, because every term contains every variable.',
+  },
+  {
+    awaiting: 'continue',
+    showContinue: true,
+    text: () => `${buildCanonicalSopHtml()}`
+      + '<br><br>But what if we wanted to simplify this? We could use boolean algebra — or we can use K-maps! <br><br>Let’s take a look at how: <br>First notice that the table is laid out in a specific pattern: 00, 01, 11, 10. <br>This is called <strong>Gray code</strong>, and it ensures only one bit changes at a time between adjacent rows.',
+  },
+  {
+    awaiting: 'continue',
+    showContinue: true,
+    text: () => `${buildCanonicalSopHtml()}`
+      + '<br><br>In order to solve a K-map, we just have to follow a few simple rules:'
+      + '<ul>'
+      + '<li>Circle groups of adjacent cells that share the same target value.</li>'
+      + '<li>Groups must be a power-of-two size (1, 2, 4, 8…) and rectangular — wraparound off the edges counts.</li>'
+      + '<li>No diagonals.</li>'
+      + '<li>Make each group as large as possible.</li>'
+      + '<li>Every target cell needs to be covered by at least one group — groups can overlap.</li>'
+      + '</ul>',
+  },
+  {
+    awaiting: 'group',
+    onEnter() {
+      resetTutorialGroupingProgress('1');
+    },
+    text() {
+      const orange = buildCanonicalSopHtml();
+      if (!tutorial.lastGroup) {
+        return `${orange}<br><br>Now that you know the rules: Select a group of 1’s to add that term to our equivalent function.`;
+      }
+      const cyan = `<span class="tutorial-expr-cyan">F=${stringifyExpression(tutorial.committedTerms)}</span>`;
+      const { cells, tokens } = tutorial.lastGroup;
+      const [cellA, cellB] = cells;
+      const keyA = state.keyMaps.posToDeclaredKey[kmapCellKey(cellA.row, cellA.col)];
+      const keyB = state.keyMaps.posToDeclaredKey[kmapCellKey(cellB.row, cellB.col)];
+      const bitIdx = findDifferingBitIndex(keyA, keyB);
+      const droppedVar = bitIdx !== -1 ? state.variables[bitIdx] : null;
+      const termHtml = stringifyTerm(tokens);
+      let dropExplanation = '';
+      if (droppedVar) {
+        const keyWith1 = `${keyA.slice(0, bitIdx)}1${keyA.slice(bitIdx + 1)}`;
+        const keyWith0 = `${keyA.slice(0, bitIdx)}0${keyA.slice(bitIdx + 1)}`;
+        dropExplanation = ` Notice that the variable <strong>${droppedVar}</strong> is absent from this term. <br>Because this group spans both ${droppedVar}=0 and ${droppedVar}=1, it covers both ${fullMintermTermHtml(keyWith1)} and ${fullMintermTermHtml(keyWith0)}. <br>By the adjacency property (X+X’=1), ${droppedVar} drops out, leaving just ${termHtml}.`;
+      }
+      return `${orange}<br><br>${cyan}`
+        + `<br><br>Great! You captured the group ${termHtml}.<br><br>${dropExplanation} <br><br>Go ahead and select the rest of the groups.`;
+    },
+  },
+  {
+    awaiting: null,
+    onEnter() {
+      tutorial.sopComplete = true;
+    },
+    text() {
+      const orange = buildCanonicalSopHtml();
+      const cyan = `<span class="tutorial-expr-cyan">F=${stringifyExpression(tutorial.committedTerms)}</span>`;
+      const cyanSpaced = `<span class="tutorial-expr-cyan">F = ${stringifyExpression(tutorial.committedTerms)}</span>`;
+      return `${orange}<br><br>${cyan}<br><br>Awesome! You selected all of the groups! <br><br>${cyanSpaced} -- as you can see, that’s a simplified version of our canonical SOP! That’s the power of K-maps.<br>It’s like a mini-game for truth tables!`
+        + '<br><br>If you’d like to learn more, switch over to POS.';
+    },
+  },
+];
+
+const TUTORIAL_POS_STEPS = [
+  {
+    awaiting: 'continue',
+    showContinue: true,
+    onEnter() {
+      // setKmapType('pos') (already run by the type-btn click that triggered
+      // this track) has already reset the primary tray and re-rendered it
+      // with the F= second tray, so there's nothing left to do here besides
+      // resetting tutorial-only bookkeeping.
+      tutorial.sopComplete = false;
+      groupHelperEnabled = false;
+      updateGroupHelperAvailability();
+    },
+    text: () => 'Same K-map, same truth table — but now let’s express F as a Product Of Sums (POS).<br>First we’ll build the SOP of <span class="kmap-overline-text">F</span> by grouping the 0’s.',
+  },
+  {
+    awaiting: 'group',
+    onEnter() {
+      resetTutorialGroupingProgress('0');
+    },
+    text() {
+      const progress = tutorial.committedTerms.length
+        ? `<br><br>So far: <span class="tutorial-expr-cyan"><span class="kmap-overline-text">F</span>=${stringifyExpression(tutorial.committedTerms)}</span>`
+        : '';
+      return `Select a group of 0’s to add its term to <span class="kmap-overline-text">F</span>.${progress}`;
+    },
+  },
+  {
+    awaiting: 'verify-pos',
+    text() {
+      const fPrimeHtml = `<span class="tutorial-expr-orange"><span class="kmap-overline-text">F</span>=${stringifyExpression(tutorial.committedTerms)}</span>`;
+      const posHtml = `<span class="tutorial-expr-cyan">F=${buildDeMorganPosHtml(tutorial.committedTokens)}</span>`;
+      return 'Now use DeMorgan’s Law to build the Product Of Sums for F'
+        + `<br><br>${fPrimeHtml}`
+        + `<br><br>DeMorgan:<br>${posHtml}<br><br> `
+        + 'Now build the POS function yourself by dragging the variable tokens to the second tray below.';
+    },
+  },
+  {
+    awaiting: null,
+    text: () => 'Great work! You’ve built both the Sum Of Products for <span class="kmap-overline-text">F</span> and the Product Of Sums for F from the very same K-map.',
+  },
+];
+
+function getTutorialSteps() {
+  return tutorial.track === 'pos' ? TUTORIAL_POS_STEPS : TUTORIAL_SOP_STEPS;
+}
+
+function renderTutorialBubble() {
+  if (!tutorial.active || !instructionTextEl) return;
+  const step = getTutorialSteps()[tutorial.step];
+  if (!step) return;
+  animateInstructionBubbleChange(() => {
+    instructionTextEl.innerHTML = typeof step.text === 'function' ? step.text() : step.text;
+    if (tutorialContinueBtn) tutorialContinueBtn.hidden = !step.showContinue;
+    if (tutorialCloseBtn) tutorialCloseBtn.hidden = false;
+  });
+}
+
+function enterTutorialStep(index) {
+  const steps = getTutorialSteps();
+  if (index < 0 || index >= steps.length) return;
+  tutorial.step = index;
+  const step = steps[index];
+  tutorial.awaiting = step.awaiting;
+  step.onEnter?.();
+  renderTutorialBubble();
+}
+
+function advanceTutorial() {
+  if (!tutorial.active) return;
+  enterTutorialStep(tutorial.step + 1);
+}
+
+function handleTutorialGroupCommitted(cells, tokens) {
+  cells.forEach(({ row, col }) => {
+    const key = state.keyMaps.posToDeclaredKey[kmapCellKey(row, col)];
+    if (key) tutorial.coveredKeys.add(key);
+  });
+  tutorial.lastGroup = { cells, tokens };
+  tutorial.committedTerms.push(stringifyTerm(tokens));
+  tutorial.committedTokens.push(tokens);
+  const allCovered = tutorial.targetKeys.length > 0 && tutorial.targetKeys.every((key) => tutorial.coveredKeys.has(key));
+  if (allCovered) {
+    advanceTutorial();
+  } else {
+    renderTutorialBubble();
+  }
+}
+
+function startTutorial() {
+  tutorial = {
+    active: true,
+    track: 'sop',
+    step: 0,
+    awaiting: null,
+    targetKeys: [],
+    coveredKeys: new Set(),
+    committedTerms: [],
+    committedTokens: [],
+    lastGroup: null,
+    sopComplete: false,
+  };
+  enterTutorialStep(0);
+}
+
+function startPosTrack() {
+  tutorial.active = true;
+  tutorial.track = 'pos';
+  tutorial.targetKeys = [];
+  tutorial.coveredKeys = new Set();
+  tutorial.committedTerms = [];
+  tutorial.committedTokens = [];
+  tutorial.lastGroup = null;
+  enterTutorialStep(0);
+}
+
+function endTutorial() {
+  tutorial.active = false;
+  // Dismissing it once is enough -- don't force it back open on every
+  // future visit, only the first one (see the DOMContentLoaded auto-start).
+  setCookie(TUTORIAL_SEEN_COOKIE, 'true', 365);
+  animateInstructionBubbleChange(() => {
+    if (instructionTextEl) instructionTextEl.innerHTML = DEFAULT_INSTRUCTION_HTML;
+    if (tutorialContinueBtn) tutorialContinueBtn.hidden = true;
+    if (tutorialCloseBtn) tutorialCloseBtn.hidden = true;
+  });
+}
+
 function initEventListeners() {
   document.querySelectorAll('.varcount-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -2743,6 +3130,7 @@ function initEventListeners() {
       document.querySelector('.type-btn.active')?.classList.remove('active');
       btn.classList.add('active');
       setKmapType(btn.dataset.type);
+      if (btn.dataset.type === 'pos' && tutorial.sopComplete) startPosTrack();
     });
   });
 
@@ -2851,8 +3239,35 @@ function initEventListeners() {
   const tutorialBtn = document.getElementById('tutorialBtn');
   const tutorialDialog = document.getElementById('tutorialDialog');
   const closeTutorial = document.getElementById('closeTutorial');
+  const startInteractiveTutorialBtn = document.getElementById('startInteractiveTutorialBtn');
   if (tutorialBtn) tutorialBtn.addEventListener('click', () => tutorialDialog.classList.remove('hidden'));
   if (closeTutorial) closeTutorial.addEventListener('click', () => tutorialDialog.classList.add('hidden'));
+  if (startInteractiveTutorialBtn) {
+    startInteractiveTutorialBtn.addEventListener('click', () => {
+      tutorialDialog.classList.add('hidden');
+      startTutorial();
+    });
+  }
+  if (tutorialContinueBtn) {
+    // Continue is now also offered on steps that primarily wait for a hover
+    // or a toggle, so it just skips ahead unconditionally whenever it's
+    // visible, rather than only when the step's specific awaited action is
+    // literally 'continue'.
+    tutorialContinueBtn.addEventListener('click', () => {
+      if (tutorial.active) advanceTutorial();
+    });
+  }
+  if (tutorialCloseBtn) tutorialCloseBtn.addEventListener('click', endTutorial);
+
+  // Whenever the speech bubble's own box size changes (tutorial text
+  // getting longer/shorter, including mid-transition), re-measure and
+  // redraw the K-map circles -- otherwise a bubble resize can leave the
+  // circle overlay's cached positions pointing at the K-map's old on-page
+  // location.
+  if (learnSpeechBubbleEl && typeof ResizeObserver !== 'undefined') {
+    const bubbleResizeObserver = new ResizeObserver(() => scheduleKmapCircleRender());
+    bubbleResizeObserver.observe(learnSpeechBubbleEl);
+  }
 
   const settingsBtn = document.getElementById('settingsBtn');
   const settingsDialog = document.getElementById('settingsDialog');
@@ -2879,4 +3294,11 @@ document.addEventListener('DOMContentLoaded', () => {
   renderTruthTable();
   renderExpressionSection();
   scheduleKmapCircleRender();
+
+  // The interactive tutorial is on by default for a first-time visitor;
+  // closing it (the bubble's X) remembers that via a cookie so it doesn't
+  // force itself back open on every later visit.
+  if (getCookie(TUTORIAL_SEEN_COOKIE) !== 'true') {
+    startTutorial();
+  }
 });
