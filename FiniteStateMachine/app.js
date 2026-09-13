@@ -3563,7 +3563,11 @@ function checkKmapMinimality(sections, kmapTable, variables, type) {
     let redundant = true;
     for (const [key, val] of kmapTable.entries()) {
       if (val !== targetValue) continue;
-      if (!others.some((t) => t?.get(key) === targetValue)) {
+      // A section's own truth table is 1 wherever that product term is true,
+      // regardless of SOP/POS — "does another term cover this cell" always
+      // means checking for '1' here, never `targetValue` (which is '0' for
+      // POS and would silently invert this check).
+      if (!others.some((t) => t?.get(key) === '1')) {
         redundant = false;
         break;
       }
@@ -3582,7 +3586,7 @@ function checkKmapMinimality(sections, kmapTable, variables, type) {
       if (!reducedTable) continue;
       let expandable = true;
       for (const [key, val] of kmapTable.entries()) {
-        if (val === badValue && reducedTable.get(key) === targetValue) {
+        if (val === badValue && reducedTable.get(key) === '1') {
           expandable = false;
           break;
         }
