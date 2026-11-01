@@ -12,6 +12,7 @@ Modules:
 - `MuxLogicTool/` — K-map to multiplexer decomposition puzzle
 - `FiniteStateMachine/` — Full FSM designer (most complex; ~6000+ line `app.js`)
 - K-map Visualizer — Planned, not yet implemented
+- `WaveformViewer/` — Viewer for VCD/FST/LXT/LXT2/VZT simulation dumps with GTKWave `.gtkw` import/export
 
 ## Development
 
@@ -29,6 +30,11 @@ npm install
 node --experimental-vm-modules node_modules/.bin/jest FlipFlops/app.test.js
 ```
 
+Waveform Viewer parser tests use Node's built-in runner (no dependencies):
+```bash
+node --test WaveformViewer/tests/parsers.test.mjs
+```
+
 There are no linters or CI checks configured. GitHub Actions deploys to GitHub Pages on push.
 
 ## Architecture
@@ -36,6 +42,8 @@ There are no linters or CI checks configured. GitHub Actions deploys to GitHub P
 ### Module Structure
 
 Each module is fully self-contained: one `index.html`, one `app.js`, one `styles.css`. Modules share no code between them — utility functions like `setCookie`/`getCookie`/`applyTheme`/`initTheme` are duplicated in each module's `app.js`.
+
+Approved exception: `WaveformViewer/` splits its file-format code into `parsers/*.js` (plain `<script>` tags, no modules), and each attaches to the global `window.WaveParsers`. `app.js` holds only the UI. Fixtures are regenerated with `tests/gen_fixtures.sh` and examples with `examples/build_examples.sh`; both need the GTKWave/iverilog tools.
 
 ### Theme System
 

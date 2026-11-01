@@ -1,0 +1,53 @@
+[*]
+[*] GTKWave Analyzer v3.3.100 (w)1999-2019 BSI
+[*] Sun Nov  1 08:30:00 2026
+[*]
+[dumpfile] "C:\Users\student\eee120\fixture.vcd"
+[dumpfile_mtime] "Sun Nov  1 08:14:18 2026"
+[dumpfile_size] 7408
+[savefile] "C:\Users\student\eee120\fixture.gtkw"
+[timestart] 0
+[size] 1280 720
+[pos] -1 -1
+*-14.000000 20000 45000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] fixture_tb.
+[treeopen] fixture_tb.uut.
+[sst_width] 233
+[signals_width] 190
+[sst_expanded] 1
+[sst_vpaned_height] 197
+@28
+fixture_tb.clk
+fixture_tb.rst
+@200
+-
+-Counter section
+@800200
+-Counter
+@22
+fixture_tb.count[3:0]
+@420
++{count (signed)} fixture_tb.uut.count[3:0]
+@1000200
+-Counter
+@c00200
+-Bus stuff
+@1022
+fixture_tb.bus[7:0]
+@1028
+fixture_tb.asc[0:3]
+@1401200
+-Bus stuff
+@24
+fixture_tb.wide[31:0]
+@20000
+-
+@22
+fixture_tb.missing_signal[7:0]
+@2022
+^1 C:\filters\states.txt
+fixture_tb.i[31:0]
+@68
+fixture_tb.tri_out
+[pattern_trace] 1
+[pattern_trace] 0
