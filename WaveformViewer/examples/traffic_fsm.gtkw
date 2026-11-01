@@ -1,0 +1,39 @@
+[*]
+[*] Digital Logic Lab example save file (GTKWave format)
+[*]
+[dumpfile] "traffic_fsm.vcd"
+[timestart] 0
+*-16.500000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+@200
+-Inputs
+@28
+traffic_tb.clk
+traffic_tb.reset
++{pedestrian button} traffic_tb.ped_request
+@200
+-
+@800200
+-State register
+@24
++{state (0=G 1=Y 2=R 3=W)} traffic_tb.state[1:0]
+@22
+traffic_tb.dut.timer[2:0]
+@1000200
+-State register
+@200
+-
+@800200
+-Lamps (Moore outputs)
+@28
+traffic_tb.green
+traffic_tb.yellow
+traffic_tb.red
+traffic_tb.walk
+@1000200
+-Lamps (Moore outputs)
+@c00200
+-Next-state logic
+@22
+traffic_tb.dut.next_state[1:0]
+@1401200
+-Next-state logic

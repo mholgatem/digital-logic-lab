@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Waveform Viewer - Digital Logic Lab</title>
+  <link rel="icon" href="../favicon.ico">
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="light">
+  <header class="main-header wv-header">
+    <div class="wv-header-inner">
+      <div class="header-left">
+        <a href="../" class="back-link">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+          Back
+        </a>
+        <h1>Waveform Viewer</h1>
+      </div>
+      <div class="header-actions">
+        <button id="helpBtn" class="icon-btn" title="Controls and shortcuts">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+        </button>
+        <button id="settingsBtn" class="icon-btn" title="Settings">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="wv-toolbar" role="toolbar" aria-label="Waveform tools">
+    <div class="tool-group">
+      <button id="openBtn" class="tool-btn primary-tool" title="Open waveform and/or .gtkw save file">Open…</button>
+      <div class="menu-wrap">
+        <button id="examplesBtn" class="tool-btn" aria-haspopup="true" aria-expanded="false">Examples ▾</button>
+        <div id="examplesMenu" class="popup-menu hidden" role="menu"></div>
+      </div>
+      <button id="exportBtn" class="tool-btn" title="Save the signal list as a GTKWave .gtkw file" disabled>Export .gtkw</button>
+      <input id="fileInput" type="file" multiple accept=".vcd,.gz,.fst,.lxt,.lxt2,.vzt,.gtkw,.sav" hidden>
+    </div>
+    <div class="tool-group">
+      <button id="undoBtn" class="tool-btn icon-tool" title="Undo (Ctrl+Z)" disabled>↶</button>
+      <button id="redoBtn" class="tool-btn icon-tool" title="Redo (Ctrl+Shift+Z)" disabled>↷</button>
+    </div>
+    <div class="tool-group">
+      <button id="zoomOutBtn" class="tool-btn icon-tool" title="Zoom out (−)" disabled>−</button>
+      <button id="zoomInBtn" class="tool-btn icon-tool" title="Zoom in (+)" disabled>+</button>
+      <button id="zoomFitBtn" class="tool-btn" title="Zoom to fit the whole simulation (F)" disabled>Fit</button>
+      <button id="zoomMarkersBtn" class="tool-btn" title="Zoom to the cursor–marker span (M)" disabled>Cursor↔Marker</button>
+    </div>
+    <div class="tool-group">
+      <button id="prevEdgeBtn" class="tool-btn icon-tool" title="Previous edge of selected signal (Ctrl+←)" disabled>⇤</button>
+      <button id="nextEdgeBtn" class="tool-btn icon-tool" title="Next edge of selected signal (Ctrl+→)" disabled>⇥</button>
+    </div>
+    <div class="tool-group">
+      <label class="tool-label" for="radixSelect">Radix</label>
+      <select id="radixSelect" class="tool-select" title="Number format for selected buses" disabled>
+        <option value="hex">Hex (H)</option>
+        <option value="dec">Decimal (D)</option>
+        <option value="signed">Signed (S)</option>
+        <option value="bin">Binary (N)</option>
+        <option value="oct">Octal (O)</option>
+        <option value="ascii">ASCII</option>
+      </select>
+    </div>
+    <div class="tool-group">
+      <button id="insertBlankBtn" class="tool-btn" title="Insert a blank row (B)" disabled>Blank</button>
+      <button id="insertLabelBtn" class="tool-btn" title="Insert a text label (L)" disabled>Label</button>
+      <button id="groupBtn" class="tool-btn" title="Group the selected rows (G)" disabled>Group</button>
+      <button id="removeBtn" class="tool-btn" title="Remove the selected rows (Delete)" disabled>Remove</button>
+    </div>
+  </div>
+
+  <main id="workspace" class="wv-workspace">
+    <aside class="wv-sidebar" aria-label="Signal hierarchy">
+      <div class="sidebar-head">
+        <input id="signalFilter" class="filter-input" type="search" placeholder="Filter signals…" aria-label="Filter signals">
+      </div>
+      <div id="hierTree" class="hier-tree" role="tree"></div>
+      <div class="sidebar-foot">
+        <button id="addSelectedBtn" class="tool-btn" disabled>Add selected</button>
+        <span class="sidebar-hint">Double-click to add</span>
+      </div>
+    </aside>
+
+    <section class="wv-main" aria-label="Waveforms">
+      <div class="wv-columns">
+        <div class="names-col" id="namesCol">
+          <div class="col-head">Signals</div>
+          <div class="rows-viewport" id="namesViewport">
+            <div class="rows-inner" id="namesRows" role="listbox" aria-multiselectable="true"></div>
+          </div>
+        </div>
+        <div class="col-resizer" id="namesResizer" title="Drag to resize"></div>
+        <div class="values-col" id="valuesCol">
+          <div class="col-head">Value</div>
+          <div class="rows-viewport" id="valuesViewport">
+            <div class="rows-inner" id="valuesRows"></div>
+          </div>
+        </div>
+        <div class="col-resizer" id="valuesResizer" title="Drag to resize"></div>
+        <div class="wave-col" id="waveCol">
+          <canvas id="waveCanvas" class="wave-canvas" tabindex="0" aria-label="Waveform display"></canvas>
+          <div id="vScroll" class="v-scroll"><div id="vScrollInner"></div></div>
+        </div>
+      </div>
+      <input id="hScroll" class="h-scroll" type="range" min="0" max="1000" value="0" step="1" aria-label="Scroll time" disabled>
+
+      <div id="dropZone" class="drop-zone">
+        <div class="drop-card">
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 14 5 14 5 6 9 6 9 14 13 14 13 6 17 6 17 14 22 14"></polyline></svg>
+          <h2>Drop a waveform here</h2>
+          <p>VCD, FST, LXT, LXT2 or VZT. Add a GTKWave <code>.gtkw</code> save file too to restore its signals, labels and groups.</p>
+          <div class="drop-actions">
+            <button id="dropOpenBtn" class="primary">Open files…</button>
+            <button id="dropExampleBtn" class="tool-btn">Try an example</button>
+          </div>
+        </div>
+      </div>
+      <div id="loadingOverlay" class="loading-overlay hidden">
+        <div class="loading-card">
+          <span id="loadingText">Loading…</span>
+          <div class="progress"><div id="progressBar" class="progress-bar"></div></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="wv-status" id="statusBar">
+    <span id="statusFile" class="status-item">No file loaded</span>
+    <span id="statusTimes" class="status-item status-times"></span>
+    <button id="warningsBtn" class="status-warn hidden" title="Show load warnings"></button>
+  </footer>
+
+  <div id="contextMenu" class="popup-menu context-menu hidden" role="menu"></div>
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+  <div id="pairDialog" class="dialog-backdrop hidden">
+    <div class="dialog">
+      <h2>Open the waveform</h2>
+      <p id="pairText" class="dialog-text"></p>
+      <div class="dialog-actions dialog-actions-split">
+        <button id="pairCancel" class="tool-btn">Cancel</button>
+        <button id="pairOpen" class="primary">Choose file…</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="labelDialog" class="dialog-backdrop hidden">
+    <div class="dialog">
+      <h2 id="labelDialogTitle">Label</h2>
+      <input id="labelInput" class="text-input" type="text" maxlength="200">
+      <div id="colorSection" class="color-section hidden">
+        <div class="color-head">
+          <span class="tool-label">Trace color</span>
+          <span id="colorPreview" class="color-preview"></span>
+          <code id="colorValue" class="color-value">Default</code>
+        </div>
+        <div id="colorSwatches" class="color-swatches" role="radiogroup" aria-label="Trace color"></div>
+      </div>
+      <div class="dialog-actions dialog-actions-split">
+        <button id="labelCancel" class="tool-btn">Cancel</button>
+        <button id="labelOk" class="primary">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="warningsDialog" class="dialog-backdrop hidden">
+    <div class="dialog dialog-wide">
+      <h2>Load warnings</h2>
+      <ul id="warningsList" class="warnings-list"></ul>
+      <div class="dialog-actions">
+        <button id="warningsClose" class="primary">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="helpDialog" class="dialog-backdrop hidden">
+    <div class="dialog dialog-wide">
+      <h2>Controls</h2>
+      <table class="help-table">
+        <tbody>
+          <tr><th>Click waveform</th><td>Place the cursor</td></tr>
+          <tr><th>Right-click / Alt+click</th><td>Place the marker (shows Δt to the cursor)</td></tr>
+          <tr><th>Drag on the time ruler</th><td>Zoom to that range</td></tr>
+          <tr><th>Ctrl + wheel</th><td>Zoom around the pointer</td></tr>
+          <tr><th>Shift + wheel, middle-drag</th><td>Scroll in time</td></tr>
+          <tr><th>Wheel</th><td>Scroll rows</td></tr>
+          <tr><th><kbd>+</kbd> / <kbd>−</kbd></th><td>Zoom in / out</td></tr>
+          <tr><th><kbd>F</kbd></th><td>Zoom to fit</td></tr>
+          <tr><th><kbd>M</kbd></th><td>Zoom to cursor ↔ marker</td></tr>
+          <tr><th><kbd>←</kbd> / <kbd>→</kbd></th><td>Scroll in time</td></tr>
+          <tr><th><kbd>Ctrl</kbd>+<kbd>←</kbd> / <kbd>→</kbd></th><td>Jump cursor to previous / next edge of the selected signal</td></tr>
+          <tr><th><kbd>H</kbd> <kbd>D</kbd> <kbd>S</kbd> <kbd>N</kbd> <kbd>O</kbd></th><td>Hex, decimal, signed, binary, octal for selected buses</td></tr>
+          <tr><th><kbd>B</kbd> / <kbd>L</kbd> / <kbd>G</kbd></th><td>Insert blank / label, group selection</td></tr>
+          <tr><th><kbd>Delete</kbd></th><td>Remove selected rows</td></tr>
+          <tr><th><kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd></th><td>Undo / redo (signal edits, cursor, marker, zoom)</td></tr>
+          <tr><th>Drag signal names</th><td>Reorder rows</td></tr>
+          <tr><th>Drag column borders</th><td>Resize the Signals and Value columns</td></tr>
+          <tr><th>Double-click a name</th><td>Rename (label, group or signal alias) and pick a signal's color</td></tr>
+        </tbody>
+      </table>
+      <div class="dialog-actions">
+        <button id="helpClose" class="primary">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="settingsDialog" class="dialog-backdrop hidden">
+    <div class="dialog">
+      <h2>Module Settings</h2>
+      <div class="form-row">
+        <span>Dark Mode</span>
+        <label class="switch">
+          <input type="checkbox" id="darkModeToggle">
+          <span class="slider round"></span>
+        </label>
+      </div>
+      <div class="dialog-actions">
+        <button id="closeSettings" class="primary">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="parsers/bytes.js"></script>
+  <script src="parsers/decompress.js"></script>
+  <script src="parsers/model.js"></script>
+  <script src="parsers/vcd.js"></script>
+  <script src="parsers/fst.js"></script>
+  <script src="parsers/lxt2.js"></script>
+  <script src="parsers/vzt.js"></script>
+  <script src="parsers/lxt.js"></script>
+  <script src="parsers/gtkw.js"></script>
+  <script src="parsers/index.js"></script>
+  <script src="app.js"></script>
+  <!-- Cloudflare Web Analytics -->
+  <script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "992da5035a144d2a89175fac742894d7"}'></script>
+  <!-- End Cloudflare Web Analytics -->
+</body>
+</html>
