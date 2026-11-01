@@ -54,6 +54,10 @@ const RULER_H = 28;
 const SCROLLBAR_W = 12;
 const MAX_DEFAULT_TRACES = 64;
 const MIN_TIME_PER_PX = 0.005;
+const MAX_UNDO = 200;
+const WHEEL_ZOOM_SETTLE_MS = 400;
+// Vaporwave trace colors, in CLAUDE.md palette order; drawn from --trace-* vars.
+const TRACE_PALETTE = ['orange', 'fuchsia', 'blue', 'purple', 'green', 'red'];
 
 const EXAMPLES = [
   {
@@ -94,6 +98,14 @@ let nextTraceId = 1;
 let colors = {};
 let renderQueued = false;
 let visibleCache = null;
+
+// Undo history: each entry holds the state from before a change plus which
+// parts of it the change touched, so undoing a cursor move never also
+// rewinds an unrelated scroll of the view.
+const undoStack = [];
+const redoStack = [];
+let changeDepth = 0;
+let wheelChange = null;
 
 const el = {};
 
@@ -262,12 +274,12 @@ function zoomCentered(factor) {
     const cx = toX(state.cursor);
     if (cx >= 0 && cx <= w) x = cx;
   }
-  zoomAt(factor, x);
+  recordChange(factor < 1 ? 'Zoom in' : 'Zoom out', () => zoomAt(factor, x));
 }
 
 function zoomFit() {
   if (!state.wave) return;
-  setView(state.wave.startTime, timeSpan() / (waveWidth() - 8));
+  recordChange('Zoom to fit', () => setView(state.wave.startTime, timeSpan() / (waveWidth() - 8)));
 }
 
 function zoomToRange(a, b) {
@@ -284,7 +296,7 @@ function zoomToMarkers() {
     return;
   }
   if (state.cursor === state.marker) return;
-  zoomToRange(state.cursor, state.marker);
+  recordChange('Zoom to cursor ↔ marker', () => zoomToRange(state.cursor, state.marker));
 }
 
 function panBy(px) {
@@ -328,7 +340,22 @@ function readColors() {
     x: v('--wave-x'),
     z: v('--wave-z'),
     primary: v('--primary'),
+    trace: {},
   };
+  for (const name of TRACE_PALETTE) colors.trace[name] = v('--trace-' + name);
+}
+
+/** Resolved stroke color for a trace, or null to use the default colors. */
+function traceColor(t) {
+  return (t.color && colors.trace[t.color]) || null;
+}
+
+/** `#rrggbb` -> rgba() with the given alpha (other formats pass through). */
+function withAlpha(color, alpha) {
+  const m = /^#([0-9a-f]{6})$/i.exec(color);
+  if (!m) return color;
+  const n = parseInt(m[1], 16);
+  return `rgba(${n >> 16}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
 }
 
 function resizeCanvas() {
@@ -543,21 +570,25 @@ function drawSignalRow(ctx, trace, y, ww) {
   const hi = y + 5;
   const lo = y + ROW_H - 5;
   const mid = (hi + lo) / 2;
+  const custom = traceColor(trace);
+  const bitColor = custom || colors.bit;
+  const vecColor = custom || colors.vec;
+  const vecFill = custom ? withAlpha(custom, 0.1) : colors.vecFill;
   ctx.lineWidth = 1.5;
 
   if (sig.kind === 'bit' && sig.width === 1) {
     let prevY = null;
     forEachSegment(d, ww, (xa, xb, value, dense) => {
       if (dense) {
-        ctx.fillStyle = colors.bit;
+        ctx.fillStyle = bitColor;
         ctx.fillRect(xa, hi, Math.max(1, xb - xa), lo - hi);
         prevY = null;
         return;
       }
       let v = value;
       if (trace.invert) v = invertBits(v);
-      if (v === '1' || v === 'h') drawBitLevel(ctx, xa, xb, hi, colors.bit, prevY);
-      else if (v === '0' || v === 'l') drawBitLevel(ctx, xa, xb, lo, colors.bit, prevY);
+      if (v === '1' || v === 'h') drawBitLevel(ctx, xa, xb, hi, bitColor, prevY);
+      else if (v === '0' || v === 'l') drawBitLevel(ctx, xa, xb, lo, bitColor, prevY);
       else if (v === 'z') drawBitLevel(ctx, xa, xb, mid, colors.z, prevY);
       else drawUnknown(ctx, xa, xb, hi, lo);
       prevY = v === '1' || v === 'h' ? hi : v === '0' || v === 'l' ? lo : v === 'z' ? mid : null;
@@ -568,7 +599,7 @@ function drawSignalRow(ctx, trace, y, ww) {
   // Buses, reals and strings are drawn as value boxes.
   forEachSegment(d, ww, (xa, xb, value, dense) => {
     if (dense) {
-      ctx.fillStyle = colors.vec;
+      ctx.fillStyle = vecColor;
       ctx.fillRect(xa, hi, Math.max(1, xb - xa), lo - hi);
       return;
     }
@@ -584,7 +615,7 @@ function drawSignalRow(ctx, trace, y, ww) {
       drawBoxText(ctx, WP.formatValue(v, sig, trace.radix), xa, xb, mid, colors.x);
       return;
     }
-    drawHexagon(ctx, xa, xb, hi, lo, colors.vec, colors.vecFill);
+    drawHexagon(ctx, xa, xb, hi, lo, vecColor, vecFill);
     drawBoxText(ctx, WP.formatValue(v, sig, trace.radix), xa, xb, mid, colors.text);
   });
 }
@@ -711,6 +742,12 @@ function renderRows() {
       nameRow.classList.add('is-label');
     }
 
+    if (t.type === 'signal' && t.color) {
+      const dot = document.createElement('span');
+      dot.className = 'color-dot';
+      dot.style.backgroundColor = traceColor(t);
+      nameRow.appendChild(dot);
+    }
     const name = document.createElement('span');
     name.className = 'trace-name';
     name.textContent = traceDisplayName(t);
@@ -812,6 +849,122 @@ function rowFromClientY(clientY) {
 }
 
 // ---------------------------------------------------------------------------
+// Undo / redo
+// ---------------------------------------------------------------------------
+function captureSnapshot() {
+  return {
+    traces: state.traces.map((t) => Object.assign({}, t)),
+    selection: [...state.selection],
+    cursor: state.cursor,
+    marker: state.marker,
+    view: { t0: state.view.t0, timePerPx: state.view.timePerPx },
+  };
+}
+
+function diffSnapshots(a, b) {
+  return {
+    traces: JSON.stringify(a.traces) !== JSON.stringify(b.traces),
+    cursor: a.cursor !== b.cursor,
+    marker: a.marker !== b.marker,
+    view: a.view.t0 !== b.view.t0 || a.view.timePerPx !== b.view.timePerPx,
+  };
+}
+
+/** Records the change from `before` to now; changes that alter nothing are dropped. */
+function endChange(before, label) {
+  const changed = diffSnapshots(before, captureSnapshot());
+  if (!changed.traces && !changed.cursor && !changed.marker && !changed.view) return;
+  undoStack.push({ label, snap: before, changed });
+  if (undoStack.length > MAX_UNDO) undoStack.shift();
+  redoStack.length = 0;
+  updateUndoButtons();
+}
+
+/** Runs `fn` as one undoable step. Nested calls fold into the outermost step. */
+function recordChange(label, fn) {
+  if (changeDepth > 0 || !state.wave) {
+    fn();
+    return;
+  }
+  flushWheelChange();
+  const before = captureSnapshot();
+  changeDepth++;
+  try {
+    fn();
+  } finally {
+    changeDepth--;
+  }
+  endChange(before, label);
+}
+
+/** Wheel zooming arrives as many small events; record the gesture as one step. */
+function noteWheelZoom() {
+  if (!wheelChange) wheelChange = { before: captureSnapshot(), timer: null };
+  clearTimeout(wheelChange.timer);
+  wheelChange.timer = setTimeout(flushWheelChange, WHEEL_ZOOM_SETTLE_MS);
+}
+
+function flushWheelChange() {
+  if (!wheelChange) return;
+  const pending = wheelChange;
+  wheelChange = null;
+  clearTimeout(pending.timer);
+  endChange(pending.before, 'Zoom');
+}
+
+function restoreSnapshot(snap, changed) {
+  if (changed.traces) {
+    state.traces = snap.traces.map((t) => Object.assign({}, t));
+    state.selection = new Set(snap.selection);
+    tracesChanged();
+  }
+  if (changed.cursor) state.cursor = snap.cursor;
+  if (changed.marker) state.marker = snap.marker;
+  if (changed.view) setView(snap.view.t0, snap.view.timePerPx);
+  updateValues();
+  renderStatus();
+  requestRender();
+}
+
+function stepHistory(from, to, verb) {
+  flushWheelChange();
+  const entry = from.pop();
+  if (!entry) {
+    showToast(`Nothing to ${verb.toLowerCase()}.`);
+    return;
+  }
+  const current = captureSnapshot();
+  restoreSnapshot(entry.snap, entry.changed);
+  to.push({ label: entry.label, snap: current, changed: entry.changed });
+  showToast(`${verb}: ${entry.label}`);
+  updateUndoButtons();
+}
+
+function undo() {
+  stepHistory(undoStack, redoStack, 'Undo');
+}
+
+function redo() {
+  stepHistory(redoStack, undoStack, 'Redo');
+}
+
+function clearHistory() {
+  if (wheelChange) clearTimeout(wheelChange.timer);
+  wheelChange = null;
+  undoStack.length = 0;
+  redoStack.length = 0;
+  updateUndoButtons();
+}
+
+function updateUndoButtons() {
+  el.undoBtn.disabled = !undoStack.length;
+  el.redoBtn.disabled = !redoStack.length;
+  el.undoBtn.title = undoStack.length ? `Undo ${undoStack[undoStack.length - 1].label} (Ctrl+Z)` : 'Undo (Ctrl+Z)';
+  el.redoBtn.title = redoStack.length ?
+    `Redo ${redoStack[redoStack.length - 1].label} (Ctrl+Shift+Z)` : 'Redo (Ctrl+Shift+Z)';
+}
+
+// ---------------------------------------------------------------------------
 // Selection and editing
 // ---------------------------------------------------------------------------
 function selectRow(r, e) {
@@ -849,11 +1002,13 @@ function insertPosition() {
   return pos;
 }
 
-function insertTraces(newTraces, pos = insertPosition()) {
-  state.traces.splice(pos, 0, ...newTraces);
-  state.selection = new Set(newTraces.map((t) => t.id));
-  state.selectionAnchor = newTraces.length ? newTraces[0].id : null;
-  tracesChanged();
+function insertTraces(newTraces, pos = insertPosition(), label = 'Add signals') {
+  recordChange(label, () => {
+    state.traces.splice(pos, 0, ...newTraces);
+    state.selection = new Set(newTraces.map((t) => t.id));
+    state.selectionAnchor = newTraces.length ? newTraces[0].id : null;
+    tracesChanged();
+  });
   scrollRowIntoView(newTraces[newTraces.length - 1]);
 }
 
@@ -869,14 +1024,14 @@ function scrollRowIntoView(trace) {
 
 function insertBlank() {
   if (!state.wave) return;
-  insertTraces([makeTrace({ type: 'blank' })]);
+  insertTraces([makeTrace({ type: 'blank' })], insertPosition(), 'Insert blank row');
 }
 
 function insertLabel() {
   if (!state.wave) return;
   const pos = insertPosition();
   askText('New label', '', (text) => {
-    insertTraces([makeTrace({ type: 'label', text })], pos);
+    insertTraces([makeTrace({ type: 'label', text })], pos, 'Insert label');
   });
 }
 
@@ -886,7 +1041,7 @@ function groupSelection() {
     showToast('Select the rows to group first.');
     return;
   }
-  askText('Group name', 'Group', (name) => {
+  askText('Group name', 'Group', (name) => recordChange('Group rows', () => {
     const moving = blocks.map((i) => state.traces[i]);
     const pos = blocks[0];
     state.traces = state.traces.filter((_, i) => !blocks.includes(i));
@@ -896,11 +1051,15 @@ function groupSelection() {
     state.selection = new Set([start.id]);
     state.selectionAnchor = start.id;
     tracesChanged();
-  });
+  }));
 }
 
 function removeSelection() {
   if (!state.selection.size) return;
+  recordChange('Remove rows', removeSelectionNow);
+}
+
+function removeSelectionNow() {
   const remove = new Set();
   for (const i of selectedIndices()) {
     const t = state.traces[i];
@@ -927,23 +1086,27 @@ function moveSelectionTo(targetIndex) {
   if (!blocks.length) return;
   const targetTrace = state.traces[targetIndex];
   if (targetTrace && blocks.includes(targetIndex)) return;
-  const moving = blocks.map((i) => state.traces[i]);
-  state.traces = state.traces.filter((_, i) => !blocks.includes(i));
-  let pos = targetTrace ? state.traces.indexOf(targetTrace) : state.traces.length;
-  if (pos < 0) pos = state.traces.length;
-  state.traces.splice(pos, 0, ...moving);
-  tracesChanged();
+  recordChange('Move rows', () => {
+    const moving = blocks.map((i) => state.traces[i]);
+    state.traces = state.traces.filter((_, i) => !blocks.includes(i));
+    let pos = targetTrace ? state.traces.indexOf(targetTrace) : state.traces.length;
+    if (pos < 0) pos = state.traces.length;
+    state.traces.splice(pos, 0, ...moving);
+    tracesChanged();
+  });
 }
 
 function setRadix(radix) {
   let changed = false;
-  for (const t of selectedSignalTraces()) {
-    const sig = traceSignal(t);
-    if (sig && (sig.kind === 'vector' || (sig.kind === 'bit' && sig.width > 1))) {
-      t.radix = radix;
-      changed = true;
+  recordChange('Change radix', () => {
+    for (const t of selectedSignalTraces()) {
+      const sig = traceSignal(t);
+      if (sig && (sig.kind === 'vector' || (sig.kind === 'bit' && sig.width > 1))) {
+        t.radix = radix;
+        changed = true;
+      }
     }
-  }
+  });
   if (!changed) {
     showToast('Select one or more buses to change their radix.');
     return;
@@ -954,7 +1117,9 @@ function setRadix(radix) {
 }
 
 function toggleInvert() {
-  for (const t of selectedSignalTraces()) t.invert = !t.invert;
+  recordChange('Invert', () => {
+    for (const t of selectedSignalTraces()) t.invert = !t.invert;
+  });
   renderRows();
   requestRender();
 }
@@ -962,36 +1127,45 @@ function toggleInvert() {
 function renameTrace(t) {
   if (!t) return;
   if (t.type === 'label') {
-    askText('Edit label', t.text, (text) => {
+    askText('Edit label', t.text, (text) => recordChange('Edit label', () => {
       t.text = text;
       tracesChanged();
-    });
+    }));
   } else if (t.type === 'groupStart') {
-    askText('Rename group', t.name, (name) => {
+    askText('Rename group', t.name, (name) => recordChange('Rename group', () => {
       const i = state.traces.indexOf(t);
       const end = state.traces[groupEndIndex(i)];
       t.name = name;
       if (end && end.type === 'groupEnd') end.name = name;
       tracesChanged();
-    });
+    }));
   } else if (t.type === 'signal') {
     const sig = traceSignal(t);
-    askText('Display name (leave empty to use ' + (sig ? sig.name : t.name) + ')', t.alias || '', (text) => {
-      t.alias = text || null;
-      tracesChanged();
-    }, true);
+    askText('Display name (leave empty to use ' + (sig ? sig.name : t.name) + ')', t.alias || '',
+      (text, color) => {
+        const renamed = (text || null) !== (t.alias || null);
+        const recolored = (color || null) !== (t.color || null);
+        const label = renamed && recolored ? 'Edit signal' : recolored ? 'Change color' : 'Rename signal';
+        recordChange(label, () => {
+          t.alias = text || null;
+          t.color = color || null;
+          tracesChanged();
+        });
+      }, true, { color: t.color || null });
   }
 }
 
 function toggleGroup(t) {
-  t.collapsed = !t.collapsed;
-  if (t.collapsed) {
-    // Hidden rows cannot stay selected.
-    const i = state.traces.indexOf(t);
-    const end = groupEndIndex(i);
-    for (let k = i + 1; k <= end; k++) state.selection.delete(state.traces[k].id);
-  }
-  tracesChanged();
+  recordChange(t.collapsed ? 'Expand group' : 'Collapse group', () => {
+    t.collapsed = !t.collapsed;
+    if (t.collapsed) {
+      // Hidden rows cannot stay selected.
+      const i = state.traces.indexOf(t);
+      const end = groupEndIndex(i);
+      for (let k = i + 1; k <= end; k++) state.selection.delete(state.traces[k].id);
+    }
+    tracesChanged();
+  });
 }
 
 function jumpEdge(dir) {
@@ -1007,8 +1181,10 @@ function jumpEdge(dir) {
     showToast(dir > 0 ? 'No later edge.' : 'No earlier edge.');
     return;
   }
-  setCursor(edge);
-  ensureVisible(edge);
+  recordChange('Jump to edge', () => {
+    setCursor(edge);
+    ensureVisible(edge);
+  });
 }
 
 function setCursor(t) {
@@ -1142,7 +1318,8 @@ function findScope(path) {
 
 function addSignals(indices) {
   if (!indices.length) return;
-  insertTraces(indices.map((i) => signalTrace(i)));
+  insertTraces(indices.map((i) => signalTrace(i)), insertPosition(),
+    indices.length === 1 ? 'Add signal' : `Add ${indices.length} signals`);
 }
 
 function treeSignalOrder() {
@@ -1269,11 +1446,18 @@ function showToast(message, isError = false) {
 let textDialogCallback = null;
 let textDialogAllowEmpty = false;
 
-function askText(title, initial, callback, allowEmpty = false) {
+/**
+ * Opens the text dialog. With `options.color` (any value, including null),
+ * the trace color picker is shown too and the callback gets (text, color).
+ */
+function askText(title, initial, callback, allowEmpty = false, options = {}) {
   el.labelDialogTitle.textContent = title;
   el.labelInput.value = initial;
   textDialogCallback = callback;
   textDialogAllowEmpty = allowEmpty;
+  const withColor = 'color' in options;
+  el.colorSection.classList.toggle('hidden', !withColor);
+  if (withColor) openColorPicker(options.color);
   el.labelDialog.classList.remove('hidden');
   el.labelInput.focus();
   el.labelInput.select();
@@ -1286,7 +1470,57 @@ function closeTextDialog(ok) {
   if (!ok || !cb) return;
   const text = el.labelInput.value.trim();
   if (!text && !textDialogAllowEmpty) return;
-  cb(text);
+  cb(text, picker.color);
+}
+
+// ---------------------------------------------------------------------------
+// Trace color picker (vaporwave palette swatches; GTKWave's own color set is
+// a fixed rainbow, so the palette maps onto it cleanly)
+// ---------------------------------------------------------------------------
+const picker = { color: null };
+
+function colorLabel(name) {
+  return name ? name[0].toUpperCase() + name.slice(1) : 'Default';
+}
+
+function openColorPicker(color) {
+  picker.color = TRACE_PALETTE.includes(color) ? color : null;
+  buildSwatches();
+  updatePickerPreview();
+}
+
+function buildSwatches() {
+  el.colorSwatches.textContent = '';
+  const add = (value, label) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'color-swatch';
+    btn.title = label;
+    btn.setAttribute('role', 'radio');
+    btn.setAttribute('aria-label', label);
+    btn.dataset.color = value || '';
+    if (value) btn.style.backgroundColor = colors.trace[value];
+    else btn.classList.add('swatch-default');
+    btn.addEventListener('click', () => {
+      picker.color = value;
+      updatePickerPreview();
+    });
+    el.colorSwatches.appendChild(btn);
+  };
+  add(null, 'Default');
+  for (const name of TRACE_PALETTE) add(name, colorLabel(name));
+}
+
+function updatePickerPreview() {
+  const c = picker.color;
+  el.colorPreview.style.background = c ? colors.trace[c] : '';
+  el.colorPreview.classList.toggle('swatch-default', !c);
+  el.colorValue.textContent = colorLabel(c);
+  for (const btn of el.colorSwatches.children) {
+    const on = (btn.dataset.color || null) === c;
+    btn.classList.toggle('active', on);
+    btn.setAttribute('aria-checked', on ? 'true' : 'false');
+  }
 }
 
 function anyDialogOpen() {
@@ -1352,7 +1586,8 @@ function showContextMenu(x, y) {
   item('Invert', toggleInvert, !sigs.length);
   sep();
   const single = state.selection.size === 1 ? state.traces.find((t) => state.selection.has(t.id)) : null;
-  item('Rename…', () => renameTrace(single), !single || single.type === 'blank');
+  item(single && single.type === 'signal' ? 'Rename / color…' : 'Rename…', () => renameTrace(single),
+    !single || single.type === 'blank');
   item('Insert blank row', insertBlank);
   item('Insert label…', insertLabel);
   item('Group…', groupSelection, !state.selection.size);
@@ -1398,7 +1633,7 @@ async function openFiles(files) {
   }
   if (!gtkw) return;
   if (state.wave) {
-    applySaveFile(gtkw.parsed);
+    recordChange('Apply ' + gtkw.name, () => applySaveFile(gtkw.parsed));
     showToast(`Applied ${gtkw.name} to ${state.wave.fileName}.`);
     return;
   }
@@ -1420,6 +1655,8 @@ async function loadWaveBytes(bytes, fileName, gtkw) {
     installWave(wave);
     if (gtkw) applySaveFile(gtkw.parsed);
     else applyDefaultTraces();
+    // A freshly opened file starts with an empty history.
+    clearHistory();
   } catch (err) {
     console.error(err);
     const msg = err && (err.name === 'UnsupportedFormatError' || err.name === 'WaveParseError') ?
@@ -1558,17 +1795,19 @@ function onCanvasMouseDown(e) {
     return;
   }
   if (e.button === 2 || (e.button === 0 && e.altKey)) {
-    setMarker(snapTime(timeAtX(p.x)));
+    recordChange('Place marker', () => setMarker(snapTime(timeAtX(p.x))));
     return;
   }
   if (e.button !== 0) return;
+  // Drags become a single undo step when the mouse is released.
+  flushWheelChange();
   if (p.y < RULER_H) {
     rulerDrag = { x0: p.x, x1: p.x };
-    canvasDrag = { mode: 'ruler' };
+    canvasDrag = { mode: 'ruler', before: captureSnapshot() };
     requestRender();
     return;
   }
-  canvasDrag = { mode: 'cursor' };
+  canvasDrag = { mode: 'cursor', before: captureSnapshot() };
   setCursor(snapTime(timeAtX(p.x)));
   const r = Math.floor((p.y - RULER_H + state.scrollY) / ROW_H);
   if (visibleRows()[r]) selectRow(r, e);
@@ -1589,8 +1828,8 @@ function onWindowMouseMove(e) {
   }
   if (nameDrag) onNameDragMove(e);
   if (resizeDrag) {
-    const w = Math.max(100, Math.min(600, resizeDrag.w + e.clientX - resizeDrag.x));
-    el.namesCol.style.width = w + 'px';
+    const w = Math.max(resizeDrag.min, Math.min(resizeDrag.max, resizeDrag.w + e.clientX - resizeDrag.x));
+    resizeDrag.target.style.width = w + 'px';
   }
 }
 
@@ -1598,9 +1837,13 @@ function onWindowMouseUp(e) {
   if (canvasDrag && canvasDrag.mode === 'ruler') {
     const { x0, x1 } = rulerDrag;
     rulerDrag = null;
-    if (Math.abs(x1 - x0) > 4) zoomToRange(timeAtX(x0), timeAtX(x1));
+    const zoomed = Math.abs(x1 - x0) > 4;
+    if (zoomed) zoomToRange(timeAtX(x0), timeAtX(x1));
     else setCursor(snapTime(timeAtX(x0)));
+    endChange(canvasDrag.before, zoomed ? 'Zoom to range' : 'Place cursor');
     requestRender();
+  } else if (canvasDrag && canvasDrag.mode === 'cursor') {
+    endChange(canvasDrag.before, 'Place cursor');
   }
   canvasDrag = null;
   if (nameDrag) onNameDragEnd(e);
@@ -1616,6 +1859,7 @@ function onCanvasWheel(e) {
   const p = canvasPoint(e);
   const delta = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
   if (e.ctrlKey || e.metaKey) {
+    noteWheelZoom();
     zoomAt(Math.pow(1.0015, delta), Math.min(p.x, waveWidth()));
   } else if (e.shiftKey) {
     panBy(delta);
@@ -1717,6 +1961,13 @@ function onKeyDown(e) {
   if (!state.wave) return;
 
   const ctrl = e.ctrlKey || e.metaKey;
+  const key = e.key.toLowerCase();
+  if (ctrl && !e.altKey && (key === 'z' || key === 'y')) {
+    if (key === 'y' || e.shiftKey) redo();
+    else undo();
+    e.preventDefault();
+    return;
+  }
   if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
     const dir = e.key === 'ArrowLeft' ? -1 : 1;
     if (ctrl) jumpEdge(dir);
@@ -1757,7 +2008,9 @@ function onKeyDown(e) {
 // Wiring
 // ---------------------------------------------------------------------------
 function cacheElements() {
-  for (const id of ['openBtn', 'examplesBtn', 'examplesMenu', 'exportBtn', 'fileInput', 'zoomOutBtn',
+  for (const id of ['openBtn', 'examplesBtn', 'examplesMenu', 'exportBtn', 'undoBtn', 'redoBtn',
+    'valuesCol', 'valuesResizer', 'colorSection', 'colorSwatches', 'colorPreview', 'colorValue',
+    'fileInput', 'zoomOutBtn',
     'zoomInBtn', 'zoomFitBtn', 'zoomMarkersBtn', 'prevEdgeBtn', 'nextEdgeBtn', 'radixSelect',
     'insertBlankBtn', 'insertLabelBtn', 'groupBtn', 'removeBtn', 'workspace', 'signalFilter', 'hierTree',
     'addSelectedBtn', 'namesCol', 'namesViewport', 'namesRows', 'namesResizer', 'valuesViewport',
@@ -1780,6 +2033,8 @@ function wireDialogs() {
     applyTheme(theme);
     setCookie(THEME_COOKIE, theme, 365);
     readColors();
+    // Palette trace colors have light/dark variants, so refresh their dots too.
+    if (state.wave) renderRows();
     requestRender();
   });
   $('helpBtn').addEventListener('click', () => el.helpDialog.classList.remove('hidden'));
@@ -1836,6 +2091,8 @@ function wireToolbar() {
     toggleExamplesMenu();
   });
   el.exportBtn.addEventListener('click', exportGtkw);
+  el.undoBtn.addEventListener('click', undo);
+  el.redoBtn.addEventListener('click', redo);
   el.zoomInBtn.addEventListener('click', () => zoomCentered(0.5));
   el.zoomOutBtn.addEventListener('click', () => zoomCentered(2));
   el.zoomFitBtn.addEventListener('click', zoomFit);
@@ -1876,10 +2133,14 @@ function wireWorkspace() {
   el.vScroll.addEventListener('scroll', () => {
     if (Math.abs(el.vScroll.scrollTop - state.scrollY) > 1) setScrollY(el.vScroll.scrollTop);
   });
-  el.namesResizer.addEventListener('mousedown', (e) => {
-    e.preventDefault();
-    resizeDrag = { x: e.clientX, w: el.namesCol.offsetWidth };
-  });
+  const wireResizer = (handle, target, min, max) => {
+    handle.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      resizeDrag = { target, min, max, x: e.clientX, w: target.offsetWidth };
+    });
+  };
+  wireResizer(el.namesResizer, el.namesCol, 100, 600);
+  wireResizer(el.valuesResizer, el.valuesCol, 50, 500);
 
   el.hierTree.addEventListener('click', onTreeClick);
   el.hierTree.addEventListener('dblclick', onTreeDblClick);
@@ -1935,5 +2196,6 @@ document.addEventListener('DOMContentLoaded', () => {
   renderTree();
   renderStatus();
   updateToolbar();
+  updateUndoButtons();
   resizeCanvas();
 });

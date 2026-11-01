@@ -43,6 +43,10 @@
       <input id="fileInput" type="file" multiple accept=".vcd,.gz,.fst,.lxt,.lxt2,.vzt,.gtkw,.sav" hidden>
     </div>
     <div class="tool-group">
+      <button id="undoBtn" class="tool-btn icon-tool" title="Undo (Ctrl+Z)" disabled>↶</button>
+      <button id="redoBtn" class="tool-btn icon-tool" title="Redo (Ctrl+Shift+Z)" disabled>↷</button>
+    </div>
+    <div class="tool-group">
       <button id="zoomOutBtn" class="tool-btn icon-tool" title="Zoom out (−)" disabled>−</button>
       <button id="zoomInBtn" class="tool-btn icon-tool" title="Zoom in (+)" disabled>+</button>
       <button id="zoomFitBtn" class="tool-btn" title="Zoom to fit the whole simulation (F)" disabled>Fit</button>
@@ -98,6 +102,7 @@
             <div class="rows-inner" id="valuesRows"></div>
           </div>
         </div>
+        <div class="col-resizer" id="valuesResizer" title="Drag to resize"></div>
         <div class="wave-col" id="waveCol">
           <canvas id="waveCanvas" class="wave-canvas" tabindex="0" aria-label="Waveform display"></canvas>
           <div id="vScroll" class="v-scroll"><div id="vScrollInner"></div></div>
@@ -149,6 +154,14 @@
     <div class="dialog">
       <h2 id="labelDialogTitle">Label</h2>
       <input id="labelInput" class="text-input" type="text" maxlength="200">
+      <div id="colorSection" class="color-section hidden">
+        <div class="color-head">
+          <span class="tool-label">Trace color</span>
+          <span id="colorPreview" class="color-preview"></span>
+          <code id="colorValue" class="color-value">Default</code>
+        </div>
+        <div id="colorSwatches" class="color-swatches" role="radiogroup" aria-label="Trace color"></div>
+      </div>
       <div class="dialog-actions dialog-actions-split">
         <button id="labelCancel" class="tool-btn">Cancel</button>
         <button id="labelOk" class="primary">OK</button>
@@ -185,8 +198,10 @@
           <tr><th><kbd>H</kbd> <kbd>D</kbd> <kbd>S</kbd> <kbd>N</kbd> <kbd>O</kbd></th><td>Hex, decimal, signed, binary, octal for selected buses</td></tr>
           <tr><th><kbd>B</kbd> / <kbd>L</kbd> / <kbd>G</kbd></th><td>Insert blank / label, group selection</td></tr>
           <tr><th><kbd>Delete</kbd></th><td>Remove selected rows</td></tr>
+          <tr><th><kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd></th><td>Undo / redo (signal edits, cursor, marker, zoom)</td></tr>
           <tr><th>Drag signal names</th><td>Reorder rows</td></tr>
-          <tr><th>Double-click a name</th><td>Rename (label, group or signal alias)</td></tr>
+          <tr><th>Drag column borders</th><td>Resize the Signals and Value columns</td></tr>
+          <tr><th>Double-click a name</th><td>Rename (label, group or signal alias) and pick a signal's color</td></tr>
         </tbody>
       </table>
       <div class="dialog-actions">

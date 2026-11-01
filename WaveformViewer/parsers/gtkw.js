@@ -4,7 +4,9 @@
 // viewer's trace list back into GTKWave syntax.
 //
 // Trace list entries (shared with the viewer):
-//   { type: 'signal', name, signal (index or null), alias, radix, invert, warning }
+//   { type: 'signal', name, signal (index or null), alias, radix, invert, color, warning }
+//     color: null or a vaporwave palette name ('orange', 'fuchsia', 'blue',
+//     'purple', 'green', 'red').
 //   { type: 'blank' }
 //   { type: 'label', text }
 //   { type: 'groupStart', name, collapsed }
@@ -56,6 +58,17 @@
     return -Math.log2(Math.max(tpp, 1e-12) * PIXELS_PER_FRAME);
   }
 
+  // GTKWave's "[color] n" rainbow (color.h: normal, red, orange, yellow, green,
+  // blue, indigo, violet) mapped to the nearest vaporwave palette color.
+  // The palette has no yellow, so yellow reads as orange.
+  const GTKW_COLORS = [null, 'red', 'orange', 'orange', 'green', 'blue', 'purple', 'fuchsia'];
+  const GTKW_INDEX = { red: 1, orange: 2, green: 4, blue: 5, purple: 6, fuchsia: 7 };
+
+  /** GTKWave color index for a palette color (0 = default). */
+  function colorToGtkwIndex(color) {
+    return GTKW_INDEX[color] || 0;
+  }
+
   function radixFromFlags(flags) {
     if (flags & TR.SIGNED) return 'signed';
     if (flags & TR.HEX) return 'hex';
@@ -87,6 +100,7 @@
     };
     let flags = TR.RJUSTIFY | TR.HEX;
     let pendingWarning = null;
+    let pendingColor = null;
 
     const lines = text.split(/\r?\n/);
     for (const raw of lines) {
@@ -104,7 +118,9 @@
         } else if (key === 'timestart') {
           result.timestart = Number(val);
         } else if (key === 'color') {
-          pendingWarning = 'Trace colors are not supported yet.';
+          // Like GTKWave, the color applies to the next trace only.
+          const idx = parseInt(val, 10);
+          pendingColor = idx > 0 && idx < GTKW_COLORS.length ? GTKW_COLORS[idx] : null;
         } else if (key === 'fpshift_count' || key === 'transaction_args') {
           pendingWarning = `[${key}] is not supported yet.`;
         }
@@ -147,6 +163,7 @@
           result.traces.push({ type: 'blank' });
         }
         pendingWarning = null;
+        pendingColor = null;
         continue;
       }
 
@@ -165,8 +182,10 @@
         alias,
         radix: radixFromFlags(flags),
         invert: !!(flags & TR.INVERT),
+        color: pendingColor,
         warning: pendingWarning,
       };
+      pendingColor = null;
       const vm = /^[#:]\{([^}]*)\}\s*(.*)$/.exec(spec);
       if (vm) {
         // A vector built from bits. Use it directly if the vector exists.
@@ -291,6 +310,8 @@
           else if (sig && sig.kind === 'bit') f |= TR.BIN;
           else f |= flagsFromRadix(t.radix);
           emitFlags(f);
+          const colorIndex = colorToGtkwIndex(t.color);
+          if (colorIndex) out.push(`[color] ${colorIndex}`);
           const name = sig ? sig.fullName : t.name;
           out.push(t.alias ? `+{${t.alias}} ${name}` : name);
           break;
@@ -305,6 +326,8 @@
   }
 
   WP.TR = TR;
+  WP.GTKW_COLORS = GTKW_COLORS;
+  WP.colorToGtkwIndex = colorToGtkwIndex;
   WP.parseGtkw = parseGtkw;
   WP.resolveGtkw = resolveGtkw;
   WP.serializeGtkw = serializeGtkw;

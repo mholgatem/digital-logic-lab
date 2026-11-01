@@ -166,6 +166,26 @@ test('gtkw: labels, blanks, groups, aliases and radix', async () => {
   assert.equal(again.namedMarkers[0], 45000);
 });
 
+test('gtkw: [color] maps to the vaporwave palette, next trace only, and round-trips', async () => {
+  const base = await baselinePromise;
+  const parsed = WP.parseGtkw([
+    '@28', '[color] 1', 'fixture_tb.clk', 'fixture_tb.rst',
+    '@22', '[color] 3', 'fixture_tb.bus[7:0]', '[color] 6', 'fixture_tb.count[3:0]',
+    '[color] 7', 'fixture_tb.wide[31:0]',
+  ].join('\n'));
+  // GTKWave yellow (3) has no palette match and reads as orange; indigo -> purple, violet -> fuchsia.
+  assert.deepEqual(parsed.traces.map((t) => t.color), ['red', null, 'orange', 'purple', 'fuchsia']);
+  assert.deepEqual(parsed.warnings, []);
+  const { traces } = WP.resolveGtkw(parsed, base);
+  traces[1].color = 'blue';
+  const text = WP.serializeGtkw({ wave: base, traces, view: { t0: 0, timePerPx: 1 }, cursor: null, marker: null });
+  assert.deepEqual(text.split('\n').filter((l) => l.startsWith('[color]')),
+    ['[color] 1', '[color] 5', '[color] 2', '[color] 6', '[color] 7']);
+  assert.deepEqual(WP.parseGtkw(text).traces.map((t) => t.color), ['red', 'blue', 'orange', 'purple', 'fuchsia']);
+  assert.equal(WP.colorToGtkwIndex('green'), 4);
+  assert.equal(WP.colorToGtkwIndex(null), 0);
+});
+
 test('format detection', () => {
   const expected = {
     'fixture.vcd': 'vcd', 'fixture.vcd.gz': 'gzip', 'fixture_lz4.fst': 'fst',
