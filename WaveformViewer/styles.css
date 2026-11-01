@@ -12,6 +12,7 @@
 
   /* Vaporwave Palette */
   --vw-orange: #FF5E00;
+  --vw-yellow: #FFE600;
   --vw-fuchsia: #FF00FF;
   --vw-blue: #00FFFF;
   --vw-purple: #8A2BE2;
@@ -40,6 +41,7 @@
   --trace-orange: #d35400;
   --trace-purple: #8a2be2;
   --trace-red: #e0244a;
+  --trace-yellow: #b08d00;
 }
 
 body.dark {
@@ -71,6 +73,7 @@ body.dark {
   --trace-orange: var(--vw-orange);
   --trace-purple: #b77cff;
   --trace-red: var(--vw-red);
+  --trace-yellow: var(--vw-yellow);
 }
 
 body {

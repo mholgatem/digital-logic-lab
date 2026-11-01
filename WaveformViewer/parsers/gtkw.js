@@ -5,8 +5,8 @@
 //
 // Trace list entries (shared with the viewer):
 //   { type: 'signal', name, signal (index or null), alias, radix, invert, color, warning }
-//     color: null or a vaporwave palette name ('orange', 'fuchsia', 'blue',
-//     'purple', 'green', 'red').
+//     color: null or a vaporwave palette name ('orange', 'yellow', 'fuchsia',
+//     'blue', 'purple', 'green', 'red').
 //   { type: 'blank' }
 //   { type: 'label', text }
 //   { type: 'groupStart', name, collapsed }
@@ -60,9 +60,8 @@
 
   // GTKWave's "[color] n" rainbow (color.h: normal, red, orange, yellow, green,
   // blue, indigo, violet) mapped to the nearest vaporwave palette color.
-  // The palette has no yellow, so yellow reads as orange.
-  const GTKW_COLORS = [null, 'red', 'orange', 'orange', 'green', 'blue', 'purple', 'fuchsia'];
-  const GTKW_INDEX = { red: 1, orange: 2, green: 4, blue: 5, purple: 6, fuchsia: 7 };
+  const GTKW_COLORS = [null, 'red', 'orange', 'yellow', 'green', 'blue', 'purple', 'fuchsia'];
+  const GTKW_INDEX = { red: 1, orange: 2, yellow: 3, green: 4, blue: 5, purple: 6, fuchsia: 7 };
 
   /** GTKWave color index for a palette color (0 = default). */
   function colorToGtkwIndex(color) {

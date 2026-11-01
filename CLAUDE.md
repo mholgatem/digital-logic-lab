@@ -57,6 +57,7 @@ All modules share the same dark/light mode pattern:
 Defined as CSS variables in each module's `styles.css`:
 ```css
 --vw-orange:  #FF5E00
+--vw-yellow:  #FFE600  /* WaveformViewer only so far */
 --vw-fuchsia: #FF00FF
 --vw-blue:    #00FFFF
 --vw-purple:  #8A2BE2

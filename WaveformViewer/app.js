@@ -57,7 +57,7 @@ const MIN_TIME_PER_PX = 0.005;
 const MAX_UNDO = 200;
 const WHEEL_ZOOM_SETTLE_MS = 400;
 // Vaporwave trace colors, in CLAUDE.md palette order; drawn from --trace-* vars.
-const TRACE_PALETTE = ['orange', 'fuchsia', 'blue', 'purple', 'green', 'red'];
+const TRACE_PALETTE = ['orange', 'yellow', 'fuchsia', 'blue', 'purple', 'green', 'red'];
 
 const EXAMPLES = [
   {
