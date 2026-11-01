@@ -76,7 +76,7 @@
   </div>
 
   <main id="workspace" class="wv-workspace">
-    <aside class="wv-sidebar" aria-label="Signal hierarchy">
+    <aside class="wv-sidebar" id="sidebar" aria-label="Signal hierarchy">
       <div class="sidebar-head">
         <input id="signalFilter" class="filter-input" type="search" placeholder="Filter signals…" aria-label="Filter signals">
       </div>
@@ -86,6 +86,7 @@
         <span class="sidebar-hint">Double-click to add</span>
       </div>
     </aside>
+    <div class="col-resizer sidebar-resizer" id="sidebarResizer" title="Drag to resize"></div>
 
     <section class="wv-main" aria-label="Waveforms">
       <div class="wv-columns">
@@ -200,7 +201,7 @@
           <tr><th><kbd>Delete</kbd></th><td>Remove selected rows</td></tr>
           <tr><th><kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd></th><td>Undo / redo (signal edits, cursor, marker, zoom)</td></tr>
           <tr><th>Drag signal names</th><td>Reorder rows</td></tr>
-          <tr><th>Drag column borders</th><td>Resize the Signals and Value columns</td></tr>
+          <tr><th>Drag column borders</th><td>Resize the signal tree, Signals and Value columns</td></tr>
           <tr><th>Double-click a name</th><td>Rename (label, group or signal alias) and pick a signal's color</td></tr>
         </tbody>
       </table>

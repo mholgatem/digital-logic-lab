@@ -2010,7 +2010,7 @@ function onKeyDown(e) {
 function cacheElements() {
   for (const id of ['openBtn', 'examplesBtn', 'examplesMenu', 'exportBtn', 'undoBtn', 'redoBtn',
     'valuesCol', 'valuesResizer', 'colorSection', 'colorSwatches', 'colorPreview', 'colorValue',
-    'fileInput', 'zoomOutBtn',
+    'sidebar', 'sidebarResizer', 'fileInput', 'zoomOutBtn',
     'zoomInBtn', 'zoomFitBtn', 'zoomMarkersBtn', 'prevEdgeBtn', 'nextEdgeBtn', 'radixSelect',
     'insertBlankBtn', 'insertLabelBtn', 'groupBtn', 'removeBtn', 'workspace', 'signalFilter', 'hierTree',
     'addSelectedBtn', 'namesCol', 'namesViewport', 'namesRows', 'namesResizer', 'valuesViewport',
@@ -2139,6 +2139,7 @@ function wireWorkspace() {
       resizeDrag = { target, min, max, x: e.clientX, w: target.offsetWidth };
     });
   };
+  wireResizer(el.sidebarResizer, el.sidebar, 150, 600);
   wireResizer(el.namesResizer, el.namesCol, 100, 600);
   wireResizer(el.valuesResizer, el.valuesCol, 50, 500);
 
