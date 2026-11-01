@@ -100,6 +100,13 @@ body {
   font-size: 1.35rem;
 }
 
+/* Loaded file name; same type as .back-link. */
+.header-file {
+  color: var(--muted);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
 .header-left {
   align-items: center;
   display: flex;

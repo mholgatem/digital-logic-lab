@@ -1399,6 +1399,7 @@ function updateToolbar() {
 
 function renderStatus() {
   const w = state.wave;
+  el.headerFile.textContent = w ? `(${w.fileName})` : '';
   if (!w) {
     el.statusFile.textContent = 'No file loaded';
     el.statusTimes.textContent = '';
@@ -2015,7 +2016,7 @@ function cacheElements() {
     'insertBlankBtn', 'insertLabelBtn', 'groupBtn', 'removeBtn', 'workspace', 'signalFilter', 'hierTree',
     'addSelectedBtn', 'namesCol', 'namesViewport', 'namesRows', 'namesResizer', 'valuesViewport',
     'valuesRows', 'waveCol', 'vScroll', 'vScrollInner', 'hScroll', 'dropZone', 'dropOpenBtn',
-    'dropExampleBtn', 'loadingOverlay', 'loadingText', 'progressBar', 'statusFile', 'statusTimes',
+    'dropExampleBtn', 'loadingOverlay', 'loadingText', 'progressBar', 'statusFile', 'statusTimes', 'headerFile',
     'warningsBtn', 'contextMenu', 'toast', 'pairDialog', 'pairText', 'pairCancel', 'pairOpen',
     'labelDialog', 'labelDialogTitle', 'labelInput', 'labelCancel', 'labelOk', 'warningsDialog',
     'warningsList', 'warningsClose', 'helpDialog', 'helpClose']) {
