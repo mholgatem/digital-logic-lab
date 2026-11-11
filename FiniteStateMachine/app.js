@@ -54,6 +54,12 @@ let verifyButtonResetTimer = null;
 let dialogBackdropMouseDownTarget = null;
 let dialogBackdropCloseBlocked = false;
 let stateTableDragId = null;
+let autosaveTimer = null;
+let autosaveEnabled = false;
+
+const AUTOSAVE_KEY = 'fsm_autosave';
+const AUTOSAVE_VERSION = 1;
+const AUTOSAVE_DELAY_MS = 400;
 
 const landing = document.getElementById('landing');
 const newMachineDialog = document.getElementById('newMachineDialog');
@@ -1169,10 +1175,134 @@ function markDirty() {
   setVerificationStatus(null);
   clearMismatchHighlights();
   updateVerifyButtonState();
+  scheduleAutosave();
 }
 
 function clearDirty() {
   unsavedChanges = false;
+  scheduleAutosave();
+}
+
+// Session autosave: the machine and view are mirrored to localStorage so a
+// reload (or reopening the page) restores the work in progress.
+function buildAutosavePayload() {
+  const payloadState = JSON.parse(JSON.stringify(state));
+  payloadState.viewState = { ...viewState };
+  return {
+    version: AUTOSAVE_VERSION,
+    savedAt: Date.now(),
+    unsavedChanges,
+    state: payloadState,
+  };
+}
+
+function writeAutosave() {
+  clearTimeout(autosaveTimer);
+  autosaveTimer = null;
+  // Nothing to keep until a machine is open (landing screen dismissed).
+  if (!autosaveEnabled || !landing.classList.contains('hidden')) return;
+  try {
+    localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(buildAutosavePayload()));
+  } catch (error) {
+    // Storage full or blocked: keep working without autosave.
+  }
+}
+
+function scheduleAutosave() {
+  if (!autosaveEnabled) return;
+  clearTimeout(autosaveTimer);
+  autosaveTimer = setTimeout(writeAutosave, AUTOSAVE_DELAY_MS);
+}
+
+function flushAutosave() {
+  writeAutosave();
+}
+
+function clearAutosave() {
+  clearTimeout(autosaveTimer);
+  autosaveTimer = null;
+  try {
+    localStorage.removeItem(AUTOSAVE_KEY);
+  } catch (error) {
+    // Ignore blocked storage.
+  }
+}
+
+function readAutosave() {
+  let raw = null;
+  try {
+    raw = localStorage.getItem(AUTOSAVE_KEY);
+  } catch (error) {
+    return null;
+  }
+  if (!raw) return null;
+  try {
+    const payload = JSON.parse(raw);
+    const data = payload?.state;
+    const isValid = payload
+      && typeof payload === 'object'
+      && data
+      && typeof data === 'object'
+      && Array.isArray(data.states)
+      && Array.isArray(data.transitions)
+      && (data.type === 'moore' || data.type === 'mealy');
+    if (!isValid) throw new Error('Invalid autosave');
+    if (!Array.isArray(data.inputs)) data.inputs = [];
+    if (!Array.isArray(data.outputs)) data.outputs = [];
+    if (!Array.isArray(data.kmaps)) data.kmaps = [];
+    if (!data.transitionTable || typeof data.transitionTable !== 'object') {
+      data.transitionTable = { cells: {} };
+    }
+    const vs = data.viewState;
+    if (vs) {
+      const finite = [vs.scale, vs.panX, vs.panY].every((v) => Number.isFinite(v));
+      if (!finite || vs.scale <= 0) delete data.viewState;
+    }
+    return { data, unsavedChanges: !!payload.unsavedChanges };
+  } catch (error) {
+    clearAutosave();
+    return null;
+  }
+}
+
+function restoreAutosave() {
+  const saved = readAutosave();
+  if (!saved) return false;
+  const blankState = JSON.parse(JSON.stringify(state));
+  try {
+    loadState(saved.data);
+    unsavedChanges = saved.unsavedChanges;
+    return true;
+  } catch (error) {
+    // Corrupt session: drop it and fall back to a blank machine.
+    clearAutosave();
+    Object.keys(state).forEach((key) => delete state[key]);
+    Object.assign(state, blankState);
+    initStates();
+    viewState = { scale: 1, panX: 0, panY: 0 };
+    applyViewTransform();
+    updateControls();
+    renderTable();
+    renderTransitionTable();
+    renderPalette();
+    renderKmaps();
+    renderDiagram();
+    clearDirty();
+    return false;
+  }
+}
+
+function showToast(message, duration = 2600) {
+  const toast = document.createElement('div');
+  toast.className = 'app-toast';
+  toast.setAttribute('role', 'status');
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  requestAnimationFrame(() => toast.classList.add('visible'));
+  setTimeout(() => {
+    toast.classList.remove('visible');
+    setTimeout(() => toast.remove(), 300);
+  }, duration);
 }
 
 function promptToSaveIfDirty(next) {
@@ -1808,6 +1938,7 @@ function renderDiagram() {
   drawPreview();
   viewport.querySelectorAll('.label-handle').forEach((el) => viewport.appendChild(el));
   updateVerifyButtonState();
+  scheduleAutosave();
 }
 
 function drawState(st) {
@@ -5201,6 +5332,7 @@ function applyViewTransform() {
     'transform',
     `translate(${viewState.panX} ${viewState.panY}) scale(${viewState.scale})`
   );
+  scheduleAutosave();
 }
 
 function focusDiagramOnContent(options = {}) {
@@ -6907,5 +7039,16 @@ document.addEventListener('DOMContentLoaded', () => {
   renderKmaps();
   applyViewTransform();
   renderDiagram();
-  openDialog('welcomeDialog');
+
+  autosaveEnabled = true;
+  if (restoreAutosave()) {
+    landing.classList.add('hidden');
+    showToast('Restored previous session');
+  } else {
+    openDialog('welcomeDialog');
+  }
+  window.addEventListener('pagehide', flushAutosave);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') flushAutosave();
+  });
 });

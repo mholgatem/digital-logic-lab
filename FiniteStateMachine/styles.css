@@ -1688,6 +1688,29 @@ body.dark .arrow-path.selected {
   outline-offset: -1px;
 }
 
+.app-toast {
+  background: var(--surface);
+  border: 1px solid var(--primary);
+  border-radius: 8px;
+  bottom: 24px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+  color: var(--text);
+  font-size: 0.9rem;
+  left: 50%;
+  opacity: 0;
+  padding: 0.6rem 1rem;
+  pointer-events: none;
+  position: fixed;
+  transform: translate(-50%, 8px);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  z-index: 300;
+}
+
+.app-toast.visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
 .download-overlay {
   align-items: center;
   background: rgba(0, 0, 0, 0.45);
