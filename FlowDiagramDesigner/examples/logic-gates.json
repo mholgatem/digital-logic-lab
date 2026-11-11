@@ -1,0 +1,496 @@
+{
+  "app": "flow-diagram-designer",
+  "version": 1,
+  "name": "Half adder",
+  "nodes": [
+    {
+      "id": "n1",
+      "type": "text",
+      "x": 40,
+      "y": 95,
+      "w": 40,
+      "h": 30,
+      "rotation": 0,
+      "fill": "none",
+      "stroke": "none",
+      "strokeWidth": 2,
+      "dash": "solid",
+      "label": {
+        "text": "A",
+        "pos": "center",
+        "dx": 0,
+        "dy": 0,
+        "rotation": 0,
+        "size": 18,
+        "color": "ink",
+        "bold": true
+      },
+      "props": {}
+    },
+    {
+      "id": "n2",
+      "type": "text",
+      "x": 40,
+      "y": 175,
+      "w": 40,
+      "h": 30,
+      "rotation": 0,
+      "fill": "none",
+      "stroke": "none",
+      "strokeWidth": 2,
+      "dash": "solid",
+      "label": {
+        "text": "B",
+        "pos": "center",
+        "dx": 0,
+        "dy": 0,
+        "rotation": 0,
+        "size": 18,
+        "color": "ink",
+        "bold": true
+      },
+      "props": {}
+    },
+    {
+      "id": "n3",
+      "type": "junction",
+      "x": 135,
+      "y": 105,
+      "w": 10,
+      "h": 10,
+      "rotation": 0,
+      "fill": "paper",
+      "stroke": "ink",
+      "strokeWidth": 2,
+      "dash": "solid",
+      "label": {
+        "text": "",
+        "pos": "center",
+        "dx": 0,
+        "dy": 0,
+        "rotation": 0,
+        "size": 14,
+        "color": "ink",
+        "bold": false
+      },
+      "props": {}
+    },
+    {
+      "id": "n4",
+      "type": "junction",
+      "x": 175,
+      "y": 185,
+      "w": 10,
+      "h": 10,
+      "rotation": 0,
+      "fill": "paper",
+      "stroke": "ink",
+      "strokeWidth": 2,
+      "dash": "solid",
+      "label": {
+        "text": "",
+        "pos": "center",
+        "dx": 0,
+        "dy": 0,
+        "rotation": 0,
+        "size": 14,
+        "color": "ink",
+        "bold": false
+      },
+      "props": {}
+    },
+    {
+      "id": "n5",
+      "type": "xor",
+      "x": 260,
+      "y": 80,
+      "w": 80,
+      "h": 60,
+      "rotation": 0,
+      "fill": "paper",
+      "stroke": "ink",
+      "strokeWidth": 2,
+      "dash": "solid",
+      "label": {
+        "text": "",
+        "pos": "below",
+        "dx": 0,
+        "dy": 0,
+        "rotation": 0,
+        "size": 14,
+        "color": "ink",
+        "bold": false
+      },
+      "props": {
+        "inputs": 2
+      }
+    },
+    {
+      "id": "n6",
+      "type": "and",
+      "x": 260,
+      "y": 220,
+      "w": 80,
+      "h": 60,
+      "rotation": 0,
+      "fill": "paper",
+      "stroke": "ink",
+      "strokeWidth": 2,
+      "dash": "solid",
+      "label": {
+        "text": "",
+        "pos": "below",
+        "dx": 0,
+        "dy": 0,
+        "rotation": 0,
+        "size": 14,
+        "color": "ink",
+        "bold": false
+      },
+      "props": {
+        "inputs": 2
+      }
+    },
+    {
+      "id": "n7",
+      "type": "text",
+      "x": 440,
+      "y": 95,
+      "w": 60,
+      "h": 30,
+      "rotation": 0,
+      "fill": "none",
+      "stroke": "none",
+      "strokeWidth": 2,
+      "dash": "solid",
+      "label": {
+        "text": "Sum",
+        "pos": "center",
+        "dx": 0,
+        "dy": 0,
+        "rotation": 0,
+        "size": 16,
+        "color": "ink",
+        "bold": true
+      },
+      "props": {}
+    },
+    {
+      "id": "n8",
+      "type": "text",
+      "x": 440,
+      "y": 235,
+      "w": 60,
+      "h": 30,
+      "rotation": 0,
+      "fill": "none",
+      "stroke": "none",
+      "strokeWidth": 2,
+      "dash": "solid",
+      "label": {
+        "text": "Carry",
+        "pos": "center",
+        "dx": 0,
+        "dy": 0,
+        "rotation": 0,
+        "size": 16,
+        "color": "ink",
+        "bold": true
+      },
+      "props": {}
+    },
+    {
+      "id": "n9",
+      "type": "title",
+      "x": 120,
+      "y": 0,
+      "w": 260,
+      "h": 40,
+      "rotation": 0,
+      "fill": "none",
+      "stroke": "none",
+      "strokeWidth": 2,
+      "dash": "solid",
+      "label": {
+        "text": "Half adder",
+        "pos": "center",
+        "dx": 0,
+        "dy": 0,
+        "rotation": 0,
+        "size": 28,
+        "color": "vw-orange",
+        "bold": true
+      },
+      "props": {}
+    }
+  ],
+  "edges": [
+    {
+      "id": "e10",
+      "from": {
+        "node": "n1",
+        "port": "e"
+      },
+      "to": {
+        "node": "n3",
+        "port": "w"
+      },
+      "style": "ortho",
+      "waypoints": [],
+      "manual": false,
+      "curve": {
+        "u": 0,
+        "v": 0
+      },
+      "stroke": "ink",
+      "strokeWidth": 2,
+      "dash": "solid",
+      "arrowStart": "none",
+      "arrowEnd": "none",
+      "busWidth": "",
+      "busPos": 0.5,
+      "labels": []
+    },
+    {
+      "id": "e11",
+      "from": {
+        "node": "n3",
+        "port": "e"
+      },
+      "to": {
+        "node": "n5",
+        "port": "in0"
+      },
+      "style": "ortho",
+      "waypoints": [],
+      "manual": false,
+      "curve": {
+        "u": 0,
+        "v": 0
+      },
+      "stroke": "ink",
+      "strokeWidth": 2,
+      "dash": "solid",
+      "arrowStart": "none",
+      "arrowEnd": "none",
+      "busWidth": "",
+      "busPos": 0.5,
+      "labels": []
+    },
+    {
+      "id": "e12",
+      "from": {
+        "node": "n3",
+        "port": "s"
+      },
+      "to": {
+        "node": "n6",
+        "port": "in0"
+      },
+      "style": "ortho",
+      "waypoints": [],
+      "manual": false,
+      "curve": {
+        "u": 0,
+        "v": 0
+      },
+      "stroke": "ink",
+      "strokeWidth": 2,
+      "dash": "solid",
+      "arrowStart": "none",
+      "arrowEnd": "none",
+      "busWidth": "",
+      "busPos": 0.5,
+      "labels": []
+    },
+    {
+      "id": "e13",
+      "from": {
+        "node": "n2",
+        "port": "e"
+      },
+      "to": {
+        "node": "n4",
+        "port": "w"
+      },
+      "style": "ortho",
+      "waypoints": [],
+      "manual": false,
+      "curve": {
+        "u": 0,
+        "v": 0
+      },
+      "stroke": "ink",
+      "strokeWidth": 2,
+      "dash": "solid",
+      "arrowStart": "none",
+      "arrowEnd": "none",
+      "busWidth": "",
+      "busPos": 0.5,
+      "labels": []
+    },
+    {
+      "id": "e14",
+      "from": {
+        "node": "n4",
+        "port": "n"
+      },
+      "to": {
+        "node": "n5",
+        "port": "in1"
+      },
+      "style": "ortho",
+      "waypoints": [],
+      "manual": false,
+      "curve": {
+        "u": 0,
+        "v": 0
+      },
+      "stroke": "ink",
+      "strokeWidth": 2,
+      "dash": "solid",
+      "arrowStart": "none",
+      "arrowEnd": "none",
+      "busWidth": "",
+      "busPos": 0.5,
+      "labels": []
+    },
+    {
+      "id": "e15",
+      "from": {
+        "node": "n4",
+        "port": "s"
+      },
+      "to": {
+        "node": "n6",
+        "port": "in1"
+      },
+      "style": "ortho",
+      "waypoints": [],
+      "manual": false,
+      "curve": {
+        "u": 0,
+        "v": 0
+      },
+      "stroke": "ink",
+      "strokeWidth": 2,
+      "dash": "solid",
+      "arrowStart": "none",
+      "arrowEnd": "none",
+      "busWidth": "",
+      "busPos": 0.5,
+      "labels": []
+    },
+    {
+      "id": "e16",
+      "from": {
+        "node": "n5",
+        "port": "out"
+      },
+      "to": {
+        "node": "n7",
+        "port": "w"
+      },
+      "style": "ortho",
+      "waypoints": [],
+      "manual": false,
+      "curve": {
+        "u": 0,
+        "v": 0
+      },
+      "stroke": "ink",
+      "strokeWidth": 2,
+      "dash": "solid",
+      "arrowStart": "none",
+      "arrowEnd": "arrow",
+      "busWidth": "",
+      "busPos": 0.5,
+      "labels": [
+        {
+          "text": "S = A ⊕ B",
+          "t": 0.5,
+          "dx": 0,
+          "dy": -14,
+          "rotation": 0,
+          "size": 13,
+          "color": "vw-blue",
+          "bold": false,
+          "bg": false
+        }
+      ]
+    },
+    {
+      "id": "e17",
+      "from": {
+        "node": "n6",
+        "port": "out"
+      },
+      "to": {
+        "node": "n8",
+        "port": "w"
+      },
+      "style": "ortho",
+      "waypoints": [],
+      "manual": false,
+      "curve": {
+        "u": 0,
+        "v": 0
+      },
+      "stroke": "ink",
+      "strokeWidth": 2,
+      "dash": "solid",
+      "arrowStart": "none",
+      "arrowEnd": "arrow",
+      "busWidth": "",
+      "busPos": 0.5,
+      "labels": [
+        {
+          "text": "C = A·B",
+          "t": 0.5,
+          "dx": 0,
+          "dy": -14,
+          "rotation": 0,
+          "size": 13,
+          "color": "vw-blue",
+          "bold": false,
+          "bg": false
+        }
+      ]
+    }
+  ],
+  "groups": [
+    {
+      "id": "g18",
+      "members": [
+        "n3",
+        "n4",
+        "n5",
+        "n6"
+      ],
+      "outline": "hull",
+      "padding": 22,
+      "radius": 8,
+      "stroke": "vw-purple",
+      "strokeWidth": 2,
+      "dash": "dashed",
+      "fill": "none",
+      "label": {
+        "text": "Half adder logic",
+        "pos": "bottom",
+        "dx": 0,
+        "dy": 0,
+        "rotation": 0,
+        "size": 14,
+        "color": "vw-purple",
+        "bold": true,
+        "bg": true
+      }
+    }
+  ],
+  "nextId": 19,
+  "grid": {
+    "size": 10,
+    "snap": true,
+    "show": true
+  }
+}

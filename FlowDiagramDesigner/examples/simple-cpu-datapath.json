@@ -1,0 +1,867 @@
+{
+  "app": "flow-diagram-designer",
+  "version": 1,
+  "name": "Simple CPU datapath",
+  "nodes": [
+    {
+      "id": "n1",
+      "type": "fields",
+      "x": 300,
+      "y": 20,
+      "w": 420,
+      "h": 30,
+      "rotation": 0,
+      "fill": "paper",
+      "stroke": "ink",
+      "strokeWidth": 2,
+      "dash": "solid",
+      "label": {
+        "text": "",
+        "pos": "center",
+        "dx": 0,
+        "dy": 0,
+        "rotation": 0,
+        "size": 14,
+        "color": "ink",
+        "bold": false
+      },
+      "props": {
+        "fields": "OPCODE:15-12, RA:11-8, RB:7-4, RD:3-0",
+        "showBits": true,
+        "showWidths": true
+      }
+    },
+    {
+      "id": "n2",
+      "type": "block",
+      "x": 120,
+      "y": 170,
+      "w": 130,
+      "h": 100,
+      "rotation": 0,
+      "fill": "paper",
+      "stroke": "ink",
+      "strokeWidth": 2,
+      "dash": "solid",
+      "label": {
+        "text": "Instruction\nMemory",
+        "pos": "center",
+        "dx": 0,
+        "dy": 0,
+        "rotation": 0,
+        "size": 14,
+        "color": "ink",
+        "bold": true
+      },
+      "props": {
+        "pins": {
+          "right": "_",
+          "bottom": "_"
+        }
+      }
+    },
+    {
+      "id": "n3",
+      "type": "text",
+      "x": 125,
+      "y": 135,
+      "w": 120,
+      "h": 24,
+      "rotation": 0,
+      "fill": "none",
+      "stroke": "none",
+      "strokeWidth": 2,
+      "dash": "solid",
+      "label": {
+        "text": "← 16 bits →",
+        "pos": "center",
+        "dx": 0,
+        "dy": 0,
+        "rotation": 0,
+        "size": 13,
+        "color": "ink",
+        "bold": false
+      },
+      "props": {}
+    },
+    {
+      "id": "n4",
+      "type": "cells",
+      "x": 320,
+      "y": 190,
+      "w": 140,
+      "h": 26,
+      "rotation": 0,
+      "fill": "paper",
+      "stroke": "ink",
+      "strokeWidth": 2,
+      "dash": "solid",
+      "label": {
+        "text": "",
+        "pos": "center",
+        "dx": 0,
+        "dy": 0,
+        "rotation": 0,
+        "size": 14,
+        "color": "ink",
+        "bold": false
+      },
+      "props": {
+        "cells": 4
+      }
+    },
+    {
+      "id": "n5",
+      "type": "text",
+      "x": 300,
+      "y": 150,
+      "w": 180,
+      "h": 26,
+      "rotation": 0,
+      "fill": "none",
+      "stroke": "none",
+      "strokeWidth": 2,
+      "dash": "solid",
+      "label": {
+        "text": "Instruction Register",
+        "pos": "center",
+        "dx": 0,
+        "dy": 0,
+        "rotation": 0,
+        "size": 14,
+        "color": "ink",
+        "bold": false
+      },
+      "props": {}
+    },
+    {
+      "id": "n6",
+      "type": "rect",
+      "x": 600,
+      "y": 160,
+      "w": 200,
+      "h": 50,
+      "rotation": 0,
+      "fill": "none",
+      "stroke": "vw-orange",
+      "strokeWidth": 2,
+      "dash": "dashed",
+      "label": {
+        "text": "Control",
+        "pos": "center",
+        "dx": 0,
+        "dy": 0,
+        "rotation": 0,
+        "size": 26,
+        "color": "vw-orange",
+        "bold": false
+      },
+      "props": {}
+    },
+    {
+      "id": "n7",
+      "type": "regfile",
+      "x": 320,
+      "y": 320,
+      "w": 170,
+      "h": 110,
+      "rotation": 0,
+      "fill": "paper",
+      "stroke": "ink",
+      "strokeWidth": 2,
+      "dash": "solid",
+      "label": {
+        "text": "16 8-bit\nRegisters",
+        "pos": "center",
+        "dx": 0,
+        "dy": 0,
+        "rotation": 0,
+        "size": 14,
+        "color": "ink",
+        "bold": true
+      },
+      "props": {
+        "pins": {
+          "top": "RA, RB, RD",
+          "left": "D",
+          "right": "A, B",
+          "bottom": ">"
+        }
+      }
+    },
+    {
+      "id": "n8",
+      "type": "alu",
+      "x": 590,
+      "y": 310,
+      "w": 60,
+      "h": 120,
+      "rotation": 0,
+      "fill": "paper",
+      "stroke": "ink",
+      "strokeWidth": 2,
+      "dash": "solid",
+      "label": {
+        "text": "ALU",
+        "pos": "center",
+        "dx": 6,
+        "dy": 0,
+        "rotation": -90,
+        "size": 14,
+        "color": "ink",
+        "bold": true
+      },
+      "props": {}
+    },
+    {
+      "id": "n9",
+      "type": "register",
+      "x": 730,
+      "y": 335,
+      "w": 130,
+      "h": 70,
+      "rotation": 0,
+      "fill": "paper",
+      "stroke": "ink",
+      "strokeWidth": 2,
+      "dash": "solid",
+      "label": {
+        "text": "W Register",
+        "pos": "center",
+        "dx": 0,
+        "dy": 0,
+        "rotation": 0,
+        "size": 14,
+        "color": "ink",
+        "bold": true
+      },
+      "props": {
+        "pins": {
+          "left": "_",
+          "right": "_",
+          "bottom": ">"
+        }
+      }
+    },
+    {
+      "id": "n10",
+      "type": "pc",
+      "x": 180,
+      "y": 350,
+      "w": 36,
+      "h": 90,
+      "rotation": 0,
+      "fill": "paper",
+      "stroke": "ink",
+      "strokeWidth": 2,
+      "dash": "solid",
+      "label": {
+        "text": "PC",
+        "pos": "center",
+        "dx": 0,
+        "dy": 0,
+        "rotation": -90,
+        "size": 14,
+        "color": "ink",
+        "bold": true
+      },
+      "props": {
+        "pins": {
+          "top": "_",
+          "left": "_",
+          "right": "_",
+          "bottom": ">"
+        }
+      }
+    },
+    {
+      "id": "n11",
+      "type": "nextaddr",
+      "x": 110,
+      "y": 350,
+      "w": 30,
+      "h": 90,
+      "rotation": 0,
+      "fill": "paper",
+      "stroke": "ink",
+      "strokeWidth": 2,
+      "dash": "solid",
+      "label": {
+        "text": "Next Addr",
+        "pos": "center",
+        "dx": 0,
+        "dy": 0,
+        "rotation": -90,
+        "size": 11,
+        "color": "ink",
+        "bold": false
+      },
+      "props": {}
+    }
+  ],
+  "edges": [
+    {
+      "id": "e12",
+      "from": {
+        "node": "n2",
+        "port": "r0"
+      },
+      "to": {
+        "node": "n4",
+        "port": "w"
+      },
+      "style": "ortho",
+      "waypoints": [],
+      "manual": false,
+      "curve": {
+        "u": 0,
+        "v": 0
+      },
+      "stroke": "ink",
+      "strokeWidth": 2,
+      "dash": "solid",
+      "arrowStart": "none",
+      "arrowEnd": "arrow",
+      "busWidth": "",
+      "busPos": 0.5,
+      "labels": []
+    },
+    {
+      "id": "e13",
+      "from": {
+        "node": "n10",
+        "port": "t0"
+      },
+      "to": {
+        "node": "n2",
+        "port": "b0"
+      },
+      "style": "ortho",
+      "waypoints": [],
+      "manual": false,
+      "curve": {
+        "u": 0,
+        "v": 0
+      },
+      "stroke": "ink",
+      "strokeWidth": 2,
+      "dash": "solid",
+      "arrowStart": "none",
+      "arrowEnd": "arrow",
+      "busWidth": "",
+      "busPos": 0.5,
+      "labels": [
+        {
+          "text": "Instruction Address",
+          "t": 0.5,
+          "dx": -70,
+          "dy": 0,
+          "rotation": 0,
+          "size": 13,
+          "color": "vw-blue",
+          "bold": false,
+          "bg": false
+        }
+      ]
+    },
+    {
+      "id": "e14",
+      "from": {
+        "node": "n11",
+        "port": "e"
+      },
+      "to": {
+        "node": "n10",
+        "port": "l0"
+      },
+      "style": "ortho",
+      "waypoints": [],
+      "manual": false,
+      "curve": {
+        "u": 0,
+        "v": 0
+      },
+      "stroke": "ink",
+      "strokeWidth": 2,
+      "dash": "solid",
+      "arrowStart": "none",
+      "arrowEnd": "arrow",
+      "busWidth": "",
+      "busPos": 0.5,
+      "labels": []
+    },
+    {
+      "id": "e15",
+      "from": {
+        "node": "n10",
+        "port": "r0"
+      },
+      "to": {
+        "node": "n11",
+        "port": "s"
+      },
+      "style": "ortho",
+      "waypoints": [
+        {
+          "x": 240,
+          "y": 395
+        },
+        {
+          "x": 240,
+          "y": 470
+        },
+        {
+          "x": 125,
+          "y": 470
+        }
+      ],
+      "manual": true,
+      "curve": {
+        "u": 0,
+        "v": 0
+      },
+      "stroke": "ink",
+      "strokeWidth": 2,
+      "dash": "solid",
+      "arrowStart": "none",
+      "arrowEnd": "arrow",
+      "busWidth": "",
+      "busPos": 0.5,
+      "labels": []
+    },
+    {
+      "id": "e16",
+      "from": {
+        "node": "n4",
+        "port": "f1b"
+      },
+      "to": {
+        "node": "n7",
+        "port": "t0"
+      },
+      "style": "ortho",
+      "waypoints": [],
+      "manual": false,
+      "curve": {
+        "u": 0,
+        "v": 0
+      },
+      "stroke": "ink",
+      "strokeWidth": 2,
+      "dash": "solid",
+      "arrowStart": "none",
+      "arrowEnd": "arrow",
+      "busWidth": "4",
+      "busPos": 0.4,
+      "labels": []
+    },
+    {
+      "id": "e17",
+      "from": {
+        "node": "n4",
+        "port": "f2b"
+      },
+      "to": {
+        "node": "n7",
+        "port": "t1"
+      },
+      "style": "ortho",
+      "waypoints": [],
+      "manual": false,
+      "curve": {
+        "u": 0,
+        "v": 0
+      },
+      "stroke": "ink",
+      "strokeWidth": 2,
+      "dash": "solid",
+      "arrowStart": "none",
+      "arrowEnd": "arrow",
+      "busWidth": "4",
+      "busPos": 0.4,
+      "labels": []
+    },
+    {
+      "id": "e18",
+      "from": {
+        "node": "n4",
+        "port": "f3b"
+      },
+      "to": {
+        "node": "n7",
+        "port": "t2"
+      },
+      "style": "ortho",
+      "waypoints": [],
+      "manual": false,
+      "curve": {
+        "u": 0,
+        "v": 0
+      },
+      "stroke": "ink",
+      "strokeWidth": 2,
+      "dash": "solid",
+      "arrowStart": "none",
+      "arrowEnd": "arrow",
+      "busWidth": "4",
+      "busPos": 0.4,
+      "labels": []
+    },
+    {
+      "id": "e19",
+      "from": {
+        "node": "n4",
+        "port": "f0t"
+      },
+      "to": {
+        "node": "n6",
+        "port": "w"
+      },
+      "style": "ortho",
+      "waypoints": [
+        {
+          "x": 337.5,
+          "y": 120
+        },
+        {
+          "x": 560,
+          "y": 120
+        },
+        {
+          "x": 560,
+          "y": 185
+        }
+      ],
+      "manual": true,
+      "curve": {
+        "u": 0,
+        "v": 0
+      },
+      "stroke": "ink",
+      "strokeWidth": 2,
+      "dash": "solid",
+      "arrowStart": "none",
+      "arrowEnd": "arrow",
+      "busWidth": "",
+      "busPos": 0.5,
+      "labels": []
+    },
+    {
+      "id": "e20",
+      "from": {
+        "node": "n7",
+        "port": "r0"
+      },
+      "to": {
+        "node": "n8",
+        "port": "a"
+      },
+      "style": "ortho",
+      "waypoints": [],
+      "manual": false,
+      "curve": {
+        "u": 0,
+        "v": 0
+      },
+      "stroke": "ink",
+      "strokeWidth": 2,
+      "dash": "solid",
+      "arrowStart": "none",
+      "arrowEnd": "arrow",
+      "busWidth": "8",
+      "busPos": 0.5,
+      "labels": [
+        {
+          "text": "A",
+          "t": 0.15,
+          "dx": 0,
+          "dy": -12,
+          "rotation": 0,
+          "size": 13,
+          "color": "ink",
+          "bold": false,
+          "bg": false
+        }
+      ]
+    },
+    {
+      "id": "e21",
+      "from": {
+        "node": "n7",
+        "port": "r1"
+      },
+      "to": {
+        "node": "n8",
+        "port": "b"
+      },
+      "style": "ortho",
+      "waypoints": [],
+      "manual": false,
+      "curve": {
+        "u": 0,
+        "v": 0
+      },
+      "stroke": "ink",
+      "strokeWidth": 2,
+      "dash": "solid",
+      "arrowStart": "none",
+      "arrowEnd": "arrow",
+      "busWidth": "8",
+      "busPos": 0.5,
+      "labels": [
+        {
+          "text": "B",
+          "t": 0.15,
+          "dx": 0,
+          "dy": -12,
+          "rotation": 0,
+          "size": 13,
+          "color": "ink",
+          "bold": false,
+          "bg": false
+        }
+      ]
+    },
+    {
+      "id": "e22",
+      "from": {
+        "node": "n8",
+        "port": "out"
+      },
+      "to": {
+        "node": "n9",
+        "port": "l0"
+      },
+      "style": "ortho",
+      "waypoints": [],
+      "manual": false,
+      "curve": {
+        "u": 0,
+        "v": 0
+      },
+      "stroke": "ink",
+      "strokeWidth": 2,
+      "dash": "solid",
+      "arrowStart": "none",
+      "arrowEnd": "arrow",
+      "busWidth": "8",
+      "busPos": 0.5,
+      "labels": [
+        {
+          "text": "Data In",
+          "t": 0.5,
+          "dx": 0,
+          "dy": -28,
+          "rotation": 0,
+          "size": 13,
+          "color": "ink",
+          "bold": false,
+          "bg": false
+        }
+      ]
+    },
+    {
+      "id": "e23",
+      "from": {
+        "node": "n9",
+        "port": "r0"
+      },
+      "to": {
+        "node": "n7",
+        "port": "l0"
+      },
+      "style": "ortho",
+      "waypoints": [
+        {
+          "x": 930,
+          "y": 370
+        },
+        {
+          "x": 930,
+          "y": 500
+        },
+        {
+          "x": 280,
+          "y": 500
+        },
+        {
+          "x": 280,
+          "y": 375
+        }
+      ],
+      "manual": true,
+      "curve": {
+        "u": 0,
+        "v": 0
+      },
+      "stroke": "ink",
+      "strokeWidth": 2,
+      "dash": "solid",
+      "arrowStart": "none",
+      "arrowEnd": "arrow",
+      "busWidth": "8",
+      "busPos": 0.55,
+      "labels": [
+        {
+          "text": "Data Out",
+          "t": 0.02,
+          "dx": 0,
+          "dy": -16,
+          "rotation": 0,
+          "size": 13,
+          "color": "ink",
+          "bold": false,
+          "bg": true
+        },
+        {
+          "text": "D",
+          "t": 0.985,
+          "dx": 0,
+          "dy": -14,
+          "rotation": 0,
+          "size": 13,
+          "color": "ink",
+          "bold": false,
+          "bg": false
+        }
+      ]
+    },
+    {
+      "id": "e24",
+      "from": {
+        "node": "n6",
+        "port": "s"
+      },
+      "to": {
+        "node": "n8",
+        "port": "op"
+      },
+      "style": "ortho",
+      "waypoints": [],
+      "manual": false,
+      "curve": {
+        "u": 0,
+        "v": 0
+      },
+      "stroke": "ink",
+      "strokeWidth": 2,
+      "dash": "solid",
+      "arrowStart": "none",
+      "arrowEnd": "arrow",
+      "busWidth": "",
+      "busPos": 0.5,
+      "labels": [
+        {
+          "text": "Control Signals",
+          "t": 0.45,
+          "dx": -68,
+          "dy": 0,
+          "rotation": 0,
+          "size": 13,
+          "color": "ink",
+          "bold": true,
+          "bg": true
+        }
+      ]
+    },
+    {
+      "id": "e25",
+      "from": {
+        "node": "n8",
+        "port": "flags"
+      },
+      "to": {
+        "node": "n6",
+        "port": "e"
+      },
+      "style": "ortho",
+      "waypoints": [],
+      "manual": false,
+      "curve": {
+        "u": 0,
+        "v": 0
+      },
+      "stroke": "ink",
+      "strokeWidth": 2,
+      "dash": "solid",
+      "arrowStart": "none",
+      "arrowEnd": "arrow",
+      "busWidth": "",
+      "busPos": 0.5,
+      "labels": [
+        {
+          "text": "Conditions",
+          "t": 0.8,
+          "dx": 50,
+          "dy": 0,
+          "rotation": 0,
+          "size": 13,
+          "color": "ink",
+          "bold": true,
+          "bg": true
+        }
+      ]
+    }
+  ],
+  "groups": [
+    {
+      "id": "g26",
+      "members": [
+        "n4",
+        "n5"
+      ],
+      "outline": "rect",
+      "padding": 10,
+      "radius": 6,
+      "stroke": "vw-orange",
+      "strokeWidth": 2,
+      "dash": "dashed",
+      "fill": "none",
+      "label": {
+        "text": "",
+        "pos": "top-left",
+        "dx": 0,
+        "dy": 0,
+        "rotation": 0,
+        "size": 18,
+        "color": "vw-orange",
+        "bold": true,
+        "bg": true
+      }
+    },
+    {
+      "id": "g27",
+      "members": [
+        "n7",
+        "n8",
+        "n9",
+        "n10",
+        "n11"
+      ],
+      "outline": "ortho",
+      "padding": 24,
+      "radius": 12,
+      "stroke": "vw-orange",
+      "strokeWidth": 2,
+      "dash": "dashed",
+      "fill": "none",
+      "label": {
+        "text": "Datapath",
+        "pos": "bottom",
+        "dx": 0,
+        "dy": 0,
+        "rotation": 0,
+        "size": 26,
+        "color": "vw-orange",
+        "bold": true,
+        "bg": true
+      }
+    }
+  ],
+  "nextId": 28,
+  "grid": {
+    "size": 10,
+    "snap": true,
+    "show": true
+  }
+}
