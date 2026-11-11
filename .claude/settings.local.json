@@ -5,7 +5,9 @@
       "Bash(grep:*)",
       "Bash(python -)",
       "Bash(node gen_examples.js \"C:/Users/holga/OneDrive/Documents/GitHub/digital-logic-lab/FlowDiagramDesigner\")",
-      "Bash(node --test FlowDiagramDesigner/tests/geometry.test.mjs)"
+      "Bash(node --test FlowDiagramDesigner/tests/geometry.test.mjs)",
+      "Bash(git check-ignore *)",
+      "Bash(echo \"exit=$?\")"
     ]
   }
 }
