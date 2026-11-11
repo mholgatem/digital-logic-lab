@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flow Diagram Designer - Digital Logic Lab</title>
+  <link rel="icon" href="../favicon.ico">
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="light">
+  <header class="main-header fd-header">
+    <div class="fd-header-inner">
+      <div class="header-left">
+        <a href="../" class="back-link">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+          Back
+        </a>
+        <h1>Flow Diagram Designer</h1>
+        <input id="docName" class="doc-name" type="text" value="Untitled diagram" aria-label="Diagram name" spellcheck="false">
+      </div>
+      <div class="header-actions">
+        <button id="helpBtn" class="icon-btn" title="Controls and shortcuts">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+        </button>
+        <button id="settingsBtn" class="icon-btn" title="Settings">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="fd-toolbar" role="toolbar" aria-label="Diagram tools">
+    <div class="tool-group">
+      <button id="newBtn" class="tool-btn" title="Start a new, empty diagram">New</button>
+      <button id="openBtn" class="tool-btn" title="Open a saved diagram (.json)">Open…</button>
+      <button id="saveBtn" class="tool-btn primary-tool" title="Save the diagram as .json (Ctrl+S)">Save</button>
+      <button id="exportBtn" class="tool-btn" title="Export as SVG or PNG image">Export…</button>
+      <div class="menu-wrap">
+        <button id="examplesBtn" class="tool-btn" aria-haspopup="true" aria-expanded="false">Examples ▾</button>
+        <div id="examplesMenu" class="popup-menu hidden" role="menu"></div>
+      </div>
+      <input id="fileInput" type="file" accept=".json,application/json" hidden>
+    </div>
+    <div class="tool-group">
+      <button id="undoBtn" class="tool-btn icon-tool" title="Undo (Ctrl+Z)" disabled>↶</button>
+      <button id="redoBtn" class="tool-btn icon-tool" title="Redo (Ctrl+Y / Ctrl+Shift+Z)" disabled>↷</button>
+      <button id="historyBtn" class="tool-btn" title="Show the undo history" aria-pressed="false">History</button>
+    </div>
+    <div class="tool-group">
+      <button id="groupBtn" class="tool-btn" title="Group the selection (Ctrl+G)" disabled>Group</button>
+      <button id="ungroupBtn" class="tool-btn" title="Ungroup (Ctrl+Shift+G)" disabled>Ungroup</button>
+      <div class="menu-wrap">
+        <button id="alignBtn" class="tool-btn" aria-haspopup="true" aria-expanded="false" disabled>Align ▾</button>
+        <div id="alignMenu" class="popup-menu hidden" role="menu">
+          <button data-align="left">Align left edges</button>
+          <button data-align="hcenter">Align centres (vertical line)</button>
+          <button data-align="right">Align right edges</button>
+          <hr>
+          <button data-align="top">Align top edges</button>
+          <button data-align="vcenter">Align middles (horizontal line)</button>
+          <button data-align="bottom">Align bottom edges</button>
+          <hr>
+          <button data-align="hdist">Distribute horizontally</button>
+          <button data-align="vdist">Distribute vertically</button>
+        </div>
+      </div>
+      <button id="frontBtn" class="tool-btn" title="Bring to front (])" disabled>Front</button>
+      <button id="backBtn" class="tool-btn" title="Send to back ([)" disabled>Back</button>
+      <button id="rotateBtn" class="tool-btn icon-tool" title="Rotate 90° (R)" disabled>⟳</button>
+    </div>
+    <div class="tool-group">
+      <label class="tool-label" for="edgeStyleSelect">New arrows</label>
+      <select id="edgeStyleSelect" class="tool-select" title="Style for newly drawn arrows">
+        <option value="ortho">90° segments</option>
+        <option value="straight">Straight</option>
+        <option value="curve">Curved</option>
+      </select>
+      <label class="tool-check" title="Snap positions to the grid">
+        <input id="snapToggle" type="checkbox" checked> Snap
+      </label>
+    </div>
+    <div class="tool-group">
+      <button id="zoomOutBtn" class="tool-btn icon-tool" title="Zoom out (−)">−</button>
+      <button id="zoomResetBtn" class="tool-btn" title="Reset zoom to 100%">100%</button>
+      <button id="zoomInBtn" class="tool-btn icon-tool" title="Zoom in (+)">+</button>
+      <button id="zoomFitBtn" class="tool-btn" title="Zoom to fit the diagram (F)">Fit</button>
+    </div>
+  </div>
+
+  <main class="fd-workspace">
+    <aside class="fd-palette" aria-label="Shape palette">
+      <div class="palette-head">
+        <input id="paletteFilter" class="filter-input" type="search" placeholder="Search shapes…" aria-label="Search shapes">
+      </div>
+      <div id="paletteList" class="palette-list"></div>
+      <div class="palette-foot">Drag onto the playmat, or click to add.</div>
+    </aside>
+
+    <section id="stage" class="fd-stage" aria-label="Playmat">
+      <svg id="canvas" class="fd-canvas" xmlns="http://www.w3.org/2000/svg" tabindex="0">
+        <defs>
+          <pattern id="gridMinor" width="10" height="10" patternUnits="userSpaceOnUse">
+            <path id="gridMinorPath" class="grid-line" d="M10 0 H0 V10"></path>
+          </pattern>
+          <pattern id="gridMajor" width="100" height="100" patternUnits="userSpaceOnUse">
+            <path id="gridMajorPath" class="grid-line-major" d="M100 0 H0 V100"></path>
+          </pattern>
+        </defs>
+        <rect id="gridMinorRect" class="grid-rect" width="100%" height="100%" fill="url(#gridMinor)"></rect>
+        <rect id="gridMajorRect" class="grid-rect" width="100%" height="100%" fill="url(#gridMajor)"></rect>
+        <g id="world" font-family="Inter, Arial, sans-serif">
+          <g id="layerGroups"></g>
+          <g id="layerEdges"></g>
+          <g id="layerNodes"></g>
+          <g id="layerOverlay"></g>
+        </g>
+      </svg>
+      <textarea id="inlineEditor" class="inline-editor hidden" rows="1" spellcheck="false" aria-label="Edit label"></textarea>
+      <div id="emptyHint" class="empty-hint">
+        <h2>Drag shapes here</h2>
+        <p>Pick a shape from the palette, then drag from a shape's port dots (or Alt+drag the shape) to draw an arrow.</p>
+      </div>
+      <div id="zoomBadge" class="zoom-badge">100%</div>
+    </section>
+
+    <aside class="fd-inspector" aria-label="Properties">
+      <div id="propsPanel" class="props-panel"></div>
+      <div id="historyPanel" class="history-panel hidden">
+        <div class="panel-title">
+          <span>History</span>
+          <button id="historyClose" class="link-btn" title="Hide history">Hide</button>
+        </div>
+        <ol id="historyList" class="history-list"></ol>
+      </div>
+    </aside>
+  </main>
+
+  <div id="contextMenu" class="popup-menu context-menu hidden" role="menu"></div>
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+  <div id="exportDialog" class="dialog-backdrop hidden">
+    <div class="dialog">
+      <h2>Export image</h2>
+      <div class="form-grid">
+        <label for="exportFormat">Format</label>
+        <select id="exportFormat" class="tool-select">
+          <option value="png">PNG (raster)</option>
+          <option value="svg">SVG (vector)</option>
+        </select>
+        <label for="exportTheme">Colours</label>
+        <select id="exportTheme" class="tool-select">
+          <option value="light">Light (for documents)</option>
+          <option value="dark">Dark</option>
+        </select>
+        <label for="exportBackground">Background</label>
+        <select id="exportBackground" class="tool-select">
+          <option value="solid">Solid</option>
+          <option value="transparent">Transparent</option>
+        </select>
+        <label for="exportScale">PNG scale</label>
+        <select id="exportScale" class="tool-select">
+          <option value="1">1×</option>
+          <option value="2" selected>2×</option>
+          <option value="3">3×</option>
+          <option value="4">4×</option>
+        </select>
+        <label for="exportSelection">Contents</label>
+        <select id="exportSelection" class="tool-select">
+          <option value="all">Whole diagram</option>
+          <option value="selection">Selection only</option>
+        </select>
+      </div>
+      <div class="dialog-actions dialog-actions-split">
+        <button id="exportCancel" class="tool-btn">Cancel</button>
+        <button id="exportGo" class="primary">Export</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="confirmDialog" class="dialog-backdrop hidden">
+    <div class="dialog">
+      <h2 id="confirmTitle">Are you sure?</h2>
+      <p id="confirmText" class="dialog-text"></p>
+      <div class="dialog-actions dialog-actions-split">
+        <button id="confirmCancel" class="tool-btn">Cancel</button>
+        <button id="confirmOk" class="primary">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="helpDialog" class="dialog-backdrop hidden">
+    <div class="dialog dialog-wide">
+      <h2>Controls</h2>
+      <table class="help-table">
+        <tbody>
+          <tr><th>Drag a palette tile</th><td>Add a shape (or click the tile to add it at the centre)</td></tr>
+          <tr><th>Click / Shift+click</th><td>Select / add to the selection</td></tr>
+          <tr><th>Drag on empty space</th><td>Box-select</td></tr>
+          <tr><th>Click a grouped shape again</th><td>Drill into the group to select the shape inside it</td></tr>
+          <tr><th>Drag a port dot, Alt+drag or right-drag a shape</th><td>Draw an arrow. Release on a shape or port to connect, on empty space for a free end</td></tr>
+          <tr><th>Ctrl+release while drawing</th><td>Place a 90° bend and keep drawing; click a shape or empty space to finish</td></tr>
+          <tr><th>Drag a 90° segment</th><td>Slide it sideways (end segments jog around the port)</td></tr>
+          <tr><th>Right-click an arrow</th><td>Insert a jog, add a label, reset the route</td></tr>
+          <tr><th>Drag the round handle</th><td>Rotate in 15° steps; hold <kbd>Shift</kbd> to rotate freely</td></tr>
+          <tr><th><kbd>R</kbd> / <kbd>Shift</kbd>+<kbd>R</kbd></th><td>Rotate the selected shape or label 90° clockwise / anticlockwise</td></tr>
+          <tr><th>Double-click</th><td>Edit the label of a shape, arrow or group</td></tr>
+          <tr><th>Click a selected shape's label</th><td>Select the label to move or rotate it</td></tr>
+          <tr><th>Wheel / Shift+drag / middle-drag</th><td>Zoom / pan</td></tr>
+          <tr><th><kbd>Ctrl</kbd>+<kbd>G</kbd> / <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>G</kbd></th><td>Group / ungroup</td></tr>
+          <tr><th><kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Ctrl</kbd>+<kbd>Y</kbd></th><td>Undo / redo (see History for the full list)</td></tr>
+          <tr><th><kbd>Ctrl</kbd>+<kbd>C</kbd> / <kbd>V</kbd> / <kbd>D</kbd></th><td>Copy / paste / duplicate</td></tr>
+          <tr><th>Arrow keys</th><td>Nudge (hold <kbd>Shift</kbd> for 10×)</td></tr>
+          <tr><th><kbd>Delete</kbd></th><td>Delete the selection</td></tr>
+          <tr><th><kbd>]</kbd> / <kbd>[</kbd></th><td>Bring to front / send to back</td></tr>
+          <tr><th><kbd>F</kbd>, <kbd>+</kbd>, <kbd>−</kbd></th><td>Fit, zoom in, zoom out</td></tr>
+          <tr><th><kbd>Ctrl</kbd>+<kbd>S</kbd></th><td>Save as .json</td></tr>
+        </tbody>
+      </table>
+      <div class="dialog-actions">
+        <button id="helpClose" class="primary">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="settingsDialog" class="dialog-backdrop hidden">
+    <div class="dialog">
+      <h2>Module Settings</h2>
+      <div class="form-row">
+        <span>Dark Mode</span>
+        <label class="switch">
+          <input type="checkbox" id="darkModeToggle">
+          <span class="slider round"></span>
+        </label>
+      </div>
+      <div class="form-row">
+        <span>Show grid</span>
+        <label class="switch">
+          <input type="checkbox" id="gridToggle" checked>
+          <span class="slider round"></span>
+        </label>
+      </div>
+      <div class="dialog-actions">
+        <button id="closeSettings" class="primary">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="themeProbeLight" class="fd-theme-light theme-probe"></div>
+  <div id="themeProbeDark" class="fd-theme-dark theme-probe"></div>
+
+  <script src="lib/geometry.js"></script>
+  <script src="lib/routing.js"></script>
+  <script src="lib/shapes.js"></script>
+  <script src="lib/serialize.js"></script>
+  <script src="app.js"></script>
+  <!-- Cloudflare Web Analytics -->
+  <script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "992da5035a144d2a89175fac742894d7"}'></script>
+  <!-- End Cloudflare Web Analytics -->
+</body>
+</html>
