@@ -31,6 +31,7 @@ const state = {
   transitionTable: { cells: {} },
   transitionTableVerified: false,
   kmaps: [],
+  assumptions: [],
 };
 
 const in_development = true;
@@ -78,6 +79,9 @@ const stateDefinitionContent = document.getElementById('stateDefinitionContent')
 const stateDefinitionWindow = stateDefinitionDialog?.querySelector('.state-definition-dialog');
 const stateDefinitionHeader = document.getElementById('stateDefinitionHeader');
 const stateDefinitionResizeHandle = document.getElementById('stateDefinitionResizeHandle');
+const assumptionsDialog = document.getElementById('assumptionsDialog');
+const assumptionsInput = document.getElementById('assumptionsInput');
+const assumptionsExport = document.getElementById('assumptionsExport');
 const toolbarTitle = document.getElementById('toolbarTitle');
 const mealyOutputRow = document.getElementById('mealyOutputRow');
 const inputChoices = document.getElementById('inputChoices');
@@ -1599,6 +1603,86 @@ function updateControls() {
   syncStateTableWidth();
 }
 
+const ASSUMPTION_BULLET = '• ';
+
+function stripAssumptionBullet(line) {
+  return line.startsWith(ASSUMPTION_BULLET) ? line.slice(ASSUMPTION_BULLET.length) : line;
+}
+
+function renderAssumptionsInput() {
+  if (!assumptionsInput) return;
+  const items = state.assumptions && state.assumptions.length ? state.assumptions : [''];
+  assumptionsInput.value = items.map((a) => `${ASSUMPTION_BULLET}${a}`).join('\n');
+}
+
+// Every line of the textarea is a bullet: re-add the prefix wherever it is
+// missing (new lines, pasted text) while keeping the caret where the user was.
+function normalizeAssumptionsInput() {
+  const value = assumptionsInput.value;
+  const caret = assumptionsInput.selectionStart;
+  let offset = 0;
+  let caretShift = 0;
+  const lines = value.split('\n').map((line) => {
+    let fixed = line;
+    if (!line.startsWith(ASSUMPTION_BULLET)) {
+      // Drop a partial bullet ("•" without its space) before re-adding it.
+      const body = line.startsWith('•') ? line.slice(1).replace(/^ /, '') : line;
+      fixed = `${ASSUMPTION_BULLET}${body}`;
+      if (offset <= caret) caretShift += fixed.length - line.length;
+    }
+    offset += line.length + 1;
+    return fixed;
+  });
+  const normalized = lines.join('\n');
+  if (normalized !== value) {
+    assumptionsInput.value = normalized;
+    const newCaret = Math.max(0, caret + caretShift);
+    assumptionsInput.setSelectionRange(newCaret, newCaret);
+  }
+  state.assumptions = lines.map(stripAssumptionBullet);
+  markDirty();
+}
+
+function initAssumptionsEditor() {
+  const openBtn = document.getElementById('assumptionsBtn');
+  if (!openBtn || !assumptionsDialog || !assumptionsInput) return;
+  openBtn.addEventListener('click', () => {
+    closeAllDropdowns();
+    renderAssumptionsInput();
+    openDialog('assumptionsDialog');
+    requestAnimationFrame(() => {
+      assumptionsInput.focus();
+      const end = assumptionsInput.value.length;
+      assumptionsInput.setSelectionRange(end, end);
+    });
+  });
+  assumptionsInput.addEventListener('input', normalizeAssumptionsInput);
+  assumptionsInput.addEventListener('keydown', (e) => {
+    if (e.key !== 'Backspace' && e.key !== 'Delete') return;
+    const { selectionStart, selectionEnd, value } = assumptionsInput;
+    if (selectionStart !== selectionEnd) return;
+    if (e.key === 'Delete') {
+      // Caret at the end of a line: pull the next line up without its bullet.
+      const joinSeq = `\n${ASSUMPTION_BULLET}`;
+      if (!value.startsWith(joinSeq, selectionStart)) return;
+      e.preventDefault();
+      assumptionsInput.value = value.slice(0, selectionStart) + value.slice(selectionStart + joinSeq.length);
+      assumptionsInput.setSelectionRange(selectionStart, selectionStart);
+      normalizeAssumptionsInput();
+      return;
+    }
+    const lineStart = value.lastIndexOf('\n', selectionStart - 1) + 1;
+    if (selectionStart !== lineStart + ASSUMPTION_BULLET.length) return;
+    if (!value.startsWith(ASSUMPTION_BULLET, lineStart)) return;
+    // Caret is right after a bullet: merge this line into the previous one.
+    e.preventDefault();
+    if (lineStart === 0) return;
+    assumptionsInput.value = value.slice(0, lineStart - 1) + value.slice(selectionStart);
+    assumptionsInput.setSelectionRange(lineStart - 1, lineStart - 1);
+    normalizeAssumptionsInput();
+  });
+}
+
 const STATE_TABLE_MIN_COL_WIDTH = 40;
 
 function stateTableHeaders() {
@@ -2936,6 +3020,9 @@ function loadState(data) {
   state.showBinary = savedShowBinary !== undefined ? savedShowBinary : true;
   if (!state.transitionTable) state.transitionTable = { cells: {} };
   state.transitionTableVerified = !!data.transitionTableVerified;
+  state.assumptions = Array.isArray(data.assumptions)
+    ? data.assumptions.filter((a) => typeof a === 'string')
+    : [];
   const normalizeKmap = (k) => {
     const variableTokens = Array.isArray(k.variableTokens)
       ? k.variableTokens.map((tk) => cloneColumnToken(tk)).filter(Boolean)
@@ -5112,16 +5199,33 @@ function captureImage(element, filename) {
     });
 }
 
+function showAssumptionsExport() {
+  if (!assumptionsExport) return;
+  const items = (state.assumptions || []).map((a) => a.trim()).filter(Boolean);
+  if (!items.length) return;
+  const listHtml = items.map((a) => `<li>${escapeHtml(a)}</li>`).join('');
+  assumptionsExport.innerHTML = `<h3>Assumptions</h3><ul>${listHtml}</ul>`;
+  assumptionsExport.classList.remove('hidden');
+}
+
+function hideAssumptionsExport() {
+  if (!assumptionsExport) return;
+  assumptionsExport.classList.add('hidden');
+  assumptionsExport.innerHTML = '';
+}
+
 function captureDefinitionTableImage() {
   if (!stateDefinitionDialog) return;
   const target = stateDefinitionContent || stateDefinitionDialog;
   const wasHidden = stateDefinitionDialog.classList.contains('hidden');
   if (wasHidden) stateDefinitionDialog.classList.remove('hidden');
   applyStateDefinitionWindowLayout();
+  showAssumptionsExport();
   showDownloadOverlay();
 
   requestAnimationFrame(() => {
     captureImage(target, `${state.name}-state-definition-table.png`).finally(() => {
+      hideAssumptionsExport();
       if (wasHidden) stateDefinitionDialog.classList.add('hidden');
       hideDownloadOverlay();
     });
@@ -5675,6 +5779,7 @@ function attachEvents() {
   document.getElementById('stateDefinitionBtn').addEventListener('click', () => {
     setDefinitionDialogOpen(true);
   });
+  initAssumptionsEditor();
   if (stateDefinitionHeader && stateDefinitionWindow) {
     stateDefinitionHeader.addEventListener('mousedown', (e) => {
       if (e.target.closest('button')) return;
@@ -5824,6 +5929,7 @@ function attachEvents() {
     state.numStates = coerceAllowedStateCount(document.getElementById('stateCount').value);
     state.inputs = parseList(document.getElementById('inputVars').value);
     state.outputs = parseList(document.getElementById('outputVars').value);
+    state.assumptions = [];
     viewState = { scale: 1, panX: 0, panY: 0 };
     applyViewTransform();
     initStates();
@@ -6964,6 +7070,7 @@ function attachEvents() {
       const activeEl = document.activeElement;
       const tablesHaveFocus =
         (stateDefinitionDialog && stateDefinitionDialog.contains(activeEl)) ||
+        (assumptionsDialog && assumptionsDialog.contains(activeEl)) ||
         (transitionDrawer && transitionDrawer.contains(activeEl));
       if (tablesHaveFocus) return;
       undoLastDelete();

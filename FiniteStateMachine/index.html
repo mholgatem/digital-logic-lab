@@ -129,6 +129,7 @@
       </div>
       <button id="quickRef" class="ghost">Quick Reference</button>
       <button id="stateDefinitionBtn" class="ghost">State Definition Table</button>
+      <button id="assumptionsBtn" class="ghost">Assumptions</button>
       <button id="toggleTransitionDrawer" class="ghost">State Transition Table</button>
       <button id="kmapToggle" class="ghost">K-maps</button>
       <button id="testKmapBtn" class="ghost">TEST KMAP</button>
@@ -235,6 +236,16 @@
     </div>
   </div>
 
+  <div id="assumptionsDialog" class="dialog-backdrop hidden">
+    <div class="dialog assumptions-dialog">
+      <h2>Assumptions</h2>
+      <textarea id="assumptionsInput" class="assumptions-input" rows="10" spellcheck="true" aria-label="Assumptions, one per line" placeholder="• Type an assumption, press Enter for the next one"></textarea>
+      <div class="dialog-actions">
+        <button data-close="assumptionsDialog">Close</button>
+      </div>
+    </div>
+  </div>
+
   <div id="stateDefinitionDialog" class="dialog-backdrop hidden">
     <div class="dialog state-definition-dialog">
       <div class="dialog-header state-definition-header" id="stateDefinitionHeader">
@@ -283,6 +294,7 @@
             </thead>
             <tbody></tbody>
           </table>
+          <div id="assumptionsExport" class="assumptions-export hidden"></div>
         </div>
       </div>
       <div class="dialog-actions end">

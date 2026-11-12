@@ -867,6 +867,47 @@ button:active {
   box-shadow: 0 15px 40px rgba(0,0,0,0.2);
 }
 
+.assumptions-dialog {
+  width: min(560px, 90vw);
+}
+
+.assumptions-input {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-sizing: border-box;
+  color: var(--text);
+  font: inherit;
+  line-height: 1.5;
+  min-height: 12rem;
+  padding: 0.5rem 0.65rem;
+  resize: vertical;
+  width: 100%;
+}
+
+.assumptions-input:focus {
+  border-color: var(--primary);
+  outline: none;
+}
+
+.assumptions-export {
+  color: var(--text);
+  padding-top: 0.75rem;
+}
+
+.assumptions-export h3 {
+  margin: 0.25rem 0 0.4rem;
+}
+
+.assumptions-export ul {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.assumptions-export li + li {
+  margin-top: 0.2rem;
+}
+
 .dialog ul li.spaced-bullet {
   margin-top: 0.35rem;
 }
