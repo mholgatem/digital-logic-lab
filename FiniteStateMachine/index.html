@@ -237,12 +237,18 @@
   </div>
 
   <div id="assumptionsDialog" class="dialog-backdrop hidden">
-    <div class="dialog assumptions-dialog">
-      <h2>Assumptions</h2>
-      <textarea id="assumptionsInput" class="assumptions-input" rows="10" spellcheck="true" aria-label="Assumptions, one per line" placeholder="• Type an assumption, press Enter for the next one"></textarea>
-      <div class="dialog-actions">
+    <div class="dialog assumptions-dialog" id="assumptionsWindow">
+      <div class="dialog-header assumptions-header" id="assumptionsHeader">
+        <h2>Assumptions</h2>
+        <button class="ghost" data-close="assumptionsDialog" aria-label="Close assumptions">✕</button>
+      </div>
+      <div class="assumptions-body">
+        <textarea id="assumptionsInput" class="assumptions-input" spellcheck="true" aria-label="Assumptions, one per line" placeholder="• Type an assumption, press Enter for the next one"></textarea>
+      </div>
+      <div class="dialog-actions end">
         <button data-close="assumptionsDialog">Close</button>
       </div>
+      <div class="assumptions-resize-handle" id="assumptionsResizeHandle" aria-hidden="true"></div>
     </div>
   </div>
 

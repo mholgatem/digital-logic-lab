@@ -867,8 +867,41 @@ button:active {
   box-shadow: 0 15px 40px rgba(0,0,0,0.2);
 }
 
-.assumptions-dialog {
+.dialog.assumptions-dialog {
+  border: 1px solid var(--border);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  height: min(420px, 85vh);
+  left: 50%;
+  max-height: calc(100vh - 24px);
+  max-width: calc(100vw - 24px);
+  min-height: 220px;
+  min-width: 280px;
+  padding: 0 0 10px;
+  position: fixed;
+  top: 50%;
+  transform: translate(-50%, -50%);
   width: min(560px, 90vw);
+}
+
+.assumptions-dialog .dialog-header {
+  align-items: center;
+  background: var(--accent);
+  border-bottom: 1px solid var(--border);
+  border-radius: 12px 12px 0 0;
+  cursor: move;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 1rem;
+  user-select: none;
+}
+
+.assumptions-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  padding: 0.75rem 1rem 0;
 }
 
 .assumptions-input {
@@ -877,17 +910,39 @@ button:active {
   border-radius: 8px;
   box-sizing: border-box;
   color: var(--text);
+  flex: 1;
   font: inherit;
+  height: 100%;
   line-height: 1.5;
-  min-height: 12rem;
   padding: 0.5rem 0.65rem;
-  resize: vertical;
+  resize: none;
   width: 100%;
 }
 
 .assumptions-input:focus {
   border-color: var(--primary);
   outline: none;
+}
+
+.assumptions-dialog .dialog-actions.end {
+  justify-content: flex-end;
+  padding: 0 1rem;
+}
+
+.assumptions-resize-handle {
+  border-bottom: 2px solid var(--primary);
+  border-radius: 2px;
+  border-right: 2px solid var(--primary);
+  bottom: 6px;
+  cursor: se-resize;
+  height: 16px;
+  position: absolute;
+  right: 6px;
+  width: 16px;
+}
+
+body.dialog-dragging {
+  user-select: none;
 }
 
 .assumptions-export {
