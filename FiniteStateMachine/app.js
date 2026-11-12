@@ -1648,6 +1648,15 @@ function assumptionStateForToken(raw) {
   return rowMatch ? state.states[parseInt(rowMatch[1], 10)] || null : null;
 }
 
+// Label matches are case-insensitive, but the token is shown (and saved) with
+// the label's own capitalisation, e.g. [idle] -> [Idle].
+function canonicalAssumptionRaw(raw) {
+  const key = (raw || '').replace(/[​ ]/g, ' ').trim().toLowerCase();
+  if (!key) return raw;
+  const byLabel = state.states.find((s) => (s.label || '').trim().toLowerCase() === key);
+  return byLabel ? byLabel.label.trim() : raw;
+}
+
 function assumptionStateColors(raw) {
   const st = assumptionStateForToken(raw);
   if (!st) return null;
@@ -1670,7 +1679,14 @@ function applyAssumptionChipColor(chip) {
 // Re-colour state chips after state colours, labels or row order change.
 function refreshAssumptionChipColors() {
   if (!assumptionsEditor) return;
-  assumptionsEditor.querySelectorAll('.assumption-token').forEach(applyAssumptionChipColor);
+  assumptionsEditor.querySelectorAll('.assumption-token').forEach((chip) => {
+    const canonical = canonicalAssumptionRaw(chip.dataset.raw);
+    if (canonical !== chip.dataset.raw) {
+      chip.dataset.raw = canonical;
+      chip.innerHTML = formatAssumptionTokenHtml(canonical);
+    }
+    applyAssumptionChipColor(chip);
+  });
 }
 
 function assumptionChipHtml(raw) {
@@ -1684,7 +1700,8 @@ function formatAssumptionTextHtml(text, asChips = false) {
   const src = text || '';
   let html = '';
   let last = 0;
-  src.replace(ASSUMPTION_TOKEN_RE, (match, raw, offset) => {
+  src.replace(ASSUMPTION_TOKEN_RE, (match, typedRaw, offset) => {
+    const raw = canonicalAssumptionRaw(typedRaw);
     html += escapeHtml(src.slice(last, offset));
     if (!parseAssumptionToken(raw)) {
       html += escapeHtml(match);
@@ -1706,8 +1723,8 @@ function createAssumptionChip(raw) {
   const chip = document.createElement('span');
   chip.className = 'assumption-token';
   chip.contentEditable = 'false';
-  chip.dataset.raw = raw;
-  chip.innerHTML = formatAssumptionTokenHtml(raw);
+  chip.dataset.raw = canonicalAssumptionRaw(raw);
+  chip.innerHTML = formatAssumptionTokenHtml(chip.dataset.raw);
   applyAssumptionChipColor(chip);
   return chip;
 }
