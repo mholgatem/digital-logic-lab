@@ -707,6 +707,34 @@ button#quickRef {
   width: 7rem;
 }
 
+#stateTable th {
+  overflow: hidden;
+  position: relative;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#stateTable .col-resize-handle {
+  bottom: 0;
+  cursor: col-resize;
+  position: absolute;
+  right: 0;
+  top: 0;
+  user-select: none;
+  width: 6px;
+}
+
+#stateTable .col-resize-handle:hover,
+body.col-resizing #stateTable .col-resize-handle:active {
+  background: var(--primary);
+  opacity: 0.6;
+}
+
+body.col-resizing {
+  cursor: col-resize;
+  user-select: none;
+}
+
 #stateTable td input {
   box-sizing: border-box;
   width: 100%;

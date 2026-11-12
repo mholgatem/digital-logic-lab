@@ -1507,7 +1507,7 @@ function buildPlainIOText(names, values, mode = 'binary') {
       if (val === 'X') return 'X';
       return `${name}${val === '0' ? "'" : ''}`;
     })
-    .join('');
+    .join(', ');
 }
 
 function buildIOText(names, values, mode = 'binary') {
@@ -1516,7 +1516,7 @@ function buildIOText(names, values, mode = 'binary') {
   }
   return names
     .map((name, idx) => variableToken(name, (values && values[idx]) || 'X'))
-    .join('');
+    .join(', ');
 }
 
 function transitionLabel(tr) {
@@ -1596,6 +1596,84 @@ function updateControls() {
     el.classList.toggle('hidden', state.type !== 'moore');
   });
   toggleIoModeBtn.textContent = `Display: ${state.showBinary ? 'Variables' : 'Binary'}`;
+  syncStateTableWidth();
+}
+
+const STATE_TABLE_MIN_COL_WIDTH = 40;
+
+function stateTableHeaders() {
+  const table = document.getElementById('stateTable');
+  return table ? Array.from(table.querySelectorAll('thead th')) : [];
+}
+
+// Once the user has resized a column, every visible header carries an explicit
+// pixel width and the table width is their sum (so it may scroll horizontally).
+function syncStateTableWidth() {
+  const table = document.getElementById('stateTable');
+  if (!table || !table.style.width) return;
+  const rootFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+  let total = 0;
+  stateTableHeaders().forEach((th) => {
+    if (th.classList.contains('hidden')) return;
+    if (!th.style.width) th.style.width = `${Math.round(7 * rootFontSize)}px`;
+    total += parseFloat(th.style.width);
+  });
+  table.style.width = `${total}px`;
+}
+
+function freezeStateTableColumnWidths() {
+  const table = document.getElementById('stateTable');
+  if (!table || table.style.width) return;
+  const headers = stateTableHeaders().filter((th) => !th.classList.contains('hidden'));
+  const widths = headers.map((th) => th.getBoundingClientRect().width);
+  headers.forEach((th, i) => {
+    th.style.width = `${widths[i]}px`;
+  });
+  table.style.width = `${widths.reduce((sum, w) => sum + w, 0)}px`;
+}
+
+function resetStateTableColumnWidths() {
+  const table = document.getElementById('stateTable');
+  if (!table) return;
+  stateTableHeaders().forEach((th) => {
+    th.style.width = '';
+  });
+  table.style.width = '';
+}
+
+function initStateTableColumnResize() {
+  stateTableHeaders().forEach((th) => {
+    const handle = document.createElement('span');
+    handle.className = 'col-resize-handle';
+    handle.title = 'Drag to resize column (double-click to reset widths)';
+    handle.setAttribute('aria-hidden', 'true');
+    th.appendChild(handle);
+    handle.addEventListener('dblclick', (e) => {
+      e.preventDefault();
+      resetStateTableColumnWidths();
+    });
+    handle.addEventListener('mousedown', (e) => {
+      if (e.button !== 0) return;
+      e.preventDefault();
+      e.stopPropagation();
+      freezeStateTableColumnWidths();
+      const startX = e.clientX;
+      const startWidth = parseFloat(th.style.width);
+      document.body.classList.add('col-resizing');
+      const moveHandler = (ev) => {
+        const newWidth = Math.max(STATE_TABLE_MIN_COL_WIDTH, startWidth + (ev.clientX - startX));
+        th.style.width = `${newWidth}px`;
+        syncStateTableWidth();
+      };
+      const upHandler = () => {
+        document.body.classList.remove('col-resizing');
+        document.removeEventListener('mousemove', moveHandler);
+        document.removeEventListener('mouseup', upHandler);
+      };
+      document.addEventListener('mousemove', moveHandler);
+      document.addEventListener('mouseup', upHandler);
+    });
+  });
 }
 
 function renderPalette() {
@@ -2581,12 +2659,12 @@ function drawTransition(tr) {
   labelRect.setAttribute('x', -labelWidth / 2);
   labelRect.setAttribute('y', -16);
   labelRect.setAttribute('width', labelWidth);
-  labelRect.setAttribute('height', 24);
+  labelRect.setAttribute('height', 28);
   labelRect.style.stroke = fromColor;
 
   const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
   label.setAttribute('text-anchor', 'middle');
-  label.setAttribute('y', 2);
+  label.setAttribute('y', 4);
   label.innerHTML = labelHtml;
 
   labelGroup.appendChild(labelRect);
@@ -5648,6 +5726,7 @@ function attachEvents() {
       document.addEventListener('mouseup', stopResize);
     });
   }
+  initStateTableColumnResize();
   if (transitionTableHelpBtn && transitionTableHelpDialog) {
     transitionTableHelpBtn.addEventListener('click', () => openDialog('transitionTableHelpDialog'));
   }
