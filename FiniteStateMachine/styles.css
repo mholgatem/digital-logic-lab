@@ -904,24 +904,72 @@ button:active {
   padding: 0.75rem 1rem 0;
 }
 
-.assumptions-input {
+.assumptions-editor {
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 8px;
   box-sizing: border-box;
   color: var(--text);
+  cursor: text;
   flex: 1;
-  font: inherit;
-  height: 100%;
-  line-height: 1.5;
-  padding: 0.5rem 0.65rem;
-  resize: none;
-  width: 100%;
+  line-height: 1.7;
+  margin: 0;
+  overflow-y: auto;
+  padding: 0.5rem 0.65rem 0.5rem 1.6rem;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
-.assumptions-input:focus {
+.assumptions-editor:focus {
   border-color: var(--primary);
   outline: none;
+}
+
+.assumptions-editor.is-empty li::after {
+  color: var(--text);
+  content: 'Type an assumption \2014  wrap names like [Q_1^+] in brackets';
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.assumption-token {
+  background: rgba(128, 128, 128, 0.25);
+  border: 1px solid transparent;
+  border-radius: 4px;
+  cursor: default;
+  padding: 0 0.25em;
+  white-space: nowrap;
+}
+
+.assumption-bar {
+  text-decoration: overline;
+}
+
+.assumption-var {
+  white-space: nowrap;
+}
+
+.assumption-var.assumption-state {
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 0 0.25em;
+}
+
+.assumptions-help-examples {
+  align-items: center;
+  display: grid;
+  gap: 0.35rem 0.75rem;
+  grid-template-columns: auto auto 1fr;
+  margin: 0.25rem 0 0.75rem 1.5rem;
+}
+
+.assumptions-help-examples .assumption-token {
+  justify-self: start;
+}
+
+.assumptions-help-note {
+  font-size: 0.85rem;
+  opacity: 0.7;
 }
 
 .assumptions-dialog .dialog-actions.end {

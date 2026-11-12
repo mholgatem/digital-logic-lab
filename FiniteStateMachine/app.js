@@ -80,7 +80,7 @@ const stateDefinitionWindow = stateDefinitionDialog?.querySelector('.state-defin
 const stateDefinitionHeader = document.getElementById('stateDefinitionHeader');
 const stateDefinitionResizeHandle = document.getElementById('stateDefinitionResizeHandle');
 const assumptionsDialog = document.getElementById('assumptionsDialog');
-const assumptionsInput = document.getElementById('assumptionsInput');
+const assumptionsEditor = document.getElementById('assumptionsEditor');
 const assumptionsExport = document.getElementById('assumptionsExport');
 const toolbarTitle = document.getElementById('toolbarTitle');
 const mealyOutputRow = document.getElementById('mealyOutputRow');
@@ -1603,44 +1603,345 @@ function updateControls() {
   syncStateTableWidth();
 }
 
-const ASSUMPTION_BULLET = '• ';
+// --- Assumptions: [token] formatting -------------------------------------
+// Text inside [ ] is a variable name: _ starts a subscript, ^ a superscript,
+// and trailing ' marks (odd count) put a bar over the base name.
+const ASSUMPTION_TOKEN_RE = /\[([^[\]\n]+)\]/g;
+const ASSUMPTION_TOKEN_AT_END_RE = /\[([^[\]\n]+)\]$/;
+const ZWSP = '​';
 
-function stripAssumptionBullet(line) {
-  return line.startsWith(ASSUMPTION_BULLET) ? line.slice(ASSUMPTION_BULLET.length) : line;
+function parseAssumptionToken(raw) {
+  const text = (raw || '').replace(/[​ ]/g, ' ').trim();
+  if (!text) return null;
+  const primes = text.match(/'+$/);
+  const negated = primes ? primes[0].length % 2 === 1 : false;
+  const name = primes ? text.slice(0, -primes[0].length) : text;
+  if (!name) return null;
+  const splitAt = name.search(/[_^]/);
+  return {
+    base: splitAt === -1 ? name : name.slice(0, splitAt),
+    rest: splitAt === -1 ? '' : name.slice(splitAt),
+    negated,
+  };
 }
 
-function renderAssumptionsInput() {
-  if (!assumptionsInput) return;
-  const items = state.assumptions && state.assumptions.length ? state.assumptions : [''];
-  assumptionsInput.value = items.map((a) => `${ASSUMPTION_BULLET}${a}`).join('\n');
+function formatAssumptionTokenHtml(raw) {
+  const token = parseAssumptionToken(raw);
+  if (!token) return escapeHtml(`[${raw}]`);
+  const base = escapeHtml(token.base);
+  const baseHtml = token.negated ? `<span class="assumption-bar">${base}</span>` : base;
+  return `${baseHtml}${formatScriptedText(token.rest)}`;
 }
 
-// Every line of the textarea is a bullet: re-add the prefix wherever it is
-// missing (new lines, pasted text) while keeping the caret where the user was.
-function normalizeAssumptionsInput() {
-  const value = assumptionsInput.value;
-  const caret = assumptionsInput.selectionStart;
-  let offset = 0;
-  let caretShift = 0;
-  const lines = value.split('\n').map((line) => {
-    let fixed = line;
-    if (!line.startsWith(ASSUMPTION_BULLET)) {
-      // Drop a partial bullet ("•" without its space) before re-adding it.
-      const body = line.startsWith('•') ? line.slice(1).replace(/^ /, '') : line;
-      fixed = `${ASSUMPTION_BULLET}${body}`;
-      if (offset <= caret) caretShift += fixed.length - line.length;
+function escapeAttr(str) {
+  return escapeHtml(str).replace(/"/g, '&quot;');
+}
+
+// A token names a state if it matches a state label (case-insensitive) or is
+// S<row number> from the State Definition Table (e.g. [S6]).
+function assumptionStateForToken(raw) {
+  const key = (raw || '').replace(/[​ ]/g, ' ').trim().toLowerCase();
+  if (!key) return null;
+  const byLabel = state.states.find((s) => (s.label || '').trim().toLowerCase() === key);
+  if (byLabel) return byLabel;
+  const rowMatch = key.match(/^s(\d+)$/);
+  return rowMatch ? state.states[parseInt(rowMatch[1], 10)] || null : null;
+}
+
+function assumptionStateColors(raw) {
+  const st = assumptionStateForToken(raw);
+  if (!st) return null;
+  const color = st.color || STATE_COLOR_PALETTE[0];
+  return { background: stateColorFill(color), borderColor: color };
+}
+
+function assumptionStateStyleAttr(raw) {
+  const colors = assumptionStateColors(raw);
+  return colors ? ` style="background: ${colors.background}; border-color: ${colors.borderColor};"` : '';
+}
+
+function applyAssumptionChipColor(chip) {
+  const colors = assumptionStateColors(chip.dataset.raw);
+  chip.classList.toggle('is-state', !!colors);
+  chip.style.background = colors ? colors.background : '';
+  chip.style.borderColor = colors ? colors.borderColor : '';
+}
+
+// Re-colour state chips after state colours, labels or row order change.
+function refreshAssumptionChipColors() {
+  if (!assumptionsEditor) return;
+  assumptionsEditor.querySelectorAll('.assumption-token').forEach(applyAssumptionChipColor);
+}
+
+function assumptionChipHtml(raw) {
+  const stateClass = assumptionStateForToken(raw) ? ' is-state' : '';
+  return `<span class="assumption-token${stateClass}" contenteditable="false" data-raw="${escapeAttr(raw)}"`
+    + `${assumptionStateStyleAttr(raw)}>${formatAssumptionTokenHtml(raw)}</span>${ZWSP}`;
+}
+
+// asChips: editor chips (gray box, atomic); otherwise plain formatted spans (export).
+function formatAssumptionTextHtml(text, asChips = false) {
+  const src = text || '';
+  let html = '';
+  let last = 0;
+  src.replace(ASSUMPTION_TOKEN_RE, (match, raw, offset) => {
+    html += escapeHtml(src.slice(last, offset));
+    if (!parseAssumptionToken(raw)) {
+      html += escapeHtml(match);
+    } else if (asChips) {
+      html += assumptionChipHtml(raw);
+    } else {
+      const stateClass = assumptionStateForToken(raw) ? ' assumption-state' : '';
+      html += `<span class="assumption-var${stateClass}"${assumptionStateStyleAttr(raw)}>`
+        + `${formatAssumptionTokenHtml(raw)}</span>`;
     }
-    offset += line.length + 1;
-    return fixed;
+    last = offset + match.length;
+    return match;
   });
-  const normalized = lines.join('\n');
-  if (normalized !== value) {
-    assumptionsInput.value = normalized;
-    const newCaret = Math.max(0, caret + caretShift);
-    assumptionsInput.setSelectionRange(newCaret, newCaret);
-  }
-  state.assumptions = lines.map(stripAssumptionBullet);
+  return html + escapeHtml(src.slice(last));
+}
+
+// --- Assumptions: contenteditable bullet editor ---------------------------
+function createAssumptionChip(raw) {
+  const chip = document.createElement('span');
+  chip.className = 'assumption-token';
+  chip.contentEditable = 'false';
+  chip.dataset.raw = raw;
+  chip.innerHTML = formatAssumptionTokenHtml(raw);
+  applyAssumptionChipColor(chip);
+  return chip;
+}
+
+function assumptionFragment(text) {
+  const template = document.createElement('template');
+  template.innerHTML = formatAssumptionTextHtml(text, true);
+  return template.content;
+}
+
+function placeCaret(node, offset) {
+  const sel = window.getSelection();
+  const range = document.createRange();
+  range.setStart(node, offset);
+  range.collapse(true);
+  sel.removeAllRanges();
+  sel.addRange(range);
+}
+
+function assumptionLiHasContent(li) {
+  return !!li.querySelector('.assumption-token') || li.textContent.replace(/​/g, '') !== '';
+}
+
+function renderAssumptionsEditor() {
+  if (!assumptionsEditor) return;
+  const items = state.assumptions && state.assumptions.length ? state.assumptions : [''];
+  assumptionsEditor.innerHTML = items
+    .map((a) => `<li>${formatAssumptionTextHtml(a, true) || '<br>'}</li>`)
+    .join('');
+  updateAssumptionsEmptyState();
+}
+
+function serializeAssumptionNode(node) {
+  if (node.nodeType === Node.TEXT_NODE) return node.nodeValue.replace(/​/g, '');
+  if (node.nodeType !== Node.ELEMENT_NODE) return '';
+  if (node.classList.contains('assumption-token')) return `[${node.dataset.raw || ''}]`;
+  if (node.tagName === 'BR') return '';
+  return Array.from(node.childNodes).map(serializeAssumptionNode).join('');
+}
+
+function serializeAssumptionsEditor() {
+  state.assumptions = Array.from(assumptionsEditor.children).map((li) =>
+    serializeAssumptionNode(li).replace(/ /g, ' '));
+  updateAssumptionsEmptyState();
   markDirty();
+}
+
+function updateAssumptionsEmptyState() {
+  const lis = assumptionsEditor.children;
+  const empty = lis.length <= 1 && (!lis[0] || !assumptionLiHasContent(lis[0]));
+  assumptionsEditor.classList.toggle('is-empty', empty);
+}
+
+// Keep the editor a flat list of <li>: wrap stray text/<br>/<div> the browser
+// leaves behind, and give empty bullets a <br> so they keep their height.
+function normalizeAssumptionsStructure() {
+  const editor = assumptionsEditor;
+  let currentLi = null;
+  Array.from(editor.childNodes).forEach((node) => {
+    if (node.nodeType === Node.ELEMENT_NODE && node.tagName === 'LI') {
+      currentLi = null;
+      return;
+    }
+    if (node.nodeType === Node.ELEMENT_NODE && (node.tagName === 'DIV' || node.tagName === 'P')) {
+      const li = document.createElement('li');
+      while (node.firstChild) li.appendChild(node.firstChild);
+      editor.replaceChild(li, node);
+      currentLi = null;
+      return;
+    }
+    if (!currentLi) {
+      currentLi = document.createElement('li');
+      editor.insertBefore(currentLi, node);
+    }
+    currentLi.appendChild(node);
+  });
+  if (!editor.children.length) {
+    const li = document.createElement('li');
+    li.appendChild(document.createElement('br'));
+    editor.appendChild(li);
+    placeCaret(li, 0);
+  }
+  Array.from(editor.children).forEach((li) => {
+    if (!li.childNodes.length) li.appendChild(document.createElement('br'));
+  });
+}
+
+// The user just typed "]": turn the [..] ending at the caret into a chip.
+function convertAssumptionTokenAtCaret() {
+  const sel = window.getSelection();
+  if (!sel.rangeCount || !sel.isCollapsed) return;
+  const node = sel.anchorNode;
+  const offset = sel.anchorOffset;
+  if (!node || node.nodeType !== Node.TEXT_NODE || !assumptionsEditor.contains(node)) return;
+  const match = node.nodeValue.slice(0, offset).match(ASSUMPTION_TOKEN_AT_END_RE);
+  if (!match) return;
+  const raw = match[1].replace(/​/g, '').replace(/ /g, ' ');
+  if (!parseAssumptionToken(raw)) return;
+  const after = node.splitText(offset);
+  node.nodeValue = node.nodeValue.slice(0, offset - match[0].length);
+  const spacer = document.createTextNode(ZWSP);
+  after.parentNode.insertBefore(createAssumptionChip(raw), after);
+  after.parentNode.insertBefore(spacer, after);
+  if (!node.nodeValue) node.remove();
+  if (!after.nodeValue) after.remove();
+  placeCaret(spacer, 1);
+}
+
+// The chip directly before (direction -1) or after (+1) a collapsed caret,
+// looking past zero-width spacers.
+function assumptionChipNextToCaret(direction) {
+  const sel = window.getSelection();
+  if (!sel.rangeCount || !sel.isCollapsed) return null;
+  const node = sel.anchorNode;
+  const offset = sel.anchorOffset;
+  if (!node || !assumptionsEditor.contains(node)) return null;
+  let sibling;
+  if (node.nodeType === Node.TEXT_NODE) {
+    const side = direction < 0 ? node.nodeValue.slice(0, offset) : node.nodeValue.slice(offset);
+    if (side.replace(/​/g, '') !== '') return null;
+    sibling = direction < 0 ? node.previousSibling : node.nextSibling;
+  } else {
+    sibling = direction < 0 ? node.childNodes[offset - 1] : node.childNodes[offset];
+  }
+  while (sibling && sibling.nodeType === Node.TEXT_NODE && sibling.nodeValue.replace(/​/g, '') === '') {
+    sibling = direction < 0 ? sibling.previousSibling : sibling.nextSibling;
+  }
+  const isChip = sibling && sibling.nodeType === Node.ELEMENT_NODE
+    && sibling.classList.contains('assumption-token');
+  return isChip ? sibling : null;
+}
+
+function removeAssumptionChip(chip, replacementText = null) {
+  const li = chip.parentNode;
+  const next = chip.nextSibling;
+  if (next && next.nodeType === Node.TEXT_NODE && next.nodeValue.startsWith(ZWSP)) {
+    next.nodeValue = next.nodeValue.slice(1);
+  }
+  if (replacementText !== null) {
+    const text = document.createTextNode(replacementText);
+    chip.replaceWith(text);
+    placeCaret(text, text.nodeValue.length);
+    return;
+  }
+  const index = Array.prototype.indexOf.call(li.childNodes, chip);
+  chip.remove();
+  if (!assumptionLiHasContent(li)) {
+    li.innerHTML = '<br>';
+    placeCaret(li, 0);
+  } else {
+    placeCaret(li, Math.min(index, li.childNodes.length));
+  }
+}
+
+function caretAtStartOfFirstAssumption() {
+  const sel = window.getSelection();
+  if (!sel.rangeCount || !sel.isCollapsed) return false;
+  const first = assumptionsEditor.firstElementChild;
+  if (!first || !first.contains(sel.anchorNode)) return false;
+  const range = document.createRange();
+  range.setStart(first, 0);
+  range.setEnd(sel.anchorNode, sel.anchorOffset);
+  const fragment = range.cloneContents();
+  return !fragment.querySelector('.assumption-token') && fragment.textContent.replace(/​/g, '') === '';
+}
+
+function pasteIntoAssumptions(text) {
+  const sel = window.getSelection();
+  if (!sel.rangeCount) return;
+  const range = sel.getRangeAt(0);
+  range.deleteContents();
+  normalizeAssumptionsStructure();
+  let li = range.startContainer.nodeType === Node.ELEMENT_NODE && range.startContainer.tagName === 'LI'
+    ? range.startContainer
+    : range.startContainer.parentNode && range.startContainer.parentNode.closest('li');
+  if (!li || !assumptionsEditor.contains(li)) li = assumptionsEditor.lastElementChild;
+  // Split the bullet at the caret; pasted lines go in between.
+  const tailRange = document.createRange();
+  tailRange.setStart(range.startContainer, range.startOffset);
+  tailRange.setEnd(li, li.childNodes.length);
+  const tail = tailRange.extractContents();
+  const lines = text.replace(/\r\n?/g, '\n').split('\n');
+  let current = li;
+  lines.forEach((line, i) => {
+    if (i > 0) {
+      const next = document.createElement('li');
+      current.after(next);
+      current = next;
+    }
+    current.appendChild(assumptionFragment(line));
+  });
+  const caretIndex = current.childNodes.length;
+  current.appendChild(tail);
+  [li, current].forEach((item) => {
+    if (assumptionLiHasContent(item)) {
+      item.querySelectorAll(':scope > br').forEach((br) => br.remove());
+    }
+  });
+  normalizeAssumptionsStructure();
+  placeCaret(current, Math.min(caretIndex, current.childNodes.length));
+}
+
+function focusAssumptionsEditorEnd() {
+  assumptionsEditor.focus();
+  const last = assumptionsEditor.lastElementChild;
+  if (!last) return;
+  if (!assumptionLiHasContent(last)) {
+    placeCaret(last, 0);
+    return;
+  }
+  const range = document.createRange();
+  range.selectNodeContents(last);
+  range.collapse(false);
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
+}
+
+function renderAssumptionsHelpExamples() {
+  const host = document.getElementById('assumptionsHelpExamples');
+  if (!host) return;
+  const examples = [
+    ['[Q_1^+]', 'Q, subscript 1, superscript +'],
+    ["[G_1']", 'G with a bar, subscript 1'],
+    ["[Reset']", 'Reset with a bar'],
+    ['[X]', 'plain X'],
+  ];
+  host.innerHTML = examples
+    .map(([typed, note]) => {
+      const raw = typed.slice(1, -1);
+      return `<code>${escapeHtml(typed)}</code><span class="assumption-token">${formatAssumptionTokenHtml(raw)}</span>`
+        + `<span class="assumptions-help-note">${escapeHtml(note)}</span>`;
+    })
+    .join('');
 }
 
 const ASSUMPTIONS_MIN_WIDTH = 280;
@@ -1723,45 +2024,64 @@ function initAssumptionsWindowControls() {
 
 function initAssumptionsEditor() {
   const openBtn = document.getElementById('assumptionsBtn');
-  if (!openBtn || !assumptionsDialog || !assumptionsInput) return;
+  if (!openBtn || !assumptionsDialog || !assumptionsEditor) return;
   initAssumptionsWindowControls();
+  renderAssumptionsHelpExamples();
+  document.getElementById('assumptionsHelpBtn')?.addEventListener('click', () => {
+    openDialog('assumptionsHelpDialog');
+  });
   openBtn.addEventListener('click', () => {
     closeAllDropdowns();
-    renderAssumptionsInput();
+    renderAssumptionsEditor();
     openDialog('assumptionsDialog');
     // Re-clamp a previously moved/resized window in case the viewport shrank.
     const win = document.getElementById('assumptionsWindow');
     if (win && win.style.left) pinAssumptionsWindow();
-    requestAnimationFrame(() => {
-      assumptionsInput.focus();
-      const end = assumptionsInput.value.length;
-      assumptionsInput.setSelectionRange(end, end);
-    });
+    requestAnimationFrame(focusAssumptionsEditorEnd);
   });
-  assumptionsInput.addEventListener('input', normalizeAssumptionsInput);
-  assumptionsInput.addEventListener('keydown', (e) => {
-    if (e.key !== 'Backspace' && e.key !== 'Delete') return;
-    const { selectionStart, selectionEnd, value } = assumptionsInput;
-    if (selectionStart !== selectionEnd) return;
-    if (e.key === 'Delete') {
-      // Caret at the end of a line: pull the next line up without its bullet.
-      const joinSeq = `\n${ASSUMPTION_BULLET}`;
-      if (!value.startsWith(joinSeq, selectionStart)) return;
+  assumptionsEditor.addEventListener('input', () => {
+    normalizeAssumptionsStructure();
+    convertAssumptionTokenAtCaret();
+    serializeAssumptionsEditor();
+  });
+  assumptionsEditor.addEventListener('keydown', (e) => {
+    const mod = e.ctrlKey || e.metaKey;
+    if (mod && ['b', 'i', 'u'].includes(e.key.toLowerCase())) {
       e.preventDefault();
-      assumptionsInput.value = value.slice(0, selectionStart) + value.slice(selectionStart + joinSeq.length);
-      assumptionsInput.setSelectionRange(selectionStart, selectionStart);
-      normalizeAssumptionsInput();
       return;
     }
-    const lineStart = value.lastIndexOf('\n', selectionStart - 1) + 1;
-    if (selectionStart !== lineStart + ASSUMPTION_BULLET.length) return;
-    if (!value.startsWith(ASSUMPTION_BULLET, lineStart)) return;
-    // Caret is right after a bullet: merge this line into the previous one.
+    if (e.key === 'Enter' && e.shiftKey) {
+      // Line breaks inside a bullet aren't kept; Enter starts a new bullet.
+      e.preventDefault();
+      return;
+    }
+    if (e.key !== 'Backspace' && e.key !== 'Delete') return;
+    const chip = assumptionChipNextToCaret(e.key === 'Backspace' ? -1 : 1);
+    if (chip) {
+      e.preventDefault();
+      removeAssumptionChip(chip);
+      serializeAssumptionsEditor();
+      return;
+    }
+    if (e.key === 'Backspace' && caretAtStartOfFirstAssumption()) {
+      // Nothing to merge into; stop the browser from un-listing the bullet.
+      e.preventDefault();
+    }
+  });
+  assumptionsEditor.addEventListener('paste', (e) => {
     e.preventDefault();
-    if (lineStart === 0) return;
-    assumptionsInput.value = value.slice(0, lineStart - 1) + value.slice(selectionStart);
-    assumptionsInput.setSelectionRange(lineStart - 1, lineStart - 1);
-    normalizeAssumptionsInput();
+    const text = (e.clipboardData || window.clipboardData)?.getData('text/plain') || '';
+    if (!text) return;
+    pasteIntoAssumptions(text);
+    serializeAssumptionsEditor();
+  });
+  assumptionsEditor.addEventListener('drop', (e) => e.preventDefault());
+  assumptionsEditor.addEventListener('dblclick', (e) => {
+    const chip = e.target.closest('.assumption-token');
+    if (!chip || !assumptionsEditor.contains(chip)) return;
+    e.preventDefault();
+    removeAssumptionChip(chip, `[${chip.dataset.raw || ''}`);
+    serializeAssumptionsEditor();
   });
 }
 
@@ -1892,6 +2212,7 @@ function renderTable() {
     `;
     stateTableBody.appendChild(tr);
   });
+  refreshAssumptionChipColors();
 }
 
 function stateBitCount() {
@@ -2182,6 +2503,7 @@ function renderDiagram() {
   drawPreview();
   viewport.querySelectorAll('.label-handle').forEach((el) => viewport.appendChild(el));
   updateVerifyButtonState();
+  refreshAssumptionChipColors();
   scheduleAutosave();
 }
 
@@ -5285,7 +5607,7 @@ function showAssumptionsExport() {
   if (!assumptionsExport) return;
   const items = (state.assumptions || []).map((a) => a.trim()).filter(Boolean);
   if (!items.length) return;
-  const listHtml = items.map((a) => `<li>${escapeHtml(a)}</li>`).join('');
+  const listHtml = items.map((a) => `<li>${formatAssumptionTextHtml(a)}</li>`).join('');
   assumptionsExport.innerHTML = `<h3>Assumptions</h3><ul>${listHtml}</ul>`;
   assumptionsExport.classList.remove('hidden');
 }
@@ -7137,7 +7459,8 @@ function attachEvents() {
   });
 
   document.addEventListener('keydown', (e) => {
-    const isFormElement = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName);
+    const isFormElement = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)
+      || document.activeElement.isContentEditable;
     if (!isFormElement && (e.key === 'Backspace' || e.key === 'Delete')) {
       if (selectedArrowId) {
         deleteTransitionById(selectedArrowId);

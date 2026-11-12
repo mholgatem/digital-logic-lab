@@ -240,15 +240,39 @@
     <div class="dialog assumptions-dialog" id="assumptionsWindow">
       <div class="dialog-header assumptions-header" id="assumptionsHeader">
         <h2>Assumptions</h2>
-        <button class="ghost" data-close="assumptionsDialog" aria-label="Close assumptions">✕</button>
+        <div class="dialog-header-actions">
+          <button class="ghost" id="assumptionsHelpBtn" aria-label="Assumptions help">?</button>
+          <button class="ghost" data-close="assumptionsDialog" aria-label="Close assumptions">✕</button>
+        </div>
       </div>
       <div class="assumptions-body">
-        <textarea id="assumptionsInput" class="assumptions-input" spellcheck="true" aria-label="Assumptions, one per line" placeholder="• Type an assumption, press Enter for the next one"></textarea>
+        <ul id="assumptionsEditor" class="assumptions-editor" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Assumptions, one per bullet" spellcheck="true"></ul>
       </div>
       <div class="dialog-actions end">
         <button data-close="assumptionsDialog">Close</button>
       </div>
       <div class="assumptions-resize-handle" id="assumptionsResizeHandle" aria-hidden="true"></div>
+    </div>
+  </div>
+
+  <div id="assumptionsHelpDialog" class="dialog-backdrop hidden">
+    <div class="dialog">
+      <h2>Assumptions</h2>
+      <ul>
+        <li>Each line is one <b>bullet point</b>. Press <b>Enter</b> to start the next assumption.</li>
+        <li>Wrap an input, output or state variable in <b>[ ]</b> to format it. It turns into a formatted box as soon as you type the closing <b>]</b>.</li>
+        <li class="spaced-bullet">Inside the brackets, <b>_</b> starts a subscript, <b>^</b> starts a superscript, and a trailing <b>'</b> puts a bar over the name.</li>
+      </ul>
+      <div id="assumptionsHelpExamples" class="assumptions-help-examples"></div>
+      <ul>
+        <li>Refer to a state by its <b>label</b> (any capitalisation, e.g. <b>[idle]</b>) or by <b>S</b> + its row number in the State Definition Table (e.g. <b>[S6]</b>). The box takes that state's colour from the diagram.</li>
+        <li><b>Backspace</b> or <b>Delete</b> next to a formatted box removes the whole box.</li>
+        <li><b>Double-click</b> a formatted box to edit its text again, then type <b>]</b> to re-format it.</li>
+        <li>Your assumptions are listed under the table in <b>File → Download Images → State Definition Table</b>.</li>
+      </ul>
+      <div class="dialog-actions">
+        <button data-close="assumptionsHelpDialog">Close</button>
+      </div>
     </div>
   </div>
 
