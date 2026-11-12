@@ -1643,13 +1643,95 @@ function normalizeAssumptionsInput() {
   markDirty();
 }
 
+const ASSUMPTIONS_MIN_WIDTH = 280;
+const ASSUMPTIONS_MIN_HEIGHT = 220;
+const ASSUMPTIONS_MARGIN = 12;
+
+// Switch the window from CSS centring to explicit pixel placement, kept inside
+// the viewport. Called on open (after a previous move) and before drag/resize.
+function pinAssumptionsWindow() {
+  const win = document.getElementById('assumptionsWindow');
+  if (!win) return null;
+  const rect = win.getBoundingClientRect();
+  const width = Math.min(rect.width, window.innerWidth - 2 * ASSUMPTIONS_MARGIN);
+  const height = Math.min(rect.height, window.innerHeight - 2 * ASSUMPTIONS_MARGIN);
+  const maxLeft = window.innerWidth - width - ASSUMPTIONS_MARGIN;
+  const maxTop = window.innerHeight - height - ASSUMPTIONS_MARGIN;
+  const left = Math.min(Math.max(ASSUMPTIONS_MARGIN, rect.left), Math.max(ASSUMPTIONS_MARGIN, maxLeft));
+  const top = Math.min(Math.max(ASSUMPTIONS_MARGIN, rect.top), Math.max(ASSUMPTIONS_MARGIN, maxTop));
+  win.style.width = `${width}px`;
+  win.style.height = `${height}px`;
+  win.style.left = `${left}px`;
+  win.style.top = `${top}px`;
+  win.style.transform = 'none';
+  return win;
+}
+
+function trackMouseDrag(onMove) {
+  const upHandler = () => {
+    document.body.classList.remove('dialog-dragging');
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', upHandler);
+  };
+  document.body.classList.add('dialog-dragging');
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', upHandler);
+}
+
+function initAssumptionsWindowControls() {
+  const header = document.getElementById('assumptionsHeader');
+  const handle = document.getElementById('assumptionsResizeHandle');
+  if (header) {
+    header.addEventListener('mousedown', (e) => {
+      if (e.button !== 0 || e.target.closest('button')) return;
+      e.preventDefault();
+      const win = pinAssumptionsWindow();
+      if (!win) return;
+      const rect = win.getBoundingClientRect();
+      const offsetX = e.clientX - rect.left;
+      const offsetY = e.clientY - rect.top;
+      trackMouseDrag((ev) => {
+        const maxLeft = window.innerWidth - rect.width - ASSUMPTIONS_MARGIN;
+        const maxTop = window.innerHeight - rect.height - ASSUMPTIONS_MARGIN;
+        const left = Math.min(Math.max(ASSUMPTIONS_MARGIN, ev.clientX - offsetX), Math.max(ASSUMPTIONS_MARGIN, maxLeft));
+        const top = Math.min(Math.max(ASSUMPTIONS_MARGIN, ev.clientY - offsetY), Math.max(ASSUMPTIONS_MARGIN, maxTop));
+        win.style.left = `${left}px`;
+        win.style.top = `${top}px`;
+      });
+    });
+  }
+  if (handle) {
+    handle.addEventListener('mousedown', (e) => {
+      if (e.button !== 0) return;
+      e.preventDefault();
+      const win = pinAssumptionsWindow();
+      if (!win) return;
+      const rect = win.getBoundingClientRect();
+      const startX = e.clientX;
+      const startY = e.clientY;
+      trackMouseDrag((ev) => {
+        const maxWidth = window.innerWidth - rect.left - ASSUMPTIONS_MARGIN;
+        const maxHeight = window.innerHeight - rect.top - ASSUMPTIONS_MARGIN;
+        const width = Math.max(ASSUMPTIONS_MIN_WIDTH, Math.min(maxWidth, rect.width + (ev.clientX - startX)));
+        const height = Math.max(ASSUMPTIONS_MIN_HEIGHT, Math.min(maxHeight, rect.height + (ev.clientY - startY)));
+        win.style.width = `${width}px`;
+        win.style.height = `${height}px`;
+      });
+    });
+  }
+}
+
 function initAssumptionsEditor() {
   const openBtn = document.getElementById('assumptionsBtn');
   if (!openBtn || !assumptionsDialog || !assumptionsInput) return;
+  initAssumptionsWindowControls();
   openBtn.addEventListener('click', () => {
     closeAllDropdowns();
     renderAssumptionsInput();
     openDialog('assumptionsDialog');
+    // Re-clamp a previously moved/resized window in case the viewport shrank.
+    const win = document.getElementById('assumptionsWindow');
+    if (win && win.style.left) pinAssumptionsWindow();
     requestAnimationFrame(() => {
       assumptionsInput.focus();
       const end = assumptionsInput.value.length;
