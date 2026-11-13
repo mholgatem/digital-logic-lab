@@ -317,7 +317,7 @@
             <thead>
               <tr>
                 <th>#</th>
-                <th id="stateBinaryHeader">State Binary</th>
+                <th id="stateBinaryHeader" title="State binary is assigned from the row number. Drag the row handle to reorder states and reassign their codes.">State Binary</th>
                 <th>Label</th>
                 <th>Description</th>
                 <th id="stateOutputsHeader" class="moore-only">Outputs</th>
@@ -433,10 +433,11 @@
     <div class="dialog">
       <h2>State Definition Table</h2>
       <ul>
-        <li>Set the <b>binary code</b>, <b>label</b>, and <b>description</b> for each state.</li>
+        <li>Set the <b>label</b> and <b>description</b> for each state.</li>
+        <li>The <b>state binary</b> is assigned automatically from the <b>row number</b> (row 0 = 00, row 1 = 01, …) and can't be typed in.</li>
+        <li>Drag the <b>row handle</b> to reorder states. Every row that moves gets its new binary code, and the diagram updates to match.</li>
         <li>For <b>Moore machines</b>, assign output values per state (comma-separated 0/1/X).</li>
         <li>Use <b>Tab</b> / <b>Shift+Tab</b> and <b>Arrow keys</b> to navigate between cells.</li>
-        <li>Drag the <b>row handle</b> to reorder states.</li>
       </ul>
       <div class="dialog-actions">
         <button id="enableHintsStateDef" class="ghost">Enable hints</button>

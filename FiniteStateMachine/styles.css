@@ -740,6 +740,14 @@ body.col-resizing {
   width: 100%;
 }
 
+#stateTable td input.state-binary-input {
+  background: transparent;
+  border-color: transparent;
+  color: var(--muted);
+  cursor: default;
+  font-family: monospace;
+}
+
 td.row-drag-handle {
   cursor: grab;
   user-select: none;
