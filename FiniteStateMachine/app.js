@@ -687,7 +687,7 @@ function startStateDefinitionTour() {
   const steps = [
     {
       title: 'State Binary',
-      text: 'Assign the state number in binary.',
+      text: 'Each state\'s binary code comes from its row number. Drag rows to reassign codes.',
       target: () => stateTableBody.querySelector('tr:first-child input[data-field="binary"]'),
       placement: 'bottom',
     },
@@ -2213,7 +2213,32 @@ function renderPalette() {
   });
 }
 
+const STATE_BINARY_TOOLTIP =
+  'State binary is assigned from the row number. Drag the row handle to reorder states and reassign their codes.';
+
+// State binary codes always follow row order: row N gets N in binary.
+function syncStateBinariesToRows() {
+  const bitCount = stateBitCount();
+  state.states.forEach((st, index) => {
+    st.binary = index.toString(2).padStart(bitCount, '0');
+  });
+}
+
+// Orders states by their saved binary code so codes survive the switch to
+// row-assigned binaries (older saves allowed any code on any row).
+function sortStatesByBinary() {
+  const decimal = (st) => {
+    const cleaned = (st.binary || '').replace(/[^01]/g, '');
+    return cleaned ? parseInt(cleaned, 2) : Number.POSITIVE_INFINITY;
+  };
+  state.states = state.states
+    .map((st, index) => ({ st, index }))
+    .sort((a, b) => decimal(a.st) - decimal(b.st) || a.index - b.index)
+    .map(({ st }) => st);
+}
+
 function renderTable() {
+  syncStateBinariesToRows();
   stateTableBody.innerHTML = '';
   state.states.forEach((st, index) => {
     const tr = document.createElement('tr');
@@ -2225,7 +2250,7 @@ function renderTable() {
           <span class="row-number">${index}</span>
         </div>
       </td>
-      <td><input data-field="binary" data-id="${st.id}" value="${st.binary}"></td>
+      <td title="${STATE_BINARY_TOOLTIP}"><input class="state-binary-input" data-field="binary" data-id="${st.id}" value="${st.binary}" readonly tabindex="-1" aria-readonly="true"></td>
       <td><input data-field="label" data-id="${st.id}" value="${st.label}"></td>
       <td><input data-field="description" data-id="${st.id}" value="${st.description}"></td>
       <td class="moore-only ${state.type !== 'moore' ? 'hidden' : ''}"><input data-field="outputs" data-id="${st.id}" value="${st.outputs.join(',')}"></td>
@@ -3511,6 +3536,7 @@ function loadState(data) {
       hasBeenPlaced: st.hasBeenPlaced ?? !!st.placed,
       color: st.color || STATE_COLOR_PALETTE[i % STATE_COLOR_PALETTE.length],
     }));
+    sortStatesByBinary();
   }
   state.numStates = targetNumStates;
   state.inputs = targetInputs;
@@ -6917,10 +6943,7 @@ function attachEvents() {
     const field = target.dataset.field;
     const st = state.states.find((s) => s.id === id);
     if (!st) return;
-    if (field === 'binary') {
-      const cleaned = (target.value || '').replace(/[^01]/g, '');
-      if (target.value !== cleaned) target.value = cleaned;
-    }
+    if (field === 'binary') return;
     if (field === 'outputs') {
       const cleaned = (target.value || '').toUpperCase().replace(/[^01X,;]/g, '');
       if (target.value !== cleaned) target.value = cleaned;
@@ -6949,7 +6972,7 @@ function attachEvents() {
 
     const field = target.dataset.field;
     const visibleInputs = (row) => Array.from(row.querySelectorAll('input')).filter(
-      (inp) => !inp.closest('td')?.classList.contains('hidden')
+      (inp) => !inp.readOnly && !inp.closest('td')?.classList.contains('hidden')
     );
 
     if (isUp || isDown) {
@@ -7044,6 +7067,8 @@ function attachEvents() {
     state.states.splice(toIndex, 0, moved);
     stateTableDragId = null;
     renderTable();
+    renderPalette();
+    renderDiagram();
     markDirty();
   });
 
