@@ -35,7 +35,10 @@ const state = {
 };
 
 const in_development = true;
-const isHelperMode = new URLSearchParams(window.location.search).get('mode') === 'helper';
+const urlMode = new URLSearchParams(window.location.search).get('mode');
+// Fast mode is a superset of helper mode: it adds auto-fill/auto-solve tools.
+const isFastMode = urlMode === 'fast';
+const isHelperMode = urlMode === 'helper' || isFastMode;
 
 let currentArrow = null;
 let selectedArrowId = null;
@@ -3017,6 +3020,80 @@ function verifyTransitionTableAgainstDiagram(options = {}) {
   }
 }
 
+// Adds any missing column groups (current state, next state, inputs, outputs)
+// to the transition table, keeping the user's existing column layout.
+function ensureTransitionTableColumnsForFill() {
+  const templates = buildTransitionColumnTemplates();
+  const columns = state.transitionTable.columns || [];
+  const hasValueColumns = columns.some((col) => col.type !== 'spacer');
+  if (!hasValueColumns) {
+    state.transitionTable.columns = buildDefaultTransitionColumns(templates);
+    return;
+  }
+  const present = new Set(columns.filter((col) => col.type !== 'spacer').map((col) => columnBaseKey(col)));
+  const next = [...columns];
+  ['q_', 'next_q_', 'in_', 'out_'].forEach((prefix) => {
+    const missing = templates.filter((t) => t.type === 'value' && t.key.startsWith(prefix) && !present.has(t.key));
+    if (!missing.length) return;
+    next.push(createSpacerColumn());
+    missing.forEach((t) => next.push(createColumnInstance(t)));
+  });
+  state.transitionTable.columns = next;
+}
+
+// Fast mode: fills every row of the transition table from the state diagram.
+function fillTransitionTableFromDiagram() {
+  ensureTransitionTableStructure();
+  if (
+    hasTransitionTableValues() &&
+    !window.confirm('Replace the current transition table values with values from the diagram?')
+  ) {
+    return;
+  }
+  ensureTransitionTableColumnsForFill();
+  ensureTransitionTableStructure();
+
+  const bitCount = stateBitCount();
+  const diagramDict = buildTransitionDiagramDictionary();
+  const cells = state.transitionTable.cells;
+  const toBit = (val) => (val === 0 ? '0' : val === 1 ? '1' : 'X');
+
+  state.transitionTable.rows.forEach((row) => {
+    const [stateIdx, comboKey] = row.key.split('|');
+    const currentBits = parseInt(stateIdx, 10).toString(2).padStart(bitCount, '0').slice(-bitCount);
+    const combo = comboKey === 'none' ? '' : comboKey;
+    const st = findStateByBits(currentBits);
+    const value = diagramDict.get(`${currentBits}|${combo || 'none'}`);
+    const nextBits = value ? value.slice(0, bitCount).map(toBit) : Array(bitCount).fill('X');
+    let outputs = value
+      ? value.slice(bitCount).map(toBit)
+      : Array(state.outputs.length).fill('X');
+    if (!value && st && state.type === 'moore') {
+      outputs = normalizeBitArray(st.outputs, state.outputs.length).map((v) => v || 'X');
+    }
+
+    transitionTableValueColumns.forEach((col) => {
+      const baseKey = columnBaseKey(col);
+      const idx = parseInt(baseKey.slice(baseKey.lastIndexOf('_') + 1), 10);
+      let val = '';
+      if (baseKey.startsWith('next_q_')) {
+        val = nextBits[bitCount - 1 - idx];
+      } else if (baseKey.startsWith('q_')) {
+        val = currentBits[bitCount - 1 - idx];
+      } else if (baseKey.startsWith('in_')) {
+        val = combo[idx];
+      } else if (baseKey.startsWith('out_')) {
+        val = outputs[idx];
+      }
+      cells[`${row.key}::${col.key}`] = val || 'X';
+    });
+  });
+
+  renderTransitionTable();
+  markDirty();
+  verifyTransitionTableAgainstDiagram({ highlight: true });
+}
+
 function endpointsForArc(from, to, arcOffset = 0) {
   const dx = to.x - from.x;
   const dy = to.y - from.y;
@@ -4382,6 +4459,244 @@ function verifyKmapExpression(kmap) {
   return { passed: true, minimal: primaryResult.minimal };
 }
 
+// --- Fast mode: K-map auto-solve ---
+
+// Variable assignment ({label: '0'|'1'}) for one K-map cell.
+function kmapCellAssignment(layout, rowIndex, colIndex) {
+  const sub = layout.submaps.find(
+    (s) =>
+      rowIndex >= s.rowOffset &&
+      rowIndex < s.rowOffset + layout.baseRows &&
+      colIndex >= s.colOffset &&
+      colIndex < s.colOffset + layout.baseCols,
+  );
+  const mapBits = sub ? sub.mapCode : ''.padEnd(layout.mapVars.length, '0');
+  const colCode = layout.colCodes[colIndex - (sub ? sub.colOffset : 0)] || '';
+  const rowCode = layout.rowCodes[rowIndex - (sub ? sub.rowOffset : 0)] || '';
+  const bits = `${mapBits}${colCode}${rowCode}`;
+  const assignment = {};
+  kmapVariablesForLayout(layout).forEach((name, idx) => {
+    assignment[name] = bits[idx] || '0';
+  });
+  return assignment;
+}
+
+// Fills a K-map's cells from the transition table. Returns {ok, reason}.
+function fillKmapCellsFromTable(kmap) {
+  const fnKey = columnBaseKey(kmap?.functionToken);
+  if (!fnKey.startsWith('next_q_') && !fnKey.startsWith('out_')) {
+    return { ok: false, reason: 'Auto-solve only applies to next-state (Q+) or output K-maps.' };
+  }
+  const variables = kmap.variables || [];
+  const tokens = kmap.variableTokens || [];
+  const varKeys = variables.map((name, idx) => columnBaseKey(tokens[idx]));
+  if (varKeys.some((key) => !key.startsWith('q_') && !key.startsWith('in_'))) {
+    return { ok: false, reason: 'Auto-solve needs K-map variables that are current-state bits or inputs.' };
+  }
+
+  ensureTransitionTableStructure();
+  const colByBase = new Map();
+  (state.transitionTable.columns || []).forEach((col) => {
+    const base = columnBaseKey(col);
+    if (col.type !== 'spacer' && !colByBase.has(base)) colByBase.set(base, col);
+  });
+  const missing = [fnKey, ...varKeys].filter((key) => !colByBase.has(key));
+  if (missing.length) {
+    const labels = missing.map((key) => {
+      const tpl = (state.transitionTable.availableColumns || []).find((t) => t.key === key);
+      return tpl?.label || key;
+    });
+    return { ok: false, reason: `Add these columns to the transition table first: ${labels.join(', ')}` };
+  }
+
+  const cells = state.transitionTable.cells || {};
+  const readVal = (rowKey, baseKey) =>
+    normalizeBinaryValue(cells[`${rowKey}::${colByBase.get(baseKey).key}`] || '');
+  const tableRows = (state.transitionTable.rows || []).map((row) => ({
+    vars: varKeys.map((key) => readVal(row.key, key)),
+    value: readVal(row.key, fnKey),
+  }));
+
+  const layout = buildKmapLayout(kmap);
+  kmap.cells = {};
+  let conflict = false;
+  for (let r = 0; r < layout.totalRows; r += 1) {
+    for (let c = 0; c < layout.totalCols; c += 1) {
+      const assignment = kmapCellAssignment(layout, r, c);
+      const wanted = variables.map((name) => assignment[name]);
+      const values = new Set();
+      tableRows.forEach((row) => {
+        if (row.vars.some((bit, idx) => bit !== wanted[idx])) return;
+        if (row.value === '0' || row.value === '1') values.add(row.value);
+      });
+      let cellVal = 'X';
+      if (values.size === 1) {
+        [cellVal] = values;
+      } else if (values.size > 1) {
+        conflict = true;
+      }
+      kmap.cells[kmapCellKey(r, c)] = cellVal;
+    }
+  }
+  if (conflict) {
+    return { ok: true, reason: 'K-map is missing a variable this function depends on (conflicting cells set to X)' };
+  }
+  return { ok: true };
+}
+
+// Quine-McCluskey + exact minimum cover. Keys are bit strings of length n.
+// Returns an array of implicant patterns like '1-0' ('-' = variable dropped).
+function minimizeSop(onKeys, dcKeys, n) {
+  if (!onKeys.length) return [];
+  const combine = (a, b) => {
+    let diff = -1;
+    for (let i = 0; i < n; i += 1) {
+      if (a[i] === b[i]) continue;
+      if (a[i] === '-' || b[i] === '-' || diff !== -1) return null;
+      diff = i;
+    }
+    return diff === -1 ? null : `${a.slice(0, diff)}-${a.slice(diff + 1)}`;
+  };
+
+  let current = [...new Set([...onKeys, ...dcKeys])];
+  const primes = new Set();
+  while (current.length) {
+    const used = new Set();
+    const next = new Set();
+    for (let i = 0; i < current.length; i += 1) {
+      for (let j = i + 1; j < current.length; j += 1) {
+        const merged = combine(current[i], current[j]);
+        if (merged) {
+          next.add(merged);
+          used.add(current[i]);
+          used.add(current[j]);
+        }
+      }
+    }
+    current.forEach((term) => {
+      if (!used.has(term)) primes.add(term);
+    });
+    current = [...next];
+  }
+
+  const covers = (pattern, key) => [...pattern].every((ch, i) => ch === '-' || ch === key[i]);
+  const literalCount = (pattern) => [...pattern].filter((ch) => ch !== '-').length;
+  const primeList = [...primes]
+    .map((pattern) => ({ pattern, cost: literalCount(pattern), minterms: onKeys.filter((k) => covers(pattern, k)) }))
+    .filter((p) => p.minterms.length);
+
+  // Branch and bound: fewest terms, then fewest literals.
+  let best = null;
+  const better = (terms, literals) =>
+    !best || terms < best.terms || (terms === best.terms && literals < best.literals);
+  const search = (uncovered, chosen, literals) => {
+    if (!uncovered.length) {
+      if (better(chosen.length, literals)) best = { terms: chosen.length, literals, chosen: [...chosen] };
+      return;
+    }
+    if (best && chosen.length + 1 > best.terms) return;
+    // Branch on the uncovered minterm with the fewest covering primes.
+    let pivot = null;
+    let options = null;
+    uncovered.forEach((m) => {
+      const opts = primeList.filter((p) => p.minterms.includes(m));
+      if (!options || opts.length < options.length) {
+        pivot = m;
+        options = opts;
+      }
+    });
+    if (!pivot) return;
+    options
+      .slice()
+      .sort((a, b) => b.minterms.length - a.minterms.length || a.cost - b.cost)
+      .forEach((p) => {
+        const rest = uncovered.filter((m) => !p.minterms.includes(m));
+        chosen.push(p.pattern);
+        search(rest, chosen, literals + p.cost);
+        chosen.pop();
+      });
+  };
+  search([...onKeys], [], 0);
+  return best ? best.chosen : [];
+}
+
+// Fills a K-map from the transition table and writes its minimal expression(s).
+function solveKmap(kmap) {
+  if (!kmap) return { passed: false, reason: 'No k-map selected' };
+  const fill = fillKmapCellsFromTable(kmap);
+  if (!fill.ok) return { passed: false, reason: fill.reason };
+
+  const isPos = kmap.type === 'pos';
+  const { table, variables } = buildKmapTruthTable(kmap);
+  const onValue = isPos ? '0' : '1';
+  const onKeys = [];
+  const dcKeys = [];
+  table.forEach((val, key) => {
+    if (val === onValue) onKeys.push(key);
+    else if (val === 'X') dcKeys.push(key);
+  });
+
+  const name = kmap.label || 'F';
+  const patterns = minimizeSop(onKeys, dcKeys, variables.length);
+  let constantReason = null;
+  if (!onKeys.length) {
+    constantReason = `${name} = ${isPos ? '1' : '0'} (constant)`;
+  } else if (patterns.some((p) => !/[01]/.test(p))) {
+    constantReason = `${name} = ${isPos ? '0' : '1'} (constant)`;
+  }
+
+  // Literals are listed in the K-map's own variable order.
+  const order = (kmap.variables || []).map((v) => variables.indexOf(v)).filter((i) => i >= 0);
+  const termLiterals = constantReason
+    ? []
+    : patterns.map((pattern) =>
+      order
+        .filter((i) => pattern[i] !== '-')
+        .map((i) => ({ type: 'var', value: variables[i], negated: pattern[i] === '0' })));
+
+  const sopTokens = [];
+  termLiterals.forEach((lits, idx) => {
+    if (idx > 0) sopTokens.push({ type: 'op', value: '+' });
+    sopTokens.push(...lits);
+  });
+  kmap.expressionTokens = sopTokens;
+  kmap.expression = tokensToCanonical(sopTokens) || '';
+  kmap.circleSectionSignatures = getKmapSectionSignatures(sopTokens);
+
+  if (isPos) {
+    // DeMorgan: each F' product term AB' becomes the sum (A' + B).
+    const posTokens = [];
+    termLiterals.forEach((lits) => {
+      const sum = [];
+      lits.forEach((lit, idx) => {
+        if (idx > 0) sum.push({ type: 'op', value: '+' });
+        sum.push({ ...lit, negated: !lit.negated });
+      });
+      if (lits.length > 1) {
+        posTokens.push({ type: 'paren', value: '(' }, ...sum, { type: 'paren', value: ')' });
+      } else {
+        posTokens.push(...sum);
+      }
+    });
+    const withOps = insertImplicitMultiply(posTokens);
+    kmap.fExpressionTokens = withOps;
+    kmap.fExpression = tokensToCanonical(withOps) || '';
+  }
+
+  if (fill.reason) return { passed: false, reason: fill.reason };
+  if (constantReason) return { passed: false, reason: constantReason };
+  return verifyKmapExpression(kmap);
+}
+
+// Shows a solve result on the K-map's Solve button (green/red, reason as tooltip).
+function showKmapSolveResult(kmapId, result) {
+  const btn = kmapList?.querySelector(`[data-solve-kmap="${kmapId}"]`);
+  if (!btn || !result) return;
+  btn.classList.toggle('verified', !!result.passed);
+  btn.classList.toggle('failed', !result.passed);
+  btn.title = result.passed ? 'Solved from the transition table' : result.reason || 'Could not solve this K-map';
+}
+
 function buildKmapLayout(kmap) {
   const variables = kmap.variables || [];
   const mapVarCount = Math.max(0, variables.length - 4);
@@ -5106,6 +5421,14 @@ function renderKmaps() {
 
     const controls = document.createElement('div');
     controls.className = 'kmap-expression-actions';
+    const solveBtn = document.createElement('button');
+    solveBtn.textContent = 'Solve';
+    solveBtn.type = 'button';
+    solveBtn.dataset.solveKmap = kmap.id;
+    solveBtn.title = 'Fill this K-map from the transition table and write its minimal expression';
+    solveBtn.hidden = !isFastMode;
+    controls.appendChild(solveBtn);
+
     const verifyBtn = document.createElement('button');
     verifyBtn.textContent = 'Verify';
     verifyBtn.type = 'button';
@@ -5509,7 +5832,9 @@ function createKmapFromDialog() {
     variableTokens,
   };
   state.kmaps.push(newMap);
+  const solveResult = isFastMode ? solveKmap(newMap) : null;
   renderKmaps();
+  if (solveResult) showKmapSolveResult(newMap.id, solveResult);
   closeDialog('kmapCreateDialog');
   showKmapWorkspace();
   if (state.kmaps.length === 1) {
@@ -6405,6 +6730,9 @@ function attachEvents() {
   document
     .getElementById('verifyTransitionTable')
     .addEventListener('click', () => verifyTransitionTableAgainstDiagram({ highlight: true }));
+  document
+    .getElementById('fillTransitionTable')
+    ?.addEventListener('click', fillTransitionTableFromDiagram);
   document.getElementById('closeTransitionDrawer').addEventListener('click', closeTransitionDrawer);
 
   transitionDrawerHandle.addEventListener('mousedown', (e) => {
@@ -7091,6 +7419,17 @@ function attachEvents() {
       return;
     }
 
+    const solveBtn = e.target.closest('[data-solve-kmap]');
+    if (solveBtn) {
+      const kmap = getKmapById(solveBtn.dataset.solveKmap);
+      if (!kmap) return;
+      const result = solveKmap(kmap);
+      renderKmaps();
+      showKmapSolveResult(kmap.id, result);
+      markDirty();
+      return;
+    }
+
     const verifyBtn = e.target.closest('[data-verify-kmap]');
     if (verifyBtn) {
       const kmap = state.kmaps.find((m) => m.id.toString() === verifyBtn.dataset.verifyKmap);
@@ -7632,6 +7971,9 @@ document.addEventListener('DOMContentLoaded', () => {
   document.body.classList.toggle('dark', savedTheme === 'dark');
   document.body.classList.toggle('light', savedTheme !== 'dark');
   document.body.classList.toggle('helper', isHelperMode);
+  document.body.classList.toggle('fast', isFastMode);
+  const fillTTBtn = document.getElementById('fillTransitionTable');
+  if (fillTTBtn) fillTTBtn.hidden = !isFastMode;
   if (!isHelperMode) {
     const verifyTTBtn = document.getElementById('verifyTransitionTable');
     if (verifyTTBtn) verifyTTBtn.hidden = true;
