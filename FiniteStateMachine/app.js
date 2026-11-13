@@ -4732,6 +4732,372 @@ function solveKmap(kmap) {
   return verifyKmapExpression(kmap);
 }
 
+// --- Fast mode: export to Digital (.dig, H. Neemann's simulator) ---
+
+const DIG_RESERVED_NETS = ['clk', 'set', 'reset'];
+
+function digInputNet(name) {
+  return DIG_RESERVED_NETS.includes(name) ? `in\\_${name}` : name;
+}
+
+function digLiteralNet(lit) {
+  return lit.negated ? `~${lit.net}` : lit.net;
+}
+
+// Maps K-map/variable labels (Q_1, X, ...) to the net names used in the circuit.
+function digVariableNets() {
+  const map = new Map();
+  const bitCount = stateBitCount();
+  for (let i = bitCount - 1; i >= 0; i -= 1) map.set(`Q_${i}`, `Q_${i}`);
+  state.inputs.forEach((name) => map.set(name, digInputNet(name)));
+  return map;
+}
+
+// Converts verified K-map tokens into flat two-level terms, or null if the
+// expression isn't a plain SOP (form 'sop') / POS (form 'pos').
+function digTermsFromTokens(tokens, form, varNets) {
+  const terms = [];
+  let current = [];
+  let depth = 0;
+  const literal = (tk) => {
+    const net = varNets.get(tk.value);
+    return net ? { net, negated: !!tk.negated } : null;
+  };
+  for (const tk of tokens || []) {
+    if (tk.type === 'var') {
+      const lit = literal(tk);
+      if (!lit) return null;
+      if (form === 'pos' && depth === 0) {
+        terms.push([lit]);
+      } else {
+        current.push(lit);
+      }
+      continue;
+    }
+    if (tk.type === 'paren') {
+      if (form !== 'pos') return null;
+      if (tk.value === '(') {
+        if (depth) return null;
+        depth = 1;
+        current = [];
+      } else {
+        if (!depth || !current.length) return null;
+        depth = 0;
+        terms.push(current);
+        current = [];
+      }
+      continue;
+    }
+    if (tk.type === 'op') {
+      if (form === 'sop') {
+        if (tk.value === '+') {
+          if (!current.length) return null;
+          terms.push(current);
+          current = [];
+        }
+        continue;
+      }
+      // POS: '+' only inside parentheses, '*' only between factors.
+      if (tk.value === '+' && !depth) return null;
+      if (tk.value === '*' && depth) return null;
+      continue;
+    }
+    return null;
+  }
+  if (form === 'sop' && current.length) terms.push(current);
+  if (depth) return null;
+  return terms.length ? terms : null;
+}
+
+// Minimizes one function straight from the transition table (falling back to
+// the diagram when the table lacks columns). Variables: all Q bits + inputs.
+function digSolveFromTable(fnKey) {
+  const bitCount = stateBitCount();
+  const qKeys = [];
+  for (let i = bitCount - 1; i >= 0; i -= 1) qKeys.push(`q_${i}`);
+  const inKeys = state.inputs.map((_, idx) => `in_${idx}`);
+  const varKeys = [...qKeys, ...inKeys];
+  const n = varKeys.length;
+
+  ensureTransitionTableStructure();
+  const colByBase = new Map();
+  (state.transitionTable.columns || []).forEach((col) => {
+    const base = columnBaseKey(col);
+    if (col.type !== 'spacer' && !colByBase.has(base)) colByBase.set(base, col);
+  });
+  const cells = state.transitionTable.cells || {};
+  const values = new Map();
+  const tableReady = [fnKey, ...varKeys].every((key) => colByBase.has(key)) &&
+    (state.transitionTable.rows || []).some((row) =>
+      normalizeBinaryValue(cells[`${row.key}::${colByBase.get(fnKey).key}`]));
+
+  if (tableReady) {
+    const readVal = (rowKey, key) => normalizeBinaryValue(cells[`${rowKey}::${colByBase.get(key).key}`] || '');
+    state.transitionTable.rows.forEach((row) => {
+      const bits = varKeys.map((key) => readVal(row.key, key));
+      if (bits.some((b) => b !== '0' && b !== '1')) return;
+      const val = readVal(row.key, fnKey);
+      if (val === '0' || val === '1') values.set(bits.join(''), val);
+    });
+  } else {
+    const dict = buildTransitionDiagramDictionary();
+    const idx = fnKey.startsWith('next_q_')
+      ? bitCount - 1 - parseInt(fnKey.slice(7), 10)
+      : bitCount + parseInt(fnKey.slice(4), 10);
+    dict.forEach((value, key) => {
+      const [stateBits, combo] = key.split('|');
+      const bit = value[idx];
+      if (bit === 0 || bit === 1) values.set(`${stateBits}${combo === 'none' ? '' : combo}`, String(bit));
+    });
+  }
+
+  const onKeys = [];
+  const dcKeys = [];
+  for (let m = 0; m < Math.pow(2, n); m += 1) {
+    const key = m.toString(2).padStart(n, '0');
+    const val = values.get(key);
+    if (val === '1') onKeys.push(key);
+    else if (val !== '0') dcKeys.push(key);
+  }
+  const nets = [
+    ...qKeys.map((key) => `Q_${key.slice(2)}`),
+    ...state.inputs.map((name) => digInputNet(name)),
+  ];
+  if (!onKeys.length) return { form: 'sop', terms: [], constant: 0 };
+  const patterns = minimizeSop(onKeys, dcKeys, n);
+  if (patterns.some((p) => !/[01]/.test(p))) return { form: 'sop', terms: [], constant: 1 };
+  const terms = patterns.map((p) =>
+    [...p].map((ch, i) => (ch === '-' ? null : { net: nets[i], negated: ch === '0' })).filter(Boolean));
+  return { form: 'sop', terms, constant: null };
+}
+
+// One equation per next-state bit and per output: from a verified K-map when
+// possible, otherwise minimized from the transition table.
+function collectDigEquations() {
+  const bitCount = stateBitCount();
+  const varNets = digVariableNets();
+  const functions = [];
+  for (let i = bitCount - 1; i >= 0; i -= 1) {
+    functions.push({ key: `next_q_${i}`, net: `Q_${i}^+`, section: 'state' });
+  }
+  state.outputs.forEach((name, idx) => {
+    functions.push({ key: `out_${idx}`, net: name || `out\\_${idx}`, section: 'output' });
+  });
+
+  const autoDerived = [];
+  const equations = functions.map((fn) => {
+    const kmaps = (state.kmaps || []).filter((k) => columnBaseKey(k.functionToken) === fn.key);
+    for (const kmap of kmaps) {
+      if (!verifyKmapExpression(kmap).passed) continue;
+      const isPos = kmap.type === 'pos';
+      const tokens = isPos
+        ? kmap.fExpressionTokens || expressionStringToTokens(kmap.fExpression || '')
+        : kmap.expressionTokens || expressionStringToTokens(kmap.expression || '');
+      const terms = digTermsFromTokens(tokens, isPos ? 'pos' : 'sop', varNets);
+      if (terms) return { ...fn, form: isPos ? 'pos' : 'sop', terms, constant: null };
+    }
+    autoDerived.push(fn.net);
+    return { ...fn, ...digSolveFromTable(fn.key) };
+  });
+  return { equations, autoDerived };
+}
+
+function digXmlEscape(text) {
+  return String(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+// Last input pin offset (and output pin offset) for an n-input Digital gate.
+function digGatePins(n) {
+  const pins = [];
+  for (let k = 0; k <= n; k += 1) {
+    if (n % 2 === 0 && k === n / 2) continue;
+    if (pins.length < n) pins.push(k * 20);
+  }
+  return { inputs: pins, output: 20 * Math.floor(n / 2) };
+}
+
+function buildDigCircuit(equations) {
+  const elements = [];
+  const wires = [];
+  const entry = (key, valueXml) => `        <entry>\n          <string>${key}</string>\n          ${valueXml}\n        </entry>`;
+  const str = (val) => `<string>${digXmlEscape(val)}</string>`;
+  const el = (name, x, y, entries = []) => {
+    const attrs = entries.length
+      ? `<elementAttributes>\n${entries.join('\n')}\n      </elementAttributes>`
+      : '<elementAttributes/>';
+    elements.push(`    <visualElement>\n      <elementName>${name}</elementName>\n      ${attrs}\n      <pos x="${x}" y="${y}"/>\n    </visualElement>`);
+  };
+  const wire = (x1, y1, x2, y2) => {
+    wires.push(`    <wire>\n      <p1 x="${x1}" y="${y1}"/>\n      <p2 x="${x2}" y="${y2}"/>\n    </wire>`);
+  };
+  const tunnel = (net, x, y, facingLeft) => {
+    const entries = [];
+    if (facingLeft) entries.push(entry('rotation', '<rotation rotation="2"/>'));
+    entries.push(entry('NetName', str(net)));
+    el('Tunnel', x, y, entries);
+  };
+  const gate = (name, x, y, n) => {
+    el(name, x, y, n === 2 ? [] : [entry('Inputs', `<int>${n}</int>`)]);
+    return digGatePins(n);
+  };
+
+  // Inputs: clk / set / reset, then each FSM input with its inverse.
+  [['clk', 60], ['set', 100], ['reset', 140]].forEach(([name, y]) => {
+    el('In', 0, y, [entry('Label', str(name))]);
+    wire(0, y, 20, y);
+    tunnel(name, 20, y, false);
+  });
+  state.inputs.forEach((name, idx) => {
+    const y = 180 + idx * 40;
+    const net = digInputNet(name);
+    el('In', 0, y, [entry('Label', str(name))]);
+    wire(0, y, 20, y);
+    tunnel(net, 20, y, false);
+    wire(20, y, 20, y + 20);
+    wire(20, y + 20, 40, y + 20);
+    el('Not', 40, y + 20);
+    wire(80, y + 20, 100, y + 20);
+    tunnel(`~${net}`, 100, y + 20, false);
+  });
+
+  // Single-literal equations need no logic: consumers use the literal's net.
+  const driverNet = (eq) =>
+    (eq.constant === null && eq.terms.length === 1 && eq.terms[0].length === 1
+      ? digLiteralNet(eq.terms[0][0])
+      : eq.net);
+
+  // Flip-flops (MSB first).
+  const stateEqs = equations.filter((eq) => eq.section === 'state');
+  stateEqs.forEach((eq, k) => {
+    const x = 340 + k * 220;
+    const y = 140;
+    const bit = eq.key.slice(7);
+    el('D_FF_AS', x, y, [entry('Label', str(`Q_${bit}`))]);
+    [['set', 0, 20], [driverNet(eq), 20, 40], ['clk', 40, 20], ['reset', 60, 20]].forEach(([net, dy, len]) => {
+      wire(x - len, y + dy, x, y + dy);
+      tunnel(net, x - len, y + dy, true);
+    });
+    wire(x + 60, y, x + 80, y);
+    tunnel(`Q_${bit}`, x + 80, y, false);
+    wire(x + 60, y + 20, x + 80, y + 20);
+    tunnel(`~Q_${bit}`, x + 80, y + 20, false);
+  });
+
+  // Outputs.
+  const outputEqs = equations.filter((eq) => eq.section === 'output');
+  outputEqs.forEach((eq, k) => {
+    const x = 340 + k * 220;
+    const y = 300;
+    el('Out', x, y, [entry('Label', str(state.outputs[parseInt(eq.key.slice(4), 10)] || eq.net))]);
+    wire(x - 20, y, x, y);
+    tunnel(driverNet(eq), x - 20, y, true);
+  });
+
+  // Two-level logic for one equation, starting at y. Returns the next free y.
+  const drawEquation = (eq, top) => {
+    if (driverNet(eq) !== eq.net) return top;
+    if (eq.constant !== null) {
+      el('Const', 200, top, [entry('Value', `<long>${eq.constant}</long>`)]);
+      wire(200, top, 220, top);
+      tunnel(eq.net, 220, top, false);
+      return top + 60;
+    }
+    const firstGate = eq.form === 'pos' ? 'Or' : 'And';
+    const secondGate = eq.form === 'pos' ? 'And' : 'Or';
+    const single = eq.terms.length === 1;
+    const termNets = [];
+    let y = top;
+    eq.terms.forEach((lits, idx) => {
+      if (lits.length === 1) {
+        termNets.push(digLiteralNet(lits[0]));
+        return;
+      }
+      const pins = gate(firstGate, 140, y, lits.length);
+      lits.forEach((lit, i) => {
+        wire(120, y + pins.inputs[i], 140, y + pins.inputs[i]);
+        tunnel(digLiteralNet(lit), 120, y + pins.inputs[i], true);
+      });
+      const termNet = single ? eq.net : `${eq.key.replace(/_/g, '\\_')}\\_t${idx}`;
+      wire(200, y + pins.output, 220, y + pins.output);
+      tunnel(termNet, 220, y + pins.output, false);
+      termNets.push(termNet);
+      y += pins.inputs[pins.inputs.length - 1] + 40;
+    });
+    let bottom = y;
+    if (!single) {
+      const pins = gate(secondGate, 680, top, termNets.length);
+      termNets.forEach((net, i) => {
+        wire(660, top + pins.inputs[i], 680, top + pins.inputs[i]);
+        tunnel(net, 660, top + pins.inputs[i], true);
+      });
+      wire(740, top + pins.output, 760, top + pins.output);
+      tunnel(eq.net, 760, top + pins.output, false);
+      bottom = Math.max(bottom, top + pins.inputs[pins.inputs.length - 1] + 40);
+    }
+    return bottom + 20;
+  };
+
+  const drawSection = (label, eqs, top) => {
+    let y = top;
+    eqs.forEach((eq) => {
+      y = drawEquation(eq, y);
+    });
+    const rectTop = top - 40;
+    const height = Math.max(5, Math.ceil((y - rectTop + 20) / 20));
+    el('Rectangle', -100, rectTop, [
+      entry('Label', str(label)),
+      entry('RectHeight', `<int>${height}</int>`),
+      entry('RectWidth', `<int>55</int>`),
+    ]);
+    return rectTop + height * 20;
+  };
+
+  const inputsBottom = 180 + state.inputs.length * 40;
+  const stateTop = Math.ceil(Math.max(340, inputsBottom) / 20) * 20 + 60;
+  const stateBottom = drawSection('State Logic', stateEqs, stateTop);
+  drawSection('Output Logic', outputEqs, stateBottom + 100);
+
+  return [
+    '<?xml version="1.0" encoding="utf-8"?>',
+    '<circuit>',
+    '  <version>2</version>',
+    '  <attributes/>',
+    '  <visualElements>',
+    ...elements,
+    '  </visualElements>',
+    '  <wires>',
+    ...wires,
+    '  </wires>',
+    '  <measurementOrdering/>',
+    '</circuit>',
+    '',
+  ].join('\n');
+}
+
+function exportDigFile() {
+  closeAllDropdowns();
+  const { equations, autoDerived } = collectDigEquations();
+  const xml = buildDigCircuit(equations);
+  const blob = new Blob([xml], { type: 'application/xml' });
+  const url = URL.createObjectURL(blob);
+  download(`${sanitizeFilename(state.name, 'fsm')}.dig`, url);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+  const notes = [];
+  if (autoDerived.length) {
+    notes.push(`Derived from the transition table (no verified K-map): ${autoDerived.join(', ')}`);
+  }
+  const clashes = state.inputs.filter((name) => DIG_RESERVED_NETS.includes(name));
+  if (clashes.length) {
+    notes.push(`Inputs renamed to avoid clashing with clk/set/reset: ${clashes.map((n) => `in_${n}`).join(', ')}`);
+  }
+  if (notes.length) window.alert(`Exported .dig file.\n\n${notes.join('\n')}`);
+}
+
 // Shows a solve result on the K-map's Solve button (green/red, reason as tooltip).
 function showKmapSolveResult(kmapId, result) {
   const btn = kmapList?.querySelector(`[data-solve-kmap="${kmapId}"]`);
@@ -6810,6 +7176,7 @@ function attachEvents() {
     closeAllDropdowns();
     saveState();
   });
+  document.getElementById('saveDigButton')?.addEventListener('click', exportDigFile);
   saveImageDropdown.addEventListener('click', (e) => {
     e.stopPropagation();
     const willOpen = saveImageMenu.classList.contains('hidden');
@@ -8017,6 +8384,8 @@ document.addEventListener('DOMContentLoaded', () => {
   document.body.classList.toggle('fast', isFastMode);
   const fillTTBtn = document.getElementById('fillTransitionTable');
   if (fillTTBtn) fillTTBtn.hidden = !isFastMode;
+  const saveDigBtn = document.getElementById('saveDigButton');
+  if (saveDigBtn) saveDigBtn.hidden = !isFastMode;
   if (!isHelperMode) {
     const verifyTTBtn = document.getElementById('verifyTransitionTable');
     if (verifyTTBtn) verifyTTBtn.hidden = true;
