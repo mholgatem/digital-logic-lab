@@ -4997,6 +4997,40 @@ function buildDigCircuit(equations) {
     tunnel(driverNet(eq), x - 20, y, true);
   });
 
+  // Seven-segment hex display(s) showing the current state number. Each digit
+  // takes 4 state bits through a splitter; missing bits and dp go to ground.
+  const bitCount = stateEqs.length;
+  const digits = Math.max(1, Math.ceil(bitCount / 4));
+  const displayX = 340 + 220 * Math.max(stateEqs.length, outputEqs.length) - 20;
+  for (let digit = 0; digit < digits; digit += 1) {
+    const x = displayX + (digits - 1 - digit) * 160;
+    el('Seven-Seg-Hex', x, 40);
+    el('Splitter', x, 200, [
+      entry('Input Splitting', str('1,1,1,1')),
+      entry('Output Splitting', str('4')),
+    ]);
+    wire(x + 20, 200, x + 40, 200);
+    wire(x + 40, 180, x + 40, 200);
+    wire(x + 60, 180, x + 60, 240);
+    el('Ground', x + 60, 240);
+    let lastUnused = null;
+    for (let i = 0; i < 4; i += 1) {
+      const bit = digit * 4 + i;
+      const y = 200 + i * 20;
+      wire(x - 20, y, x, y);
+      if (bit < bitCount) {
+        tunnel(`Q_${bit}`, x - 20, y, true);
+      } else {
+        if (lastUnused !== null) wire(x - 20, lastUnused, x - 20, y);
+        lastUnused = y;
+      }
+    }
+    if (lastUnused !== null) {
+      wire(x - 20, lastUnused, x - 20, lastUnused + 20);
+      el('Ground', x - 20, lastUnused + 20);
+    }
+  }
+
   // Two-level logic for one equation, starting at y. Returns the next free y.
   const drawEquation = (eq, top) => {
     if (driverNet(eq) !== eq.net) return top;

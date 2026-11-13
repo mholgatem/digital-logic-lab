@@ -1009,12 +1009,12 @@
       <elementName>Rectangle</elementName>
       <elementAttributes>
         <entry>
-          <string>Label</string>
-          <string>State Logic</string>
-        </entry>
-        <entry>
           <string>RectHeight</string>
           <int>25</int>
+        </entry>
+        <entry>
+          <string>Label</string>
+          <string>State Logic</string>
         </entry>
         <entry>
           <string>RectWidth</string>
@@ -1327,6 +1327,77 @@
       </elementAttributes>
       <pos x="-100" y="920"/>
     </visualElement>
+    <visualElement>
+      <elementName>Splitter</elementName>
+      <elementAttributes>
+        <entry>
+          <string>Input Splitting</string>
+          <string>1,1,1,1</string>
+        </entry>
+        <entry>
+          <string>Output Splitting</string>
+          <string>4</string>
+        </entry>
+      </elementAttributes>
+      <pos x="980" y="200"/>
+    </visualElement>
+    <visualElement>
+      <elementName>Seven-Seg-Hex</elementName>
+      <elementAttributes/>
+      <pos x="980" y="40"/>
+    </visualElement>
+    <visualElement>
+      <elementName>Tunnel</elementName>
+      <elementAttributes>
+        <entry>
+          <string>rotation</string>
+          <rotation rotation="2"/>
+        </entry>
+        <entry>
+          <string>NetName</string>
+          <string>Q_0</string>
+        </entry>
+      </elementAttributes>
+      <pos x="960" y="200"/>
+    </visualElement>
+    <visualElement>
+      <elementName>Tunnel</elementName>
+      <elementAttributes>
+        <entry>
+          <string>rotation</string>
+          <rotation rotation="2"/>
+        </entry>
+        <entry>
+          <string>NetName</string>
+          <string>Q_1</string>
+        </entry>
+      </elementAttributes>
+      <pos x="960" y="220"/>
+    </visualElement>
+    <visualElement>
+      <elementName>Tunnel</elementName>
+      <elementAttributes>
+        <entry>
+          <string>rotation</string>
+          <rotation rotation="2"/>
+        </entry>
+        <entry>
+          <string>NetName</string>
+          <string>Q_2</string>
+        </entry>
+      </elementAttributes>
+      <pos x="960" y="240"/>
+    </visualElement>
+    <visualElement>
+      <elementName>Ground</elementName>
+      <elementAttributes/>
+      <pos x="960" y="280"/>
+    </visualElement>
+    <visualElement>
+      <elementName>Ground</elementName>
+      <elementAttributes/>
+      <pos x="1040" y="240"/>
+    </visualElement>
   </visualElements>
   <wires>
     <wire>
@@ -1348,6 +1419,10 @@
     <wire>
       <p1 x="120" y="580"/>
       <p2 x="140" y="580"/>
+    </wire>
+    <wire>
+      <p1 x="960" y="260"/>
+      <p2 x="980" y="260"/>
     </wire>
     <wire>
       <p1 x="740" y="520"/>
@@ -1384,6 +1459,14 @@
     <wire>
       <p1 x="760" y="200"/>
       <p2 x="780" y="200"/>
+    </wire>
+    <wire>
+      <p1 x="960" y="200"/>
+      <p2 x="980" y="200"/>
+    </wire>
+    <wire>
+      <p1 x="1000" y="200"/>
+      <p2 x="1020" y="200"/>
     </wire>
     <wire>
       <p1 x="400" y="140"/>
@@ -1476,6 +1559,10 @@
     <wire>
       <p1 x="0" y="220"/>
       <p2 x="20" y="220"/>
+    </wire>
+    <wire>
+      <p1 x="960" y="220"/>
+      <p2 x="980" y="220"/>
     </wire>
     <wire>
       <p1 x="20" y="220"/>
@@ -1598,6 +1685,10 @@
       <p2 x="100" y="240"/>
     </wire>
     <wire>
+      <p1 x="960" y="240"/>
+      <p2 x="980" y="240"/>
+    </wire>
+    <wire>
       <p1 x="320" y="180"/>
       <p2 x="340" y="180"/>
     </wire>
@@ -1678,12 +1769,24 @@
       <p2 x="680" y="1020"/>
     </wire>
     <wire>
+      <p1 x="1040" y="180"/>
+      <p2 x="1040" y="240"/>
+    </wire>
+    <wire>
+      <p1 x="960" y="260"/>
+      <p2 x="960" y="280"/>
+    </wire>
+    <wire>
       <p1 x="20" y="180"/>
       <p2 x="20" y="200"/>
     </wire>
     <wire>
       <p1 x="20" y="220"/>
       <p2 x="20" y="240"/>
+    </wire>
+    <wire>
+      <p1 x="1020" y="180"/>
+      <p2 x="1020" y="200"/>
     </wire>
   </wires>
   <measurementOrdering/>
