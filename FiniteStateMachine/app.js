@@ -3197,28 +3197,46 @@ function limitArrowPointOnTarget(fromState, targetState, cursorPoint) {
   return { ...projected, radius: 0 };
 }
 
+// Self-loop: a leg out of the state, a semicircle, and a leg back in.
+// The start/end points keep a fixed spacing on the state's edge; loopAngle
+// rotates the loop around the state and arcOffset sets how far the top of the
+// semicircle sits from the edge (which also grows the semicircle).
 function selfLoopPath(node, tr) {
   const angle = tr.loopAngle !== undefined ? tr.loopAngle : -Math.PI / 2;
   const sweep = Math.PI / 4;
-  const startAngle = angle - sweep / 2;
-  const endAngle = angle + sweep / 2;
-  const loopDepth = Math.min(240, Math.max(0, tr.arcOffset || 0));
-  const ctrlRadius = node.radius * 0.7 + loopDepth;
+  const R = node.radius;
+  const u = { x: Math.cos(angle), y: Math.sin(angle) }; // outward
+  const v = { x: -u.y, y: u.x }; // across the loop
+  const at = (along, across) => ({
+    x: node.x + u.x * along + v.x * across,
+    y: node.y + u.y * along + v.y * across,
+  });
 
-  const start = {
-    x: node.x + Math.cos(startAngle) * node.radius,
-    y: node.y + Math.sin(startAngle) * node.radius,
-  };
-  const end = {
-    x: node.x + Math.cos(endAngle) * node.radius,
-    y: node.y + Math.sin(endAngle) * node.radius,
-  };
-  const ctrl = {
-    x: node.x + Math.cos(angle) * (node.radius + ctrlRadius),
-    y: node.y + Math.sin(angle) * (node.radius + ctrlRadius),
-  };
+  const halfGap = R * Math.sin(sweep / 2);
+  const edgeAlong = R * Math.cos(sweep / 2);
+  const start = at(edgeAlong, -halfGap);
+  const end = at(edgeAlong, halfGap);
 
-  return { d: `M ${start.x} ${start.y} Q ${ctrl.x} ${ctrl.y} ${end.x} ${end.y}`, ctrl };
+  const minDepth = halfGap * 2.4;
+  const depth = Math.min(300, Math.max(minDepth, tr.arcOffset || 0));
+  const loopRadius = Math.max(halfGap, depth * 0.4);
+  const centerAlong = R + depth - loopRadius;
+  const left = at(centerAlong, -loopRadius);
+  const right = at(centerAlong, loopRadius);
+  const apex = at(centerAlong + loopRadius, 0);
+
+  // Leg control points sit on the semicircle's tangent so the joins are smooth.
+  const legReach = Math.max(0, centerAlong - edgeAlong) * 0.5;
+  const ctrlLeft = at(centerAlong - legReach, -loopRadius);
+  const ctrlRight = at(centerAlong - legReach, loopRadius);
+
+  const d = [
+    `M ${start.x} ${start.y}`,
+    `Q ${ctrlLeft.x} ${ctrlLeft.y} ${left.x} ${left.y}`,
+    `A ${loopRadius} ${loopRadius} 0 0 1 ${right.x} ${right.y}`,
+    `Q ${ctrlRight.x} ${ctrlRight.y} ${end.x} ${end.y}`,
+  ].join(' ');
+  return { d, ctrl: apex };
 }
 
 function drawTransition(tr) {
