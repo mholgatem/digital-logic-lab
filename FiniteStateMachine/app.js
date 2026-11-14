@@ -688,7 +688,7 @@ function startStateDefinitionTour() {
     {
       title: 'State Binary',
       text: 'Each state\'s binary code comes from its row number. Drag rows to reassign codes.',
-      target: () => stateTableBody.querySelector('tr:first-child input[data-field="binary"]'),
+      target: () => stateTableBody.querySelector('tr:first-child [data-field="binary"]'),
       placement: 'bottom',
     },
   ];
@@ -1712,7 +1712,7 @@ function formatAssumptionTextHtml(text, asChips = false) {
       html += assumptionChipHtml(raw);
     } else {
       const stateClass = assumptionStateForToken(raw) ? ' assumption-state' : '';
-      html += `<span class="assumption-var${stateClass}"${assumptionStateStyleAttr(raw)}>`
+      html += `<span class="assumption-var assumption-boxed${stateClass}"${assumptionStateStyleAttr(raw)}>`
         + `${formatAssumptionTokenHtml(raw)}</span>`;
     }
     last = offset + match.length;
@@ -2250,7 +2250,7 @@ function renderTable() {
           <span class="row-number">${index}</span>
         </div>
       </td>
-      <td title="${STATE_BINARY_TOOLTIP}"><input class="state-binary-input" data-field="binary" data-id="${st.id}" value="${st.binary}" readonly tabindex="-1" aria-readonly="true"></td>
+      <td title="${STATE_BINARY_TOOLTIP}"><span class="state-binary" data-field="binary" data-id="${st.id}">${st.binary}</span></td>
       <td><input data-field="label" data-id="${st.id}" value="${st.label}"></td>
       <td><input data-field="description" data-id="${st.id}" value="${st.description}"></td>
       <td class="moore-only ${state.type !== 'moore' ? 'hidden' : ''}"><input data-field="outputs" data-id="${st.id}" value="${st.outputs.join(',')}"></td>
