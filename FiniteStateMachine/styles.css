@@ -740,12 +740,13 @@ body.col-resizing {
   width: 100%;
 }
 
-#stateTable td input.state-binary-input {
-  background: transparent;
-  border-color: transparent;
+#stateTable td .state-binary {
   color: var(--muted);
   cursor: default;
+  display: block;
   font-family: monospace;
+  line-height: normal;
+  padding: calc(0.4rem + 1px) calc(0.5rem + 1px);
 }
 
 td.row-drag-handle {
@@ -957,7 +958,8 @@ button:active {
   white-space: nowrap;
 }
 
-.assumption-var.assumption-state {
+.assumption-var.assumption-boxed {
+  background: rgba(128, 128, 128, 0.25);
   border: 1px solid transparent;
   border-radius: 4px;
   padding: 0 0.25em;
